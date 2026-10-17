@@ -11,7 +11,8 @@ interface ClubSeed {
 }
 
 /**
- * Launch courses chosen by the owner on 17 October 2026. Sources are in
+ * Courses chosen by the owner on 17 October 2026 (five launch courses, then Fremantle
+ * Public, Whaleback and Point Walter). Sources are in
  * docs/platforms.md. Coordinates are left empty until verified.
  */
 export const SEED_CLUBS: ClubSeed[] = [
@@ -81,6 +82,78 @@ export const SEED_CLUBS: ClubSeed[] = [
         notes:
           "City of Stirling course. Times were listed at least 16 days ahead on 17 October 2026; " +
           "we read 14, the longest search range. Club website not yet confirmed.",
+      },
+    ],
+  },
+  {
+    name: "Fremantle Public Golf Course",
+    slug: "fremantle-public",
+    courses: [
+      {
+        name: "Fremantle Public Golf Course",
+        slug: "fremantle-public",
+        suburb: "Fremantle",
+        holes: 18,
+        platform: "miclub",
+        platformConfig: {
+          baseUrl: "https://fremantlepublic.miclub.com.au",
+          bookingResourceId: "3000000",
+        },
+        websiteUrl: "https://fremantlepublic.miclub.com.au",
+        bookingUrl:
+          "https://fremantlepublic.miclub.com.au/guests/bookings/ViewPublicCalendar.msp?bookingResourceId=3000000",
+        enabled: true,
+        bookingWindowDays: 9,
+        notes:
+          "City of Fremantle course. Checked live 17 October 2026: no CAPTCHA, times listed 9 days " +
+          "ahead (today plus 8).",
+      },
+    ],
+  },
+  {
+    name: "Whaleback Golf Course",
+    slug: "whaleback",
+    courses: [
+      {
+        name: "Whaleback Golf Course",
+        slug: "whaleback",
+        suburb: "Parkwood",
+        holes: 18,
+        platform: "miclub",
+        platformConfig: {
+          baseUrl: "https://www.whalebackgolfcourse.com.au",
+          bookingResourceId: "3000000",
+        },
+        websiteUrl: "https://www.whalebackgolfcourse.com.au",
+        bookingUrl: "https://www.whalebackgolfcourse.com.au/guests/bookings/ViewPublicCalendar.msp",
+        enabled: false,
+        bookingWindowDays: 10,
+        notes:
+          "Not yet checked live: www.whalebackgolfcourse.com.au is not on the build environment's " +
+          "allowed domains. Times open up to 10 days ahead, refreshed " +
+          "at 6 am. Prepaid, with a 48 hour cancellation policy.",
+      },
+    ],
+  },
+  {
+    name: "Point Walter Golf Course",
+    slug: "point-walter",
+    courses: [
+      {
+        name: "Point Walter Golf Course",
+        slug: "point-walter",
+        suburb: "Bicton",
+        holes: 18,
+        platform: "chronogolf",
+        platformConfig: {},
+        websiteUrl: "https://www.pointwaltergolf.com.au",
+        bookingUrl: "https://www.chronogolf.com/club/point-walter-public-golf-course",
+        enabled: false,
+        bookingWindowDays: 11,
+        notes:
+          "Moved from Quick18 to Chronogolf (the old Quick18 site says 'coming soon', October 2026). " +
+          "Run by Belgravia Leisure. Times open 11 days ahead. Not searchable until Lightspeed " +
+          "partner API access is arranged.",
       },
     ],
   },
