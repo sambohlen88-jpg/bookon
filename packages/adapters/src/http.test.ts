@@ -1,14 +1,19 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { HttpError, PoliteHttpClient, RobotsDisallowedError, isAllowed, parseRobots } from "./http";
 
 const UA = "BookOnBot/0.1 (+https://bookon.com.au; hello@bookon.com.au)";
 
 /** A fake clock and fetch so tests run instantly and can see timing. */
-function harness(handler: (url: string) => Response | Promise<Response>) {
+function harness(
+  handler: (url: string) => Response | Promise<Response>,
+  alsoObeyAgents: string[] = [],
+) {
   let clock = 0;
   const calls: { url: string; at: number; userAgent: string | null }[] = [];
   const client = new PoliteHttpClient({
     userAgent: UA,
+    alsoObeyAgents,
     minIntervalMs: 3000,
     backoffMs: 1000,
     now: () => clock,
@@ -141,5 +146,54 @@ describe("robots.txt rules", () => {
       true,
     );
     expect(isAllowed(parseRobots("User-agent: *\nDisallow:", "x"), "/anything")).toBe(true);
+  });
+});
+
+describe("alsoObeyAgents", () => {
+  // Quick18 robots.txt, 17 October 2026: no `*` group, but Claude-User and other AI agents are blocked.
+  const quick18 = readFileSync(
+    new URL("../fixtures/robots/quick18-2026-10-17.txt", import.meta.url),
+    "utf8",
+  );
+  // MiClub's robots.txt: AI training crawlers blocked, public pages open to everyone else.
+  const miclub = readFileSync(
+    new URL("../fixtures/robots/miclub-2026-10-17.txt", import.meta.url),
+    "utf8",
+  );
+
+  const serve = (robots: string) => (url: string) =>
+    url.endsWith("robots.txt") ? ok(robots) : ok("page");
+
+  it("allows BookOnBot on Quick18 when run normally", async () => {
+    const { client } = harness(serve(quick18));
+    await expect(
+      client.getText("https://hamersley.quick18.com/teetimes/searchmatrix"),
+    ).resolves.toBe("page");
+  });
+
+  it("refuses Quick18 when Claude runs the worker, without fetching the page", async () => {
+    const { client, calls } = harness(serve(quick18), ["Claude-User"]);
+    await expect(
+      client.getText("https://hamersley.quick18.com/teetimes/searchmatrix"),
+    ).rejects.toThrow("robots.txt disallows Claude-User");
+    expect(calls.map((c) => c.url)).toEqual(["https://hamersley.quick18.com/robots.txt"]);
+  });
+
+  it("still allows MiClub booking pages when Claude runs the worker", async () => {
+    const { client } = harness(serve(miclub), ["Claude-User"]);
+    await expect(
+      client.getText(
+        "https://fremantlepublic.miclub.com.au/guests/bookings/ViewPublicCalendar.msp",
+      ),
+    ).resolves.toBe("page");
+    await expect(client.getText("https://fremantlepublic.miclub.com.au/members/x")).rejects.toThrow(
+      RobotsDisallowedError,
+    );
+  });
+
+  it("keeps an empty Disallow from merging the next agent into its group", () => {
+    const text = "User-agent: *\nDisallow:\n\nUser-agent: badbot\nDisallow: /";
+    expect(isAllowed(parseRobots(text, "bookonbot"), "/page")).toBe(true);
+    expect(isAllowed(parseRobots(text, "badbot"), "/page")).toBe(false);
   });
 });

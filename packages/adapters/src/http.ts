@@ -16,6 +16,11 @@ export interface PoliteHttpOptions {
   maxRetries?: number;
   backoffMs?: number;
   respectRobots?: boolean;
+  /**
+   * Other user agents whose own robots.txt rules we also obey, e.g. "Claude-User"
+   * when Claude Code runs the worker. Only groups naming them apply, not `*`.
+   */
+  alsoObeyAgents?: string[];
   fetch?: typeof fetch;
   sleep?: (ms: number) => Promise<void>;
   now?: () => number;
@@ -37,11 +42,15 @@ export class RobotsDisallowedError extends Error {
     readonly url: string,
     /** Set when robots.txt itself could not be read, which RFC 9309 treats as disallow all. */
     readonly unreachableReason?: string,
+    /** The agent the blocking rule names, when it is one of `alsoObeyAgents`. */
+    readonly agent?: string,
   ) {
     super(
       unreachableReason
         ? `robots.txt could not be read (${unreachableReason}), so not fetching ${url}`
-        : `robots.txt disallows ${url}`,
+        : agent
+          ? `robots.txt disallows ${agent}, so not fetching ${url}`
+          : `robots.txt disallows ${url}`,
     );
   }
 }
@@ -49,9 +58,14 @@ export class RobotsDisallowedError extends Error {
 const ROBOTS_TTL_MS = 6 * 60 * 60 * 1000;
 const MAX_RETRY_AFTER_MS = 60_000;
 
+interface RobotsPolicy {
+  own: RobotsRule[];
+  extra: { agent: string; rules: RobotsRule[] }[];
+}
+
 interface RobotsEntry {
   /** Shared so concurrent requests to a new host fetch robots.txt once. */
-  rules: Promise<RobotsRule[] | { unreachable: string }>;
+  policy: Promise<RobotsPolicy | { unreachable: string }>;
   fetchedAt: number;
 }
 
@@ -69,6 +83,7 @@ export class PoliteHttpClient implements HttpClient {
       maxRetries: 2,
       backoffMs: 2000,
       respectRobots: true,
+      alsoObeyAgents: [],
       fetch: globalThis.fetch.bind(globalThis),
       sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
       now: () => Date.now(),
@@ -94,21 +109,32 @@ export class PoliteHttpClient implements HttpClient {
     const { origin, pathname, search } = new URL(url);
     let entry = this.robots.get(origin);
     if (!entry || this.options.now() - entry.fetchedAt > ROBOTS_TTL_MS) {
-      entry = { rules: this.loadRobots(origin), fetchedAt: this.options.now() };
+      entry = { policy: this.loadRobots(origin), fetchedAt: this.options.now() };
       this.robots.set(origin, entry);
     }
-    const rules = await entry.rules;
-    if (!Array.isArray(rules)) throw new RobotsDisallowedError(url, rules.unreachable);
-    if (!isAllowed(rules, pathname + search)) throw new RobotsDisallowedError(url);
+    const policy = await entry.policy;
+    if ("unreachable" in policy) throw new RobotsDisallowedError(url, policy.unreachable);
+    const path = pathname + search;
+    if (!isAllowed(policy.own, path)) throw new RobotsDisallowedError(url);
+    for (const { agent, rules } of policy.extra) {
+      if (!isAllowed(rules, path)) throw new RobotsDisallowedError(url, undefined, agent);
+    }
   }
 
   /** RFC 9309: 4xx means no rules; 5xx or unreachable means assume everything is disallowed. */
-  private async loadRobots(origin: string): Promise<RobotsRule[] | { unreachable: string }> {
+  private async loadRobots(origin: string): Promise<RobotsPolicy | { unreachable: string }> {
     try {
       const response = await this.send(`${origin}/robots.txt`);
-      if (response.status >= 400 && response.status < 500) return [];
+      if (response.status >= 400 && response.status < 500) return { own: [], extra: [] };
       if (!response.ok) return { unreachable: `HTTP ${response.status}` };
-      return parseRobots(await response.text(), productToken(this.options.userAgent));
+      const groups = parseRobotsGroups(await response.text());
+      return {
+        own: rulesFor(groups, productToken(this.options.userAgent)),
+        extra: this.options.alsoObeyAgents.map((agent) => ({
+          agent,
+          rules: rulesNaming(groups, agent.toLowerCase()) ?? [],
+        })),
+      };
     } catch (error) {
       if (error instanceof HttpError) return { unreachable: `HTTP ${error.status}` };
       const cause =
@@ -189,10 +215,30 @@ export interface RobotsRule {
   path: string;
 }
 
+interface RobotsGroup {
+  agents: string[];
+  rules: RobotsRule[];
+  /** Any Allow or Disallow line seen, even an empty one, which ends the list of agents. */
+  hasRules: boolean;
+}
+
 /** Rules from the group naming our product token, otherwise the `*` group. */
 export function parseRobots(text: string, token: string): RobotsRule[] {
-  const groups: { agents: string[]; rules: RobotsRule[] }[] = [];
-  let current: { agents: string[]; rules: RobotsRule[] } | null = null;
+  return rulesFor(parseRobotsGroups(text), token);
+}
+
+function rulesFor(groups: RobotsGroup[], token: string): RobotsRule[] {
+  return rulesNaming(groups, token) ?? groups.find((g) => g.agents.includes("*"))?.rules ?? [];
+}
+
+/** Rules from a group that names this agent specifically, or null. */
+export function rulesNaming(groups: RobotsGroup[], token: string): RobotsRule[] | null {
+  return groups.find((g) => g.agents.some((a) => a !== "*" && token.startsWith(a)))?.rules ?? null;
+}
+
+export function parseRobotsGroups(text: string): RobotsGroup[] {
+  const groups: RobotsGroup[] = [];
+  let current: RobotsGroup | null = null;
 
   for (const rawLine of text.split(/\r?\n/)) {
     const line = rawLine.replace(/#.*$/, "").trim();
@@ -202,19 +248,18 @@ export function parseRobots(text: string, token: string): RobotsRule[] {
     const value = line.slice(separator + 1).trim();
 
     if (field === "user-agent") {
-      if (!current || current.rules.length > 0) {
-        current = { agents: [], rules: [] };
+      if (!current || current.hasRules) {
+        current = { agents: [], rules: [], hasRules: false };
         groups.push(current);
       }
       current.agents.push(value.toLowerCase());
     } else if ((field === "allow" || field === "disallow") && current) {
+      current.hasRules = true;
       if (value === "" && field === "disallow") continue; // "Disallow:" with no path allows everything.
       current.rules.push({ allow: field === "allow", path: value });
     }
   }
-
-  const ours = groups.find((g) => g.agents.some((a) => a !== "*" && token.startsWith(a)));
-  return (ours ?? groups.find((g) => g.agents.includes("*")))?.rules ?? [];
+  return groups;
 }
 
 /** Longest matching rule wins; Allow wins a tie. Supports `*` and `$` wildcards. */

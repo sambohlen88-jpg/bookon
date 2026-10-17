@@ -35,6 +35,7 @@ await handle.migrate();
 const http = new PoliteHttpClient({
   userAgent: config.userAgent,
   minIntervalMs: config.minRequestIntervalMs,
+  alsoObeyAgents: config.alsoObeyAgents,
 });
 
 async function coursesToPoll(db: Database): Promise<PollableCourse[]> {

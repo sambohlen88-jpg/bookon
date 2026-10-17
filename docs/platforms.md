@@ -74,6 +74,16 @@ Chronogolf now covers three of the owner's courses (Marangaroo, The Cut, Point W
 
 Note for anyone running the worker behind an HTTP proxy: Node's built-in `fetch` ignores `HTTPS_PROXY` unless `NODE_USE_ENV_PROXY=1` is set (Node 22.21 or later).
 
+## robots.txt check (17 October 2026)
+
+| Platform   | What robots.txt blocks                                                                                                                | BookOnBot (the product)              | Claude fetching for the owner                                                                          |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| MiClub     | AI training and large-scale crawlers (ClaudeBot, anthropic-ai, GPTBot and others); `/members/`, `/security/` and similar for everyone | Allowed on `/guests/` booking pages  | Allowed (`Claude-User` is not listed)                                                                  |
+| Quick18    | AI agents including `Claude-User`, SEO bots, and generic scraper tools (curl, python-requests, Scrapy)                                | Allowed by the letter (no `*` group) | **Blocked.** Claude no longer fetches Quick18 pages; the worker enforces this when Claude Code runs it |
+| Chronogolf | `/private_api/`, `/reservations/`, user and password pages                                                                            | Allowed on public pages              | Allowed                                                                                                |
+
+Quick18's list of blocked scraper tools shows it does not welcome automated reading in general, even though BookOnBot is not named. That makes written permission from Sagacity more important before launch. Claude fetched Hamersley pages earlier on 17 October 2026, before reading this file closely; it will not again.
+
 ## Chronogolf (Lightspeed Golf)
 
 Two of the owner's launch courses are on neither MiClub nor Quick18:

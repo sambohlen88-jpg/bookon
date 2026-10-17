@@ -5,6 +5,8 @@ export interface WorkerConfig {
   userAgent: string;
   minRequestIntervalMs: number;
   pollIntervalMinutes: number;
+  /** Robots.txt agents obeyed as well as our own. */
+  alsoObeyAgents: string[];
 }
 
 /** Goes in the user agent so clubs can contact us. */
@@ -19,5 +21,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): WorkerConfig {
     userAgent: `BookOnBot/0.1 (+${site}; ${contact})`,
     minRequestIntervalMs: Number(env.MIN_REQUEST_INTERVAL_MS) || 3000,
     pollIntervalMinutes: Number(env.POLL_INTERVAL_MINUTES) || 30,
+    // When Claude Code runs the worker, it is Claude fetching for a user, so obey sites' rules for Claude-User too.
+    alsoObeyAgents: env.CLAUDECODE ? ["Claude-User"] : [],
   };
 }

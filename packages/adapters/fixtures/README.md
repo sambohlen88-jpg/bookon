@@ -21,3 +21,5 @@ Saved public booking pages used by the adapter tests, so tests never hit live cl
 Source of the 2025 files: the test data of [TeeTimeFinder](https://github.com/Ay1tsMe/TeeTimeFinder) by Adam Wyatt, MIT licence.
 
 The 2025 files were saved from a browser, after scripts ran. The `live-*` files are raw server responses recorded by `pnpm --filter @bookon/worker record` (see `apps/worker/README.md`). Record new ones the same way when a club's page changes.
+
+`robots/` holds the robots.txt files of Quick18 and MiClub as read on 17 October 2026, for the HTTP client tests.

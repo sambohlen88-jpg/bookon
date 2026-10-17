@@ -13,4 +13,9 @@ describe("loadConfig", () => {
       "ops@bookon.com.au",
     );
   });
+
+  it("obeys rules for Claude-User when Claude Code runs it", () => {
+    expect(loadConfig({}).alsoObeyAgents).toEqual([]);
+    expect(loadConfig({ CLAUDECODE: "1" }).alsoObeyAgents).toEqual(["Claude-User"]);
+  });
 });
