@@ -102,14 +102,16 @@ Also checked:
 
 ## WA expansion (17 October 2026, later)
 
-At the owner's request ("as many courses in Perth or WA as possible"), about 60 likely `<club>.miclub.com.au` addresses were probed. **22 more MiClub courses read cleanly and are switched on, for 26 searchable in all.** The full list, and the courses left out with reasons, is in [`courses.md`](./courses.md).
+At the owner's request ("as many courses in Perth or WA as possible"), about 60 likely `<club>.miclub.com.au` addresses were probed. **22 more MiClub courses read cleanly and are switched on, for 26 searchable in all.** A full poll of all 26 then took about 2 minutes: 557 requests, about 19,700 tee times, every MiClub course ok. The full list, and the courses left out with reasons, is in [`courses.md`](./courses.md).
 
 Changes to the MiClub reader that this needed:
 
 - **Rate names.** Any rate naming 9 or 18 holes counts unless it mentions a package, deal, cart, meal, twilight, junior or member rate. This covers "18 Hole Green Fees", "18 Holes Weekday", "18 Holes Online Booking", "Maylands 9 Holes (carts can be added)" and "18 Holes - WALKING". A course can still override this (Joondalup does, as its 18 hole rate always includes a cart).
 - **Other booking calendars.** Rockingham and Joondalup keep public bookings on resource 3900000.
 - **Fees in a pop-up.** Rockingham lists fees in a popover, not a list.
-- **Tee names.** Clubs type rows like "1st TEE 18 HOLE SOCIAL PLAY" or "Monday 10th tee". BookOn shows "1st Tee" or "10th Tee".
+- **Tee names.** Clubs type rows like "1st TEE 18 HOLE SOCIAL PLAY", "Monday 10th tee" or "No 1 Tee". BookOn shows "1st Tee" or "10th Tee".
+- **Competition rows.** Rows labelled for a competition or members (for example "9 Hole Ladies Comp" at Pinjarra) are skipped.
+- **Twilight rows** are priced at the twilight fee they list (Dunsborough Lakes), as that is what an adult pays then.
 - **Days not released yet.** Past a club's window the calendar comes back with no rates. BookOn now reads that as "nothing released" and stops paging, instead of failing the course.
 
 ## Chronogolf (Lightspeed Golf)

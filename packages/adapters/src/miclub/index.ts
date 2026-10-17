@@ -170,10 +170,13 @@ export function parseTimesheet(html: string): TimesheetRow[] {
 
     const spotsAvailable = $row.find(".records-wrapper .cell.cell-available").length;
     if (spotsAvailable === 0) return;
+    // Rows set aside for a competition or members aren't for public golfers.
+    const label = collapse($row.find(".time-wrapper > h4").first().text());
+    if (/\b(comp|competition|pennants?|members?)\b/i.test(label)) return;
 
     rows.push({
       time,
-      layout: cleanLayout($row.find(".time-wrapper > h4").first().text()),
+      layout: cleanLayout(label),
       spotsAvailable,
       priceCents: adultPrice($, $row),
     });
@@ -200,8 +203,9 @@ function adultPrice($: cheerio.CheerioAPI, $row: ReturnType<cheerio.CheerioAPI>)
     }
   }
   const priced = prices.filter((p) => p.cents !== null);
+  // A twilight fee listed on a twilight row is what an adult pays then, so it counts.
   const adult = priced.find(
-    (p) => !/concession|pensioner|senior|student|junior|child|twilight/i.test(p.label),
+    (p) => !/concession|pensioner|senior|student|junior|child/i.test(p.label),
   );
   // A lone price is the rate for everyone, even when labelled e.g. "Cored Greens Concession Rate Applies".
   return adult?.cents ?? (priced.length === 1 ? priced[0]!.cents : null);
@@ -214,8 +218,9 @@ function adultPrice($: cheerio.CheerioAPI, $row: ReturnType<cheerio.CheerioAPI>)
  * a trailing hole count: "Pine Lake 18 Holes" → "Pine Lake", "Pines 9 ONLY" → "Pines".
  */
 export function cleanLayout(text: string): string | null {
-  const tee = /\b(1st|2nd|10th)\s+tee\b/i.exec(text);
-  if (tee) return `${tee[1]!.toLowerCase()} Tee`;
+  const tee =
+    /\b(1st|2nd|10th)(?:\s+tee)?\b/i.exec(text) ?? /\bno\.?\s*(1|2|10)\s+tee\b/i.exec(text);
+  if (tee) return `${ordinal(tee[1]!)} Tee`;
   const cleaned = collapse(text)
     .replace(/\s*\b(9|18)(\s+or\s+(9|18))?\s*(holes?(\s+only)?|only)\s*$/i, "")
     .trim();
@@ -230,6 +235,11 @@ export function layoutForHoles(layout: string | null, holes: 9 | 18): string | n
   const match = /^(.+?)\s*\(9\)\s*(?:or\s+)?(.+?)\s*\(18\)$/i.exec(layout ?? "");
   if (!match) return layout;
   return holes === 9 ? match[1]! : match[2]!;
+}
+
+function ordinal(tee: string): string {
+  const n = tee.replace(/\D/g, "");
+  return n === "1" ? "1st" : n === "2" ? "2nd" : `${n}th`;
 }
 
 function isCheaper(price: number | null, than: number | null): boolean {

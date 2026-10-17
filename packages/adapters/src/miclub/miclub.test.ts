@@ -292,6 +292,24 @@ describe("live pages recorded 17 October 2026", () => {
     expect(new Set(rows.map((r) => r.priceCents))).toEqual(new Set([2050, 1600]));
   });
 
+  it("prices twilight rows at the twilight fee", () => {
+    // Dunsborough Lakes: twilight rows list only "$39 TWILIGHT FEE" and a junior fee.
+    const rows = parseTimesheet(
+      fixture("miclub/live-dunsborough-timesheet-2026-10-18-twilight.html"),
+    );
+    expect(rows.every((r) => r.priceCents !== null)).toBe(true);
+    expect(rows.some((r) => r.priceCents === 3900)).toBe(true);
+  });
+
+  it("skips rows set aside for a competition", () => {
+    const html = `<div class="teetime-day-table">
+      <div class="row row-time"><div class="time-wrapper"><h3>07:00 am</h3><h4>9 Hole Ladies Comp</h4></div>
+        <div class="records-wrapper"><div class="cell cell-available"></div></div></div>
+      <div class="row row-time"><div class="time-wrapper"><h3>07:10 am</h3><h4>1st Tee</h4></div>
+        <div class="records-wrapper"><div class="cell cell-available"></div></div></div></div>`;
+    expect(parseTimesheet(html).map((r) => r.time)).toEqual(["07:10"]);
+  });
+
   it("reads prices from a pop-up fee list", () => {
     // Rockingham lists fees in a popover: Adult $30, Pensioner $27.50, Twilight $25, Weekday Child $12.
     const rows = parseTimesheet(
@@ -366,6 +384,9 @@ describe("cleanLayout", () => {
     expect(cleanLayout("Monday 10th tee")).toBe("10th Tee");
     expect(cleanLayout("Twilight After 3PM 10th Tee")).toBe("10th Tee");
     expect(cleanLayout("2nd Tee - Front Nine")).toBe("2nd Tee");
+    expect(cleanLayout("No 1 Tee")).toBe("1st Tee");
+    expect(cleanLayout("No 10 Tee")).toBe("10th Tee");
+    expect(cleanLayout("Twilight 10th")).toBe("10th Tee");
     expect(cleanLayout("Social Play")).toBe("Social Play");
     expect(cleanLayout("  ")).toBeNull();
   });
