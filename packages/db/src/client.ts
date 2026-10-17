@@ -31,7 +31,8 @@ function migrationsFolder(): string {
  */
 export function createDb(url: string): DbHandle {
   if (url.startsWith("postgres://") || url.startsWith("postgresql://")) {
-    const sql = postgres(url, { max: 5 });
+    // Silence NOTICEs such as "schema already exists, skipping" on every migrate.
+    const sql = postgres(url, { max: 5, onnotice: () => {} });
     const db = drizzlePostgres(sql, { schema });
     return {
       db: db as unknown as Database,
