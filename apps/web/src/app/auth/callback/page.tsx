@@ -21,7 +21,7 @@ export default async function SignInCallback({
   return (
     <>
       <SiteHeader />
-      <main className="mx-auto max-w-md px-4 pb-12 pt-6">
+      <main className="mx-auto max-w-md px-4 pb-12 pt-6 md:mt-12 md:rounded-2xl md:border md:border-border md:p-10">
         <h1 className="text-3xl font-bold tracking-tight">Sign in to BookOn</h1>
         {token ? (
           <form action={completeSignIn} className="mt-6">

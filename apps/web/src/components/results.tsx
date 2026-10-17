@@ -2,6 +2,7 @@ import Link from "next/link";
 import { formatAgo, formatPerthDay, formatPerthTime, formatPrice } from "@bookon/core";
 import type { CourseResult, DayNotice, ResultTeeTime } from "@bookon/db";
 import { toggleFavourite } from "@/app/actions";
+import { CourseArt } from "@/components/course-art";
 
 /**
  * Keep pages light on mobile data: a two week search can match 18,000 times.
@@ -57,19 +58,25 @@ export function CourseResults({
       className="rounded-xl border border-border bg-background p-4"
     >
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+        <CourseArt
+          slug={course.slug}
+          className="hidden h-16 w-28 shrink-0 overflow-hidden rounded-lg lg:block"
+        />
+        <div className="min-w-0 flex-1">
           <h2 id={headingId} className="text-lg font-semibold leading-tight">
-            {course.name}
+            <Link href={`/courses/${course.slug}`} prefetch={false} className="hover:text-brand">
+              {course.name}
+            </Link>
           </h2>
           <p className="text-sm text-muted">{course.suburb}</p>
+          {checkedAt && (
+            <p className="mt-1 text-xs text-muted">
+              <time dateTime={checkedAt.toISOString()}>Checked {formatAgo(checkedAt, now)}</time>
+            </p>
+          )}
         </div>
         <FavouriteStar courseId={course.id} name={course.name} on={favourite} back={back} />
       </div>
-      {checkedAt && (
-        <p className="mt-1 text-xs text-muted">
-          <time dateTime={checkedAt.toISOString()}>Checked {formatAgo(checkedAt, now)}</time>
-        </p>
-      )}
 
       <Notices notices={notices} now={now} />
 
@@ -80,7 +87,7 @@ export function CourseResults({
       {shownDays.map(([day, times]) => (
         <div key={day} className="mt-3">
           {multiDay && <h3 className="text-sm font-semibold">{formatPerthDay(day)}</h3>}
-          <ul>
+          <ul className="tee-list">
             {times.slice(0, limits.visible).map((t) => (
               <TeeTimeRow
                 key={`${t.startTime.toISOString()}-${t.holes}-${t.layout}`}
@@ -95,7 +102,7 @@ export function CourseResults({
               <summary className="min-h-11 cursor-pointer py-3 text-sm font-medium text-brand">
                 Show {Math.min(times.length, limits.max) - limits.visible} more
               </summary>
-              <ul>
+              <ul className="tee-list">
                 {times.slice(limits.visible, limits.max).map((t) => (
                   <TeeTimeRow
                     key={`${t.startTime.toISOString()}-${t.holes}-${t.layout}`}

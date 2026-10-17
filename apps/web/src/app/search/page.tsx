@@ -82,101 +82,120 @@ export default async function SearchPage({
   return (
     <>
       <SiteHeader />
-      <main className="mx-auto max-w-md px-4 pb-12 pt-4">
-        <details className="rounded-xl bg-surface">
-          <summary className="flex min-h-12 cursor-pointer items-center justify-between gap-3 px-4 py-3">
-            <span className="text-sm">{summarise(form, params.dateTo)}</span>
-            <span className="shrink-0 text-sm font-semibold text-brand">Change</span>
-          </summary>
-          <div className="px-4 pb-4">
+      <main className="mx-auto max-w-md px-4 pb-12 pt-4 lg:grid lg:max-w-6xl lg:grid-cols-[340px_minmax(0,1fr)] lg:items-start lg:gap-10 lg:px-6 lg:pt-8">
+        {/* Desktop: the search stays open beside the results. */}
+        <aside aria-label="Your search" className="hidden lg:sticky lg:top-6 lg:block">
+          <div className="rounded-2xl border border-border p-5">
+            <h2 className="mb-4 text-lg font-semibold">Your search</h2>
             <SearchForm
               values={form}
               courses={courses}
               now={now}
               favourites={favourites.length}
               mine={mine}
+              idPrefix="d-"
             />
           </div>
-        </details>
+        </aside>
+        <div>
+          <details className="rounded-xl bg-surface lg:hidden">
+            <summary className="flex min-h-12 cursor-pointer items-center justify-between gap-3 px-4 py-3">
+              <span className="text-sm">{summarise(form, params.dateTo)}</span>
+              <span className="shrink-0 text-sm font-semibold text-brand">Change</span>
+            </summary>
+            <div className="px-4 pb-4">
+              <SearchForm
+                values={form}
+                courses={courses}
+                now={now}
+                favourites={favourites.length}
+                mine={mine}
+              />
+            </div>
+          </details>
 
-        <h1 className="mt-6 text-2xl font-bold tracking-tight" aria-live="polite">
-          {result.totalTeeTimes === 0
-            ? "No tee times match"
-            : `${result.totalTeeTimes.toLocaleString("en-AU")} tee ${result.totalTeeTimes === 1 ? "time" : "times"} at ${withTimes} ${withTimes === 1 ? "course" : "courses"}`}
-        </h1>
+          <h1
+            className="mt-6 text-2xl font-bold tracking-tight lg:mt-0 lg:text-3xl"
+            aria-live="polite"
+          >
+            {result.totalTeeTimes === 0
+              ? "No tee times match"
+              : `${result.totalTeeTimes.toLocaleString("en-AU")} tee ${result.totalTeeTimes === 1 ? "time" : "times"} at ${withTimes} ${withTimes === 1 ? "course" : "courses"}`}
+          </h1>
 
-        {alertStatus === "created" && (
-          <div className="mt-4">
-            <Notice tone="info">
-              Alert set. We&apos;ll{" "}
-              {hasDevices ? "send a notification and an email" : `email ${user?.email ?? "you"}`}{" "}
-              when a new time appears.{" "}
-              <Link href="/account" className="underline">
-                Manage alerts
-              </Link>
-            </Notice>
-            {offerPush && (
-              <div className="mt-3 rounded-xl border border-border p-4">
-                <p className="mb-2 font-semibold">Want to hear even faster?</p>
-                <PushToggle publicKey={offerPush} />
-              </div>
+          {alertStatus === "created" && (
+            <div className="mt-4">
+              <Notice tone="info">
+                Alert set. We&apos;ll{" "}
+                {hasDevices ? "send a notification and an email" : `email ${user?.email ?? "you"}`}{" "}
+                when a new time appears.{" "}
+                <Link href="/account" className="underline">
+                  Manage alerts
+                </Link>
+              </Notice>
+              {offerPush && (
+                <div className="mt-3 rounded-xl border border-border p-4">
+                  <p className="mb-2 font-semibold">Want to hear even faster?</p>
+                  <PushToggle publicKey={offerPush} />
+                </div>
+              )}
+            </div>
+          )}
+          {alertStatus === "limit" && (
+            <div className="mt-4">
+              <Notice tone="warning">
+                You already have 10 alerts. Delete one in{" "}
+                <Link href="/account" className="underline">
+                  My account
+                </Link>{" "}
+                to add another.
+              </Notice>
+            </div>
+          )}
+
+          {result.totalTeeTimes === 0 && <EmptyState form={form} />}
+          {result.totalTeeTimes === 0 && alertStatus !== "created" && (
+            <AlertCard here={here} signedIn={Boolean(user)} empty />
+          )}
+
+          <div className="mt-4 flex flex-col gap-4">
+            {cards.map((r) => (
+              <CourseResults
+                key={r.course.id}
+                result={r}
+                multiDay={multiDay}
+                oneCourse={result.courses.length === 1}
+                now={now}
+                favourite={user ? favouriteIds.has(r.course.id) : null}
+                back={here}
+                dayHref={(date) => searchHref({ ...form, date, days: 1, courses: [r.course.slug] })}
+                courseHref={searchHref({ ...form, courses: [r.course.slug] })}
+                bookHref={(t) =>
+                  bookLink({
+                    courseId: r.course.id,
+                    startTime: t.startTime.toISOString(),
+                    url: t.bookingUrl,
+                    source: "search",
+                  })
+                }
+              />
+            ))}
+            {folded.length > 0 && (
+              <NoMatchList results={folded} now={now} others={cards.length > 0} />
             )}
           </div>
-        )}
-        {alertStatus === "limit" && (
-          <div className="mt-4">
-            <Notice tone="warning">
-              You already have 10 alerts. Delete one in{" "}
-              <Link href="/account" className="underline">
-                My account
-              </Link>{" "}
-              to add another.
-            </Notice>
-          </div>
-        )}
 
-        {result.totalTeeTimes === 0 && <EmptyState form={form} />}
-        {result.totalTeeTimes === 0 && alertStatus !== "created" && (
-          <AlertCard here={here} signedIn={Boolean(user)} empty />
-        )}
-
-        <div className="mt-4 flex flex-col gap-4">
-          {cards.map((r) => (
-            <CourseResults
-              key={r.course.id}
-              result={r}
-              multiDay={multiDay}
-              oneCourse={result.courses.length === 1}
-              now={now}
-              favourite={user ? favouriteIds.has(r.course.id) : null}
-              back={here}
-              dayHref={(date) => searchHref({ ...form, date, days: 1, courses: [r.course.slug] })}
-              courseHref={searchHref({ ...form, courses: [r.course.slug] })}
-              bookHref={(t) =>
-                bookLink({
-                  courseId: r.course.id,
-                  startTime: t.startTime.toISOString(),
-                  url: t.bookingUrl,
-                  source: "search",
-                })
-              }
-            />
-          ))}
-          {folded.length > 0 && (
-            <NoMatchList results={folded} now={now} others={cards.length > 0} />
+          {result.totalTeeTimes > 0 && alertStatus !== "created" && (
+            <div className="mt-6">
+              <AlertCard here={here} signedIn={Boolean(user)} />
+            </div>
           )}
+
+          <p className="mt-8 pb-16 text-xs text-muted">
+            Times and prices come from each club&apos;s booking page and can change. You book and
+            pay with the club.
+          </p>
         </div>
-
-        {result.totalTeeTimes > 0 && alertStatus !== "created" && (
-          <div className="mt-6">
-            <AlertCard here={here} signedIn={Boolean(user)} />
-          </div>
-        )}
-
-        <p className="mt-8 pb-16 text-xs text-muted">
-          Times and prices come from each club&apos;s booking page and can change. You book and pay
-          with the club.
-        </p>
         <RefreshBar renderedAt={now.toISOString()} />
       </main>
     </>

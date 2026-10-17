@@ -22,6 +22,7 @@ export function SearchForm({
   now,
   favourites = 0,
   mine = false,
+  idPrefix = "",
 }: {
   values: SearchFormValues;
   courses: SearchableCourse[];
@@ -30,17 +31,20 @@ export function SearchForm({
   favourites?: number;
   /** Search only those courses. */
   mine?: boolean;
+  /** Keeps ids unique when a page has two forms (one for phones, one for desktop). */
+  idPrefix?: string;
 }) {
+  const id = (name: string) => `${idPrefix}${name}`;
   const today = perthDate(now);
   return (
     <form action="/search" method="get" className="flex flex-col gap-5">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label htmlFor="date" className={fieldLabel}>
+          <label htmlFor={id("date")} className={fieldLabel}>
             Day
           </label>
           <input
-            id="date"
+            id={id("date")}
             name="date"
             type="date"
             required
@@ -51,10 +55,10 @@ export function SearchForm({
           />
         </div>
         <div>
-          <label htmlFor="days" className={fieldLabel}>
+          <label htmlFor={id("days")} className={fieldLabel}>
             Flexible?
           </label>
-          <select id="days" name="days" defaultValue={values.days} className={control}>
+          <select id={id("days")} name="days" defaultValue={values.days} className={control}>
             {DAY_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
@@ -66,10 +70,10 @@ export function SearchForm({
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label htmlFor="from" className={fieldLabel}>
+          <label htmlFor={id("from")} className={fieldLabel}>
             Earliest
           </label>
-          <select id="from" name="from" defaultValue={values.from} className={control}>
+          <select id={id("from")} name="from" defaultValue={values.from} className={control}>
             {TIME_OPTIONS.map((t) => (
               <option key={t} value={t}>
                 {formatFormTime(t)}
@@ -78,10 +82,10 @@ export function SearchForm({
           </select>
         </div>
         <div>
-          <label htmlFor="to" className={fieldLabel}>
+          <label htmlFor={id("to")} className={fieldLabel}>
             Latest
           </label>
-          <select id="to" name="to" defaultValue={values.to} className={control}>
+          <select id={id("to")} name="to" defaultValue={values.to} className={control}>
             {TIME_OPTIONS.map((t) => (
               <option key={t} value={t}>
                 {formatFormTime(t)}

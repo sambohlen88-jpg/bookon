@@ -25,7 +25,7 @@ export default async function SignInPage({
   return (
     <>
       <SiteHeader />
-      <main className="mx-auto max-w-md px-4 pb-12 pt-6">
+      <main className="mx-auto max-w-md px-4 pb-12 pt-6 md:mt-12 md:rounded-2xl md:border md:border-border md:p-10">
         <h1 className="text-3xl font-bold tracking-tight">Sign in</h1>
         {sent ? (
           <div className="mt-4 flex flex-col gap-3">

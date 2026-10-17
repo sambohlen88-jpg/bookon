@@ -41,7 +41,7 @@ export default async function ManageAlertPage({
   return (
     <>
       <SiteHeader />
-      <main className="mx-auto max-w-md px-4 pb-12 pt-6">
+      <main className="mx-auto max-w-md px-4 pb-12 pt-6 md:max-w-2xl md:px-6 md:pt-12">
         <h1 className="text-3xl font-bold tracking-tight">
           {fromNotification && latest.length > 0 ? "New tee times" : "Your alert"}
         </h1>

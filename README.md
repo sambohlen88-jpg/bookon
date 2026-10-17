@@ -2,7 +2,7 @@
 
 Find a tee time at Perth public golf courses, then book with the club. See [`SPEC.md`](./SPEC.md) for the full product spec.
 
-**Status:** Milestone 5 done (installable app, push notifications and a speed pass), covering 26 WA courses. See [`docs/m5-review.md`](./docs/m5-review.md) and [`docs/courses.md`](./docs/courses.md).
+**Status:** Milestone 6 done (the full website: desktop design, course pages and pictures), covering 26 WA courses. See [`docs/m6-review.md`](./docs/m6-review.md) and [`docs/courses.md`](./docs/courses.md).
 
 ## Layout
 

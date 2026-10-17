@@ -64,6 +64,42 @@ export async function listSearchableCourses(db: Database): Promise<SearchableCou
     .orderBy(courses.name);
 }
 
+export interface CourseDetails extends SearchableCourse {
+  holes: number;
+  bookingWindowDays: number;
+  websiteUrl: string;
+  bookingUrl: string;
+}
+
+const detailColumns = {
+  id: courses.id,
+  slug: courses.slug,
+  name: courses.name,
+  suburb: courses.suburb,
+  holes: courses.holes,
+  bookingWindowDays: courses.bookingWindowDays,
+  websiteUrl: courses.websiteUrl,
+  bookingUrl: courses.bookingUrl,
+};
+
+/** Every searchable course with the details its public page shows. */
+export async function listCourseDetails(db: Database): Promise<CourseDetails[]> {
+  return db
+    .select(detailColumns)
+    .from(courses)
+    .where(eq(courses.enabled, true))
+    .orderBy(courses.name);
+}
+
+/** One searchable course, or null when there's none by that name (or it's switched off). */
+export async function courseDetails(db: Database, slug: string): Promise<CourseDetails | null> {
+  const [course] = await db
+    .select(detailColumns)
+    .from(courses)
+    .where(and(eq(courses.enabled, true), eq(courses.slug, slug)));
+  return course ?? null;
+}
+
 export async function searchTeeTimes(
   db: Database,
   params: SearchParams,

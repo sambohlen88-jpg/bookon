@@ -143,6 +143,8 @@ Each milestone ends with a short written summary, a list of open issues, and a d
 - **M6, club reporting and admin.** Admin login, source health view, report page and CSV export.
 - **M7, hardening and launch.** Error monitoring, rate limits, privacy and terms pages, accessibility check, backups, launch checklist.
 
+**Owner's change, 17 October 2026:** Milestone 6 is now the full website (a website design on desktop with course images and a bigger brand area, mobile unchanged), and Milestone 7 is club onboarding (clubs sign up with their details, approvals, tee time setup and full price list, ready for payments later). The original M6 (club reporting and admin) and M7 (hardening and launch) move to M8 and M9.
+
 ## 12. Phase 2 preview (do not build yet)
 
 Stripe Connect style payments and commission, official partner API adapters that can book and cancel, support for a booking history and refunds, more cities, and native apps. Keep the adapter interface flexible enough that a `book()` and `cancel()` method can be added later.

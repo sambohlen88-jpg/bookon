@@ -22,5 +22,6 @@ Read `SPEC.md` before starting work. The product is BookOn (the spec's working t
 - Local database: `pnpm db:dev` (PGlite server on port 5433). It is a single database session, so queries from different connections can interleave and fail. `createDb` uses one connection for it, but the web app and worker are still two. Keep a request's queries one after another, not `Promise.all`.
 - Times: store UTC, display Perth time via helpers in `packages/core/src/time.ts`. Do not hand-roll offsets elsewhere.
 - Emails go through `createMailer` in `packages/email`. Locally they land in the outbox (`/dev/outbox`); never send real email to anyone but the owner without their say-so.
-- Colours come from CSS tokens in `apps/web/src/app/globals.css`, not hard-coded values in components.
+- Colours come from CSS tokens in `apps/web/src/app/globals.css`, not hard-coded values in components. The one exception is the course illustrations (`apps/web/src/lib/course-art.ts`), which are served as images and can't see page CSS, so they carry their own light and dark palette.
+- Never copy photos or logos from club websites. Course pictures are drawn, or supplied by the club with permission.
 - Before finishing: `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build`.
