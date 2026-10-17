@@ -1,6 +1,6 @@
-# Booking platforms research (Milestone 0)
+# Booking platforms research
 
-Status: **draft, 17 October 2026.** Covers MiClub and Quick18, the Perth public courses found on each, deep-link support, and what is known about permission for automated reading.
+Status: **Milestone 0 research, updated in Milestone 1 (17 October 2026).** Covers MiClub and Quick18, the Perth public courses found on each, deep-link support, and what is known about permission for automated reading.
 
 ## How this research was done, and its limits
 
@@ -22,7 +22,44 @@ Before Milestone 1, the owner (or a session with those hosts allowed) should che
 | Terms on automated access            | No clause found either way. MiClub is actively fighting booking bots.                                                                                             | No clause on scraping found in snippets. Full Terms of Service not read.                    |
 | **Verdict**                          | **Not clearly permitted. Ask before building.**                                                                                                                   | **Not clearly permitted. Ask before building.**                                             |
 
-Per SPEC section 6 ("If a source is not clearly permitted, stop and ask the owner"), **no adapter should be built against live sites until the owner decides how to proceed.** See "Recommendation" at the end.
+**Update, 17 October 2026: the owner decided to go ahead and read MiClub and Quick18 public pages** (see "Owner decision" below). The verdict row above records the position before that decision.
+
+## Owner decision (17 October 2026)
+
+The owner decided to start reading MiClub and Quick18 public availability, ahead of approaching the platforms for permission. The worker reads only public pages that need no login, identifies itself in its user agent with a contact email, honours robots.txt, waits at least 3 seconds between requests to the same site, backs off on errors, and never books. Approaching MiClub (TeeNet feed) and Sagacity for written permission is still recommended.
+
+## What the saved pages confirmed (Milestone 1)
+
+This session still could not reach the club sites. But the open-source [TeeTimeFinder](https://github.com/Ay1tsMe/TeeTimeFinder) (MIT licence) includes browser-saved pages from Collier Park, Fremantle Public, Hamersley and The Springs (September and October 2025). They confirm the structure below, and the adapters are tested against them.
+
+### MiClub
+
+- Calendar: `/guests/bookings/ViewPublicCalendar.msp?bookingResourceId=3000000&selectedDate=YYYY-MM-DD&weekends=false`. Shows 6 days per page. One row per fee group ("18 Holes", "9 Holes", "18 Holes - Public Holiday", "Twilight", packages). Bookable cells link to a timesheet, others say "No Bookings Available" or "Not Available".
+- Timesheet: `/guests/bookings/ViewPublicTimesheet.msp?bookingResourceId=3000000&selectedDate=YYYY-MM-DD&feeGroupId=<id>`. One row per tee time with the time, a layout ("Pine Lake 18 Holes", "1st Tee"), adult and concession prices, and four player cells marked `cell-available` or `cell-taken`.
+- **Date deep link: confirmed.** The timesheet URL opens a given day and fee group directly. BookOn links golfers there.
+- Collier Park's `bookingResourceId` is `3000000` (from the saved page URL). Wembley's is still assumed.
+- A public timesheet page carries a "No Login? Sign Up" button, confirming golfers must register to book.
+
+### Quick18
+
+- Search matrix: `/teetimes/searchmatrix?teedate=YYYYMMDD`. One page per date. Columns are rates ("9 Holes", "9 Holes Concession", "Twilight Unlimited Golf", "18 holes"). Rows give the time, layout ("Back 9 Morning", "Hamersley") and group size ("1 player", "1 or 2 players", "1 to 4 players").
+- **Slot deep link: confirmed.** Each bookable cell has a Select link like `/teetimes/course/1161/teetime/202510180607?psid=6547&p=0`, which opens that exact slot. BookOn links golfers there.
+- The search form has players and time-of-day fields (`SearchForm_Players`, `SearchForm_TimeOfDay`), so pre-filling those by URL may be possible. Not tested.
+
+### Caveat
+
+These were saved from a browser after scripts ran, so the raw server HTML could differ. The first live run should use `pnpm --filter @bookon/worker record --course <slug>` to save raw pages, and the fixtures should be replaced with those.
+
+## Chronogolf (Lightspeed Golf)
+
+Two of the owner's launch courses are on neither MiClub nor Quick18:
+
+| Course               | Evidence                                                                                                                                                                                                                                                                                                                                 |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Marangaroo           | [Chronogolf club page](https://www.chronogolf.com/club/marangaroo-golf-course), "powered by Lightspeed". Own site says online bookings open 11 days ahead from 9 am ([Marangaroo bookings](https://www.marangaroogolf.com.au/play-golf/golf-bookings/)). The earlier note that Marangaroo is on TeeNet/MiClub appears to be out of date. |
+| The Cut (Dawesville) | [Chronogolf club page](https://www.chronogolf.com/club/the-cut-golf-course). Also listed on GolfNow and Golfscape. About 80 km south of the Perth CBD, outside the spec's "Perth only" scope.                                                                                                                                            |
+
+Lightspeed publishes a [Partner API](https://partner-api.docs.chronogolf.com/) that lets approved partners read a club's tee sheet and pricing. That is an official, permitted feed, the route SPEC section 6 prefers. **Recommendation: apply for partner access rather than reading Chronogolf pages.** Both courses are seeded but switched off until then.
 
 ## MiClub
 
@@ -111,18 +148,18 @@ Many indexed URLs use this exact form, for example [Hamersley](https://hamersley
 
 ## Perth public courses found
 
-| Course                | Suburb             | Platform                 | Public calendar URL                                                                            | Notes                                                                               |
-| --------------------- | ------------------ | ------------------------ | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| Wembley (Old, Tuart)  | Wembley Downs      | MiClub                   | `www.wembleygolf.com.au/guests/bookings/ViewPublicCalendar.msp` (also `wembley.miclub.com.au`) | 36 holes over two courses. No bookings during school holidays. Registration needed. |
-| Collier Park          | Como               | MiClub (club domain)     | `bookings.collierparkgolf.com.au/guests/bookings/ViewPublicCalendar.msp`                       | 27 holes. Demand-based pricing. Prepaid. Has its own app.                           |
-| Whaleback             | Parkwood           | MiClub                   | `www.whalebackgolfcourse.com.au/guests/bookings/ViewPublicCalendar.msp`                        | Weekday 18 holes $39 adult (2026/27). Prepaid.                                      |
-| Carramar              | Carramar           | MiClub                   | `www.carramargolf.com.au/guests/bookings/ViewPublicCalendar.msp?booking_resource_id=3000000`   | "Strictly no walk-ins."                                                             |
-| Maylands and Embleton | Maylands, Embleton | MiClub                   | `maylandsembleton.miclub.com.au`                                                               | Shared booking site. Embleton is 9 holes.                                           |
-| Marangaroo            | Marangaroo         | MiClub (via TeeNet list) | Not found                                                                                      |                                                                                     |
-| Hamersley             | Karrinyup          | Quick18                  | `hamersley.quick18.com/teetimes/searchmatrix`                                                  |                                                                                     |
-| Point Walter          | Bicton             | Quick18                  | `pointwaltergoannagolf.quick18.com/teetimes/searchmatrix`                                      |                                                                                     |
-| The Springs           | Forrestdale        | Quick18                  | `springs.quick18.com/teetimes/searchmatrix`                                                    |                                                                                     |
-| Lake Claremont        | Claremont          | Quick18                  | `lakeclaremont.quick18.com`                                                                    | 9 holes.                                                                            |
+| Course                | Suburb             | Platform                   | Public calendar URL                                                                            | Notes                                                                               |
+| --------------------- | ------------------ | -------------------------- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Wembley (Old, Tuart)  | Wembley Downs      | MiClub                     | `www.wembleygolf.com.au/guests/bookings/ViewPublicCalendar.msp` (also `wembley.miclub.com.au`) | 36 holes over two courses. No bookings during school holidays. Registration needed. |
+| Collier Park          | Como               | MiClub (club domain)       | `bookings.collierparkgolf.com.au/guests/bookings/ViewPublicCalendar.msp`                       | 27 holes. Demand-based pricing. Prepaid. Has its own app.                           |
+| Whaleback             | Parkwood           | MiClub                     | `www.whalebackgolfcourse.com.au/guests/bookings/ViewPublicCalendar.msp`                        | Weekday 18 holes $39 adult (2026/27). Prepaid.                                      |
+| Carramar              | Carramar           | MiClub                     | `www.carramargolf.com.au/guests/bookings/ViewPublicCalendar.msp?booking_resource_id=3000000`   | "Strictly no walk-ins."                                                             |
+| Maylands and Embleton | Maylands, Embleton | MiClub                     | `maylandsembleton.miclub.com.au`                                                               | Shared booking site. Embleton is 9 holes.                                           |
+| Marangaroo            | Marangaroo         | **Chronogolf** (see above) | `www.chronogolf.com/club/marangaroo-golf-course`                                               | Earlier TeeNet listing appears out of date.                                         |
+| Hamersley             | Karrinyup          | Quick18                    | `hamersley.quick18.com/teetimes/searchmatrix`                                                  |                                                                                     |
+| Point Walter          | Bicton             | Quick18                    | `pointwaltergoannagolf.quick18.com/teetimes/searchmatrix`                                      |                                                                                     |
+| The Springs           | Forrestdale        | Quick18                    | `springs.quick18.com/teetimes/searchmatrix`                                                    |                                                                                     |
+| Lake Claremont        | Claremont          | Quick18                    | `lakeclaremont.quick18.com`                                                                    | 9 holes.                                                                            |
 
 Not yet checked: Altone Park, Fremantle Public, Kwinana, Araluen, Hillview, The Vines, Secret Harbour. Some may use other platforms (for example GolfNow lists some WA courses), which would need a third adapter or the `manual` adapter.
 
@@ -148,4 +185,7 @@ Not yet checked: Altone Park, Fremantle Public, Kwinana, Araluen, Hillview, The 
 - [ ] Read `/robots.txt` on `wembleygolf.com.au`, `bookings.collierparkgolf.com.au`, `hamersley.quick18.com`, `www.teenet.com.au`.
 - [ ] Read the [Sagacity Terms of Service](https://www.sagacitygolf.com/terms-of-service/) for any clause on bots or automated access.
 - [ ] Read the terms linked from each launch club's booking pages, including the [Collier Park booking terms](https://collierparkgolf.com.au/wp-content/uploads/2025/06/Golf-Terms-Conditions-Feb-25-1.pdf).
-- [ ] Find Marangaroo's booking page and check the unlisted courses above.
+- [x] Find Marangaroo's booking page (Chronogolf).
+- [ ] Check the unlisted courses above.
+- [ ] Confirm Wembley's `bookingResourceId` and Hamersley's booking window.
+- [ ] Add coordinates for the five launch courses (left empty in the seed data).

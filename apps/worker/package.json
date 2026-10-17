@@ -4,14 +4,18 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "start": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts run",
+    "start": "tsx src/index.ts run",
+    "poll": "tsx src/index.ts poll",
+    "record": "tsx src/index.ts record",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run"
   },
   "dependencies": {
-    "@bookon/core": "workspace:*"
+    "@bookon/core": "workspace:*",
+    "@bookon/adapters": "workspace:*",
+    "@bookon/db": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

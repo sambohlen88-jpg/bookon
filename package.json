@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "pnpm --filter @bookon/web dev",
     "dev:worker": "pnpm --filter @bookon/worker dev",
+    "db:seed": "pnpm --filter @bookon/db seed",
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",

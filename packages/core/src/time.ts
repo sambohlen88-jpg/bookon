@@ -48,3 +48,29 @@ export function eachPerthDate(from: string, to: string): string[] {
   }
   return days;
 }
+
+/** Add whole days to a Perth date. */
+export function addPerthDays(date: string, days: number): string {
+  return perthDate(new Date(perthToUtc(date, "12:00").getTime() + days * 24 * 60 * 60 * 1000));
+}
+
+/**
+ * Parse a clock time as clubs write it ("6:07 AM", "06:00 am", "14:30") into
+ * 24-hour "HH:mm". Returns null when it does not look like a time.
+ */
+export function parseClockTime(text: string): string | null {
+  const match = /^(\d{1,2}):(\d{2})\s*(am|pm)?$/i.exec(text.trim());
+  if (!match) return null;
+  let hour = Number(match[1]);
+  const minute = Number(match[2]);
+  const meridiem = match[3]?.toLowerCase();
+  if (minute > 59) return null;
+  if (meridiem) {
+    if (hour < 1 || hour > 12) return null;
+    if (meridiem === "am" && hour === 12) hour = 0;
+    if (meridiem === "pm" && hour !== 12) hour += 12;
+  } else if (hour > 23) {
+    return null;
+  }
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}
