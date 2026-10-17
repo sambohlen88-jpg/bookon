@@ -44,6 +44,18 @@ export function pollRange(course: PollableCourse, now: Date, days?: number): Dat
 }
 
 /**
+ * Runs database work one piece at a time. Fetching from club sites stays
+ * parallel, but 26 courses writing at once hung the local PGlite server,
+ * and one writer at a time is plenty for Postgres too.
+ */
+let dbQueue: Promise<unknown> = Promise.resolve();
+function exclusive<T>(work: () => Promise<T>): Promise<T> {
+  const next = dbQueue.then(work, work);
+  dbQueue = next.catch(() => undefined);
+  return next;
+}
+
+/**
  * Read one course and store the result. Never throws: a failing course is
  * recorded and must not stop the others (SPEC section 10).
  */
@@ -62,38 +74,44 @@ export async function pollCourse(
   const startedAt = now();
   const range = pollRange(course, startedAt, options.days);
   const counted = countingClient(http);
-  const runId = await startFetchRun(db, course.id, range.from, range.to, startedAt);
+  const runId = await exclusive(() =>
+    startFetchRun(db, course.id, range.from, range.to, startedAt),
+  );
 
   try {
     const days = await adapter.fetchAvailability(course, range, { http: counted });
     const fetchedAt = now();
-    let teeTimes = 0;
-    for (const day of days) {
-      await saveDayAvailability(db, course.id, day.date, day.teeTimes, fetchedAt);
-      teeTimes += day.teeTimes.length;
-    }
-    await finishFetchRun(
-      db,
-      runId,
-      { status: "ok", requestCount: counted.count, teeTimeCount: teeTimes },
-      now(),
-    );
+    const teeTimes = days.reduce((n, day) => n + day.teeTimes.length, 0);
+    await exclusive(async () => {
+      for (const day of days) {
+        await saveDayAvailability(db, course.id, day.date, day.teeTimes, fetchedAt);
+      }
+      await finishFetchRun(
+        db,
+        runId,
+        { status: "ok", requestCount: counted.count, teeTimeCount: teeTimes },
+        now(),
+      );
+    });
     return { course: course.slug, status: "ok", teeTimes };
   } catch (error) {
     const message = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
     const failedAt = now();
-    await recordDayFailures(db, course.id, eachPerthDate(range.from, range.to), message, failedAt);
-    await finishFetchRun(
-      db,
-      runId,
-      {
-        status: "error",
-        requestCount: counted.count,
-        teeTimeCount: 0,
-        error: message,
-      },
-      failedAt,
-    );
+    await exclusive(async () => {
+      await recordDayFailures(
+        db,
+        course.id,
+        eachPerthDate(range.from, range.to),
+        message,
+        failedAt,
+      );
+      await finishFetchRun(
+        db,
+        runId,
+        { status: "error", requestCount: counted.count, teeTimeCount: 0, error: message },
+        failedAt,
+      );
+    });
     return { course: course.slug, status: "error", teeTimes: 0, error: message };
   }
 }
@@ -106,6 +124,6 @@ export async function pollAll(
   options: { now?: () => Date; days?: number } = {},
 ): Promise<PollResult[]> {
   const results = await Promise.all(courses.map((course) => pollCourse(db, course, http, options)));
-  await pruneOldSnapshots(db, perthDate((options.now ?? (() => new Date()))()));
+  await exclusive(() => pruneOldSnapshots(db, perthDate((options.now ?? (() => new Date()))())));
   return results;
 }
