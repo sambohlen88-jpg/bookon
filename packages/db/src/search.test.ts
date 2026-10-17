@@ -90,12 +90,12 @@ describe("searchTeeTimes", () => {
     );
 
     const result = await searchTeeTimes(handle.db, base, now);
-    expect(result.courses.map((c) => c.course.slug)).toEqual([
+    // Courses with matching times come first, earliest first; the rest follow.
+    expect(result.courses.map((c) => c.course.slug).slice(0, 2)).toEqual([
       "hamersley",
       "collier-park",
-      "fremantle-public",
-      "whaleback",
     ]);
+    expect(result.courses.slice(2).every((c) => c.teeTimes.length === 0)).toBe(true);
     expect(times(result, "hamersley")).toEqual(["2026-10-17T23:30:00.000Z"]);
     expect(times(result, "collier-park")).toEqual([
       "2026-10-18T00:00:00.000Z",
@@ -182,22 +182,15 @@ describe("searchTeeTimes", () => {
   });
 
   it("never includes switched off courses", async () => {
-    const result = await searchTeeTimes(
-      handle.db,
-      { ...base, courseSlugs: ["wembley", "marangaroo"] },
-      now,
-    );
+    const result = await searchTeeTimes(handle.db, { ...base, courseSlugs: ["wembley"] }, now);
     expect(result.courses).toEqual([]);
   });
 });
 
 describe("listSearchableCourses", () => {
   it("lists only switched on courses", async () => {
-    expect((await listSearchableCourses(handle.db)).map((c) => c.slug)).toEqual([
-      "collier-park",
-      "fremantle-public",
-      "hamersley",
-      "whaleback",
-    ]);
+    const slugs = (await listSearchableCourses(handle.db)).map((c) => c.slug);
+    expect(slugs).toHaveLength(26);
+    expect(slugs).not.toContain("wembley");
   });
 });

@@ -26,18 +26,26 @@ export interface MiClubConfig {
   /** Site root, e.g. "https://bookings.collierparkgolf.com.au". */
   baseUrl: string;
   bookingResourceId: string;
-  /** Overrides which fee group headings are read. Defaults to `DEFAULT_FEE_GROUP_PATTERN`. */
+  /**
+   * Overrides which fee group headings are read: a regex whose group 1 is the
+   * layout (may be empty) and group 2 is 9 or 18. Defaults to `classifyFeeGroup`'s rules.
+   */
   feeGroupPattern?: string;
 }
 
+/** A fee group heading that names 9 or 18 holes, with anything before or after. */
+const HOLES_HEADING = /^(?:(.+?)\s+)?(9|18)\s*holes?\b\s*(.*)$/i;
+
 /**
- * Plain green fee rows only: "18 Holes", "OLD Course 18 Holes", and the
- * same with a " - " note, which clubs use for rates that replace the normal
- * one for a while ("9 Holes - Public Holiday", "18 Holes - Maintenance
- * (Greens Coring)"). Skips twilight, "+" packages and cart deals, which have
- * conditions a search result cannot show.
+ * Words that mark a rate with conditions a search result cannot show:
+ * packages, food and cart deals, twilight, junior and member rates.
+ * "(carts can be added)" is fine: the cart is optional.
  */
-export const DEFAULT_FEE_GROUP_PATTERN = "^(?:(.+?)\\s+)?(9|18)\\s*holes?(?:\\s+-\\s+[^+]+)?$";
+const NOT_A_PLAIN_RATE =
+  /\+|package|deal|special|lunch|meal|burger|pie\b|scooter|trike|twilight|unlimited|under\s*\d|junior|member|\bcomp\b|cart(?!s can be added)/i;
+
+/** Day words before the hole count say when the rate applies, not which course. */
+const WHEN_PREFIX = /^(mon|tue|wed|thu|fri|sat|sun|week|mid)/i;
 
 export interface CalendarCell {
   feeGroupId: string;
@@ -51,6 +59,8 @@ export interface CalendarCell {
 export interface CalendarPage {
   /** Number of days the page covers, starting at the requested date. */
   dayCount: number;
+  /** A real calendar with no rates at all: nothing released from this date on. */
+  notReleased: boolean;
   /** Bookable cells for fee groups that match the pattern. */
   cells: CalendarCell[];
 }
@@ -78,27 +88,46 @@ export function timesheetUrl(config: MiClubConfig, feeGroupId: string, date: str
   return url.toString();
 }
 
+/**
+ * Plain green fee rows: "18 Holes", "OLD Course 18 Holes", "18 Hole Green Fees",
+ * "18 Holes Weekday", "9 Holes - Public Holiday", "18 Holes - Maintenance
+ * (Greens Coring)", "Maylands 9 Holes (carts can be added)". Skips anything
+ * matching `NOT_A_PLAIN_RATE`.
+ */
 export function classifyFeeGroup(
   heading: string,
-  pattern = DEFAULT_FEE_GROUP_PATTERN,
+  pattern?: string,
 ): { holes: 9 | 18; layout: string | null } | null {
-  const match = new RegExp(pattern, "i").exec(collapse(heading));
-  if (!match) return null;
-  const holes = Number(match[2]);
-  if (holes !== 9 && holes !== 18) return null;
-  return { holes, layout: match[1] ? titleCase(match[1]) : null };
+  const text = collapse(heading);
+  if (pattern) {
+    const match = new RegExp(pattern, "i").exec(text);
+    if (!match) return null;
+    const holes = Number(match[2]);
+    if (holes !== 9 && holes !== 18) return null;
+    return { holes, layout: match[1] ? titleCase(match[1]) : null };
+  }
+
+  const match = HOLES_HEADING.exec(text);
+  if (!match || NOT_A_PLAIN_RATE.test(text)) return null;
+  const prefix = match[1]?.trim();
+  return {
+    holes: Number(match[2]) as 9 | 18,
+    layout: prefix && !WHEN_PREFIX.test(prefix) ? titleCase(prefix) : null,
+  };
 }
 
 /** Parse a calendar page. Dates come from each cell's timesheet link. */
 export function parseCalendar(html: string, pattern?: string): CalendarPage {
-  const $ = cheerio.load(html);
-  const rows = $("div.feeGroupRow");
-  if (rows.length === 0) {
-    throw new PageFormatError("MiClub calendar has no fee group rows");
-  }
   // The calendar sets this flag when timesheets sit behind reCAPTCHA. Stop here, before requesting any.
   if (/publicCaptchaEnabled\s*=\s*true\b/.test(html)) {
     throw new CaptchaRequiredError("The club requires a CAPTCHA to view timesheets");
+  }
+  const $ = cheerio.load(html);
+  const rows = $("div.feeGroupRow");
+  if (rows.length === 0) {
+    // Past a club's release window the calendar page loads with no rates at all.
+    if ($(".public-calendar").length > 0) return { dayCount: 0, notReleased: true, cells: [] };
+    throw new PageFormatError("MiClub calendar has no fee group rows");
   }
 
   const dayCount = $(".cell-heading").length || 7;
@@ -123,7 +152,7 @@ export function parseCalendar(html: string, pattern?: string): CalendarPage {
       });
   });
 
-  return { dayCount, cells };
+  return { dayCount, notReleased: false, cells };
 }
 
 /** Parse a timesheet page. Rows with no free spots are dropped. */
@@ -159,15 +188,34 @@ function adultPrice($: cheerio.CheerioAPI, $row: ReturnType<cheerio.CheerioAPI>)
     const label = collapse($(li).text().replace(priceText, ""));
     prices.push({ label, cents: parsePriceCents(priceText) });
   });
+  // Some clubs put the fee list in a pop-up instead: data-content="<ul><li>Adult $30.00</li>…".
+  if (prices.length === 0) {
+    const popup = $row.find(".fees-wrapper [data-content]").attr("data-content");
+    if (popup) {
+      const $popup = cheerio.load(popup);
+      $popup("li").each((_, li) => {
+        const text = collapse($popup(li).text());
+        prices.push({ label: text.replace(/\$\s*[\d,.]+/, ""), cents: parsePriceCents(text) });
+      });
+    }
+  }
   const priced = prices.filter((p) => p.cents !== null);
-  const adult = priced.find((p) => !/concession|junior|child/i.test(p.label));
+  const adult = priced.find(
+    (p) => !/concession|pensioner|senior|student|junior|child|twilight/i.test(p.label),
+  );
   // A lone price is the rate for everyone, even when labelled e.g. "Cored Greens Concession Rate Applies".
   return adult?.cents ?? (priced.length === 1 ? priced[0]!.cents : null);
 }
 
-/** "Pine Lake 18 Holes" → "Pine Lake". "1st Tee" stays as is. */
-/** "Pine Lake 18 Holes", "Pines 9 Holes ONLY", "Pines 9 ONLY" → the course name alone. "1st Tee" stays. */
+/**
+ * Clubs label tee sheet rows by hand. Where a row names a starting tee, show
+ * just that: "1st TEE 18 HOLE SOCIAL PLAY", "Monday 10th tee" and "Before 9AM
+ * 1st Tee" become "1st Tee" and "10th Tee". Course names pass through, minus
+ * a trailing hole count: "Pine Lake 18 Holes" → "Pine Lake", "Pines 9 ONLY" → "Pines".
+ */
 export function cleanLayout(text: string): string | null {
+  const tee = /\b(1st|2nd|10th)\s+tee\b/i.exec(text);
+  if (tee) return `${tee[1]!.toLowerCase()} Tee`;
   const cleaned = collapse(text)
     .replace(/\s*\b(9|18)(\s+or\s+(9|18))?\s*(holes?(\s+only)?|only)\s*$/i, "")
     .trim();
@@ -210,6 +258,7 @@ export const miclubAdapter: CourseAdapter = {
         config.feeGroupPattern,
       );
       cells.push(...page.cells);
+      if (page.notReleased) break; // Later dates won't be released either.
       pageStart = addPerthDays(pageStart, Math.max(page.dayCount, 1));
     }
 

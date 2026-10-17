@@ -52,6 +52,22 @@ describe("PoliteHttpClient", () => {
     expect(client.requestCount).toBe(3);
   });
 
+  it("asks for HTML by default and another type when told", async () => {
+    const accepts: (string | null)[] = [];
+    const client = new PoliteHttpClient({
+      userAgent: UA,
+      respectRobots: false,
+      sleep: async () => {},
+      fetch: (async (_url: string, init?: RequestInit) => {
+        accepts.push(new Headers(init?.headers).get("accept"));
+        return ok();
+      }) as typeof fetch,
+    });
+    await client.getText("https://a.example/page");
+    await client.getText("https://a.example/data", { accept: "application/json" });
+    expect(accepts).toEqual(["text/html,text/plain", "application/json"]);
+  });
+
   it("reads robots.txt once per host", async () => {
     const { client, calls } = harness((url) =>
       url.endsWith("robots.txt") ? ok("User-agent: *\nAllow: /") : ok(),

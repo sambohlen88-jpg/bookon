@@ -42,34 +42,30 @@ function teeTime(courseId: string, iso: string, overrides: Partial<TeeTime> = {}
 }
 
 describe("seed", () => {
-  it("creates the courses, with Wembley and the not-yet-readable courses switched off", async () => {
+  it("creates the courses, with Wembley switched off", async () => {
     const enabled = await listEnabledCourses(handle.db);
-    expect(enabled.map((c) => c.slug)).toEqual([
-      "collier-park",
-      "fremantle-public",
-      "hamersley",
-      "whaleback",
-    ]);
+    expect(enabled).toHaveLength(26);
+    expect(enabled.map((c) => c.slug)).toEqual(
+      expect.arrayContaining(["collier-park", "hamersley", "the-cut"]),
+    );
     expect(await findCourseBySlug(handle.db, "wembley")).toMatchObject({
       platform: "miclub",
       enabled: false,
     });
-    const marangaroo = await findCourseBySlug(handle.db, "marangaroo");
-    expect(marangaroo).toMatchObject({
-      platform: "chronogolf",
-      enabled: false,
+    expect(await findCourseBySlug(handle.db, "marangaroo")).toMatchObject({
+      platform: "miclub",
+      enabled: true,
       bookingWindowDays: 11,
+      platformConfig: { baseUrl: "https://marangaroo.miclub.com.au", bookingResourceId: "3000000" },
     });
-    expect(await findCourseBySlug(handle.db, "the-cut")).toMatchObject({ enabled: false });
-    expect(await findCourseBySlug(handle.db, "point-walter")).toMatchObject({
-      platform: "chronogolf",
-      enabled: false,
+    expect(await findCourseBySlug(handle.db, "joondalup-resort")).toMatchObject({
+      platformConfig: expect.objectContaining({ bookingResourceId: "3900000" }),
     });
   });
 
   it("can run twice without duplicating", async () => {
     await seed(handle.db);
-    expect(await listEnabledCourses(handle.db)).toHaveLength(4);
+    expect(await listEnabledCourses(handle.db)).toHaveLength(26);
   });
 });
 

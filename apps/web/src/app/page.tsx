@@ -21,10 +21,21 @@ export default async function Home() {
           <SearchForm values={defaultForm(now)} courses={courses} now={now} />
         </div>
         {courses.length > 0 && (
-          <p className="mt-8 text-sm text-muted">
-            Checking {courses.map((c) => c.name.replace(/ Golf Course$/, "")).join(", ")}. More
-            courses coming soon.
-          </p>
+          <details className="mt-8 text-sm text-muted">
+            <summary className="min-h-11 cursor-pointer py-3">
+              Checking {courses.length} courses across Perth and WA
+            </summary>
+            <ul className="columns-2 gap-4">
+              {courses.map((c) => (
+                <li key={c.slug} className="py-0.5">
+                  {c.name.replace(
+                    / (Golf (Course|Club|Links)|Country Club|Golf & Country Club)$/,
+                    "",
+                  )}
+                </li>
+              ))}
+            </ul>
+          </details>
         )}
       </main>
     </>

@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createDb, findCourseBySlug, schema, seed, snapshotsFor, type DbHandle } from "@bookon/db";
-import { pollAll, pollCourse, pollRange, type CountingHttpClient } from "./poll";
+import type { HttpClient } from "@bookon/core";
+import { pollAll, pollCourse, pollRange } from "./poll";
 
 const hamersley = readFileSync(
   new URL("../../../packages/adapters/fixtures/quick18/hamersley-2025-10-18.html", import.meta.url),
@@ -9,7 +10,7 @@ const hamersley = readFileSync(
 );
 
 /** Serves the Hamersley fixture for 18 October 2025 and fails everything else. */
-class FixtureHttp implements CountingHttpClient {
+class FixtureHttp implements HttpClient {
   requestCount = 0;
   async getText(url: string): Promise<string> {
     this.requestCount++;
@@ -75,13 +76,26 @@ describe("pollCourse", () => {
   it("skips courses with no adapter, such as Chronogolf", async () => {
     const course = (await findCourseBySlug(handle.db, "marangaroo"))!;
     const http = new FixtureHttp();
-    const result = await pollCourse(handle.db, { ...course, enabled: true }, http, { now });
+    const result = await pollCourse(
+      handle.db,
+      { ...course, platform: "chronogolf", enabled: true },
+      http,
+      { now },
+    );
     expect(result.status).toBe("skipped");
     expect(http.requestCount).toBe(0);
   });
 });
 
 describe("pollAll", () => {
+  it("counts each course's own requests when polling in parallel", async () => {
+    const hamersleyCourse = (await findCourseBySlug(handle.db, "hamersley"))!;
+    const collier = (await findCourseBySlug(handle.db, "collier-park"))!;
+    await pollAll(handle.db, [collier, hamersleyCourse], new FixtureHttp(), { now, days: 1 });
+    const runs = await handle.db.select().from(schema.fetchRuns);
+    expect(runs.map((r) => r.requestCount).sort()).toEqual([1, 1]);
+  });
+
   it("keeps going when one course fails", async () => {
     const hamersleyCourse = (await findCourseBySlug(handle.db, "hamersley"))!;
     const collier = (await findCourseBySlug(handle.db, "collier-park"))!;

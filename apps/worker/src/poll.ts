@@ -24,9 +24,16 @@ export interface PollResult {
   error?: string;
 }
 
-/** HTTP client that counts what it sends, so each run can record its request count. */
-export interface CountingHttpClient extends HttpClient {
-  readonly requestCount: number;
+/** Counts the pages one course requests, as courses share one HTTP client and poll in parallel. */
+function countingClient(http: HttpClient): HttpClient & { count: number } {
+  const counted = {
+    count: 0,
+    getText(url: string) {
+      counted.count++;
+      return http.getText(url);
+    },
+  };
+  return counted;
 }
 
 /** From today in Perth up to the club's booking window, or `days` when given (for testing a course). */
@@ -43,7 +50,7 @@ export function pollRange(course: PollableCourse, now: Date, days?: number): Dat
 export async function pollCourse(
   db: Database,
   course: PollableCourse,
-  http: CountingHttpClient,
+  http: HttpClient,
   options: { now?: () => Date; days?: number; adapter?: CourseAdapter } = {},
 ): Promise<PollResult> {
   const now = options.now ?? (() => new Date());
@@ -54,11 +61,11 @@ export async function pollCourse(
 
   const startedAt = now();
   const range = pollRange(course, startedAt, options.days);
-  const requestsBefore = http.requestCount;
+  const counted = countingClient(http);
   const runId = await startFetchRun(db, course.id, range.from, range.to, startedAt);
 
   try {
-    const days = await adapter.fetchAvailability(course, range, { http });
+    const days = await adapter.fetchAvailability(course, range, { http: counted });
     const fetchedAt = now();
     let teeTimes = 0;
     for (const day of days) {
@@ -68,7 +75,7 @@ export async function pollCourse(
     await finishFetchRun(
       db,
       runId,
-      { status: "ok", requestCount: http.requestCount - requestsBefore, teeTimeCount: teeTimes },
+      { status: "ok", requestCount: counted.count, teeTimeCount: teeTimes },
       now(),
     );
     return { course: course.slug, status: "ok", teeTimes };
@@ -81,7 +88,7 @@ export async function pollCourse(
       runId,
       {
         status: "error",
-        requestCount: http.requestCount - requestsBefore,
+        requestCount: counted.count,
         teeTimeCount: 0,
         error: message,
       },
@@ -95,7 +102,7 @@ export async function pollCourse(
 export async function pollAll(
   db: Database,
   courses: PollableCourse[],
-  http: CountingHttpClient,
+  http: HttpClient,
   options: { now?: () => Date; days?: number } = {},
 ): Promise<PollResult[]> {
   const results = await Promise.all(courses.map((course) => pollCourse(db, course, http, options)));

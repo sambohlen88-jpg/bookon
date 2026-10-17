@@ -7,14 +7,10 @@ export class RecordingHttpClient implements HttpClient {
   private saved = 0;
 
   constructor(
-    private readonly inner: HttpClient & { requestCount: number },
+    private readonly inner: HttpClient,
     private readonly directory: string,
   ) {
     mkdirSync(directory, { recursive: true });
-  }
-
-  get requestCount(): number {
-    return this.inner.requestCount;
   }
 
   async getText(url: string): Promise<string> {

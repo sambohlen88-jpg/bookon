@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { formatPerthDay } from "@bookon/core";
 import { listSearchableCourses, searchTeeTimes } from "@bookon/db";
-import { CourseResults } from "@/components/results";
+import { CourseResults, NoMatchList } from "@/components/results";
 import { SearchForm } from "@/components/search-form";
 import { SiteHeader } from "@/components/site-header";
 import { getDb } from "@/lib/db";
@@ -37,6 +37,11 @@ export default async function SearchPage({
   const result = await searchTeeTimes(db, params, now);
   const multiDay = params.dateFrom !== params.dateTo;
   const withTimes = result.courses.filter((c) => c.teeTimes.length > 0).length;
+  // A handful of courses each get a card, so their notices show. Beyond that, courses with
+  // nothing matching fold into one list.
+  const fold = result.courses.length > 3;
+  const cards = fold ? result.courses.filter((c) => c.teeTimes.length > 0) : result.courses;
+  const folded = fold ? result.courses.filter((c) => c.teeTimes.length === 0) : [];
 
   return (
     <>
@@ -61,7 +66,7 @@ export default async function SearchPage({
         {result.totalTeeTimes === 0 && <EmptyState form={form} />}
 
         <div className="mt-4 flex flex-col gap-4">
-          {result.courses.map((r) => (
+          {cards.map((r) => (
             <CourseResults
               key={r.course.id}
               result={r}
@@ -71,6 +76,9 @@ export default async function SearchPage({
               dayHref={(date) => searchHref({ ...form, date, days: 1, courses: [r.course.slug] })}
             />
           ))}
+          {folded.length > 0 && (
+            <NoMatchList results={folded} now={now} others={cards.length > 0} />
+          )}
         </div>
 
         <p className="mt-8 text-xs text-muted">

@@ -31,15 +31,46 @@ describe("classifyFeeGroup", () => {
     });
   });
 
+  it("accepts the ways WA clubs name their standard rates", () => {
+    expect(classifyFeeGroup("18 Hole Green Fees")).toEqual({ holes: 18, layout: null });
+    expect(classifyFeeGroup("18 Holes Greenfee")).toEqual({ holes: 18, layout: null });
+    expect(classifyFeeGroup("18 Holes Online Booking")).toEqual({ holes: 18, layout: null });
+    expect(classifyFeeGroup("9 Hole Online Booking")).toEqual({ holes: 9, layout: null });
+    expect(classifyFeeGroup("18 Holes Weekday")).toEqual({ holes: 18, layout: null });
+    expect(classifyFeeGroup("9 Hole Midweek")).toEqual({ holes: 9, layout: null });
+    expect(classifyFeeGroup("18 Holes - WALKING")).toEqual({ holes: 18, layout: null });
+    expect(classifyFeeGroup("9 Holes Walking")).toEqual({ holes: 9, layout: null });
+    expect(classifyFeeGroup("18 HOLES")).toEqual({ holes: 18, layout: null });
+    expect(classifyFeeGroup("18 Hole ")).toEqual({ holes: 18, layout: null });
+    expect(classifyFeeGroup("18 Holes (carts can be added)")).toEqual({ holes: 18, layout: null });
+    expect(classifyFeeGroup("Maylands 9 Holes (carts can be added)")).toEqual({
+      holes: 9,
+      layout: "Maylands",
+    });
+  });
+
   it("skips twilight, packages and cart deals", () => {
     expect(classifyFeeGroup("Twilight")).toBeNull();
     expect(classifyFeeGroup("Twilight (Mon - Thu from 3pm)")).toBeNull();
     expect(classifyFeeGroup("18 Holes + Bacon & Egg Burger with Coffee")).toBeNull();
     expect(classifyFeeGroup("Weekend 9H for 4 Players with 2 Carts")).toBeNull();
+    expect(classifyFeeGroup("18 Holes + Cart")).toBeNull();
+    expect(classifyFeeGroup("18 Holes Weekday inc. Cart Package")).toBeNull();
+    expect(classifyFeeGroup("Under 18 - 18 Holes")).toBeNull();
+    expect(classifyFeeGroup("Friday 9 Hole Twilight ONLINE SPECIAL")).toBeNull();
+    expect(classifyFeeGroup("Fri 18 Holes + Cart + Lunch Deal for 2 @ $85pp")).toBeNull();
+    expect(classifyFeeGroup("9 Holes + Cart + Gourmet Pie before 8 am")).toBeNull();
+    expect(classifyFeeGroup("18 Cart After 12pm")).toBeNull();
+    expect(classifyFeeGroup("After 3pm - Unlimited Holes - Walking Only")).toBeNull();
   });
 
   it("takes a custom pattern", () => {
     expect(classifyFeeGroup("Twilight", "^()(9)?twilight$")).toBeNull();
+    // Joondalup's 18 hole rate always includes a cart.
+    expect(classifyFeeGroup("18 Holes + Cart", "^()(18|9) holes(?: \\+ cart| walking)$")).toEqual({
+      holes: 18,
+      layout: null,
+    });
     expect(classifyFeeGroup("Comp 9 holes", "^(comp)\\s+(9|18)\\s*holes$")).toEqual({
       holes: 9,
       layout: "Comp",
@@ -51,6 +82,7 @@ describe("parseCalendar", () => {
   it("reads bookable 9 and 18 hole cells from the Collier Park calendar", () => {
     const page = parseCalendar(collierCalendar);
     expect(page.dayCount).toBe(6);
+    expect(page.notReleased).toBe(false);
     expect(page.cells).toHaveLength(12);
     expect(page.cells).toContainEqual({
       feeGroupId: "1500323733",
@@ -71,6 +103,29 @@ describe("parseCalendar", () => {
     const page = parseCalendar(fixture("miclub/fremantle-calendar-2025-09-27.html"));
     const eighteenHoleDates = page.cells.filter((c) => c.holes === 18).map((c) => c.date);
     expect(eighteenHoleDates).toEqual(["2025-09-30", "2025-10-01", "2025-10-02"]);
+  });
+
+  it("reads a calendar with nothing released yet as no times, not an error", () => {
+    // Busselton, asked for 24 October 2026 on the 17th: a real calendar page with no rates.
+    const page = parseCalendar(
+      fixture("miclub/live-busselton-calendar-2026-10-24-not-released.html"),
+    );
+    expect(page).toEqual({ dayCount: 0, notReleased: true, cells: [] });
+  });
+
+  it("stops paging once a calendar shows nothing released", async () => {
+    const notReleased = fixture("miclub/live-busselton-calendar-2026-10-24-not-released.html");
+    const http = new FakeHttp((url) =>
+      url.pathname.endsWith("ViewPublicCalendar.msp") ? notReleased : undefined,
+    );
+    const days = await miclubAdapter.fetchAvailability(
+      testCourse({ platformConfig: config }),
+      { from: "2026-10-24", to: "2026-11-06" },
+      { http },
+    );
+    expect(http.requested).toHaveLength(1);
+    expect(days).toHaveLength(14);
+    expect(days.every((d) => d.teeTimes.length === 0)).toBe(true);
   });
 
   it("refuses a page that is not a MiClub calendar", () => {
@@ -237,6 +292,15 @@ describe("live pages recorded 17 October 2026", () => {
     expect(new Set(rows.map((r) => r.priceCents))).toEqual(new Set([2050, 1600]));
   });
 
+  it("reads prices from a pop-up fee list", () => {
+    // Rockingham lists fees in a popover: Adult $30, Pensioner $27.50, Twilight $25, Weekday Child $12.
+    const rows = parseTimesheet(
+      fixture("miclub/live-rockingham-timesheet-2026-10-19-popover-fees.html"),
+    );
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.every((r) => r.priceCents === 3000)).toBe(true);
+  });
+
   it("stops at a calendar that puts timesheets behind a CAPTCHA", () => {
     expect(() =>
       parseCalendar(fixture("miclub/live-wembley-calendar-2026-10-17-captcha.html")),
@@ -298,6 +362,11 @@ describe("cleanLayout", () => {
     expect(cleanLayout("Lake Island 9 or 18 holes")).toBe("Lake Island");
     expect(cleanLayout("Back 9")).toBe("Back 9");
     expect(cleanLayout("1st Tee")).toBe("1st Tee");
+    expect(cleanLayout("1st TEE 18 HOLE SOCIAL PLAY")).toBe("1st Tee");
+    expect(cleanLayout("Monday 10th tee")).toBe("10th Tee");
+    expect(cleanLayout("Twilight After 3PM 10th Tee")).toBe("10th Tee");
+    expect(cleanLayout("2nd Tee - Front Nine")).toBe("2nd Tee");
+    expect(cleanLayout("Social Play")).toBe("Social Play");
     expect(cleanLayout("  ")).toBeNull();
   });
 });

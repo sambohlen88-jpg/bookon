@@ -100,6 +100,18 @@ Also checked:
 - **Whaleback works. Switched on.** MiClub, no CAPTCHA, rates named "18 Hole" ($39 weekday) and "9 Hole" ($26).
 - **Carramar's site answers HTTP 403 to BookOnBot,** even for robots.txt. The network policy did not block it; the club's site did. That is a block, so Carramar stays out.
 
+## WA expansion (17 October 2026, later)
+
+At the owner's request ("as many courses in Perth or WA as possible"), about 60 likely `<club>.miclub.com.au` addresses were probed. **22 more MiClub courses read cleanly and are switched on, for 26 searchable in all.** The full list, and the courses left out with reasons, is in [`courses.md`](./courses.md).
+
+Changes to the MiClub reader that this needed:
+
+- **Rate names.** Any rate naming 9 or 18 holes counts unless it mentions a package, deal, cart, meal, twilight, junior or member rate. This covers "18 Hole Green Fees", "18 Holes Weekday", "18 Holes Online Booking", "Maylands 9 Holes (carts can be added)" and "18 Holes - WALKING". A course can still override this (Joondalup does, as its 18 hole rate always includes a cart).
+- **Other booking calendars.** Rockingham and Joondalup keep public bookings on resource 3900000.
+- **Fees in a pop-up.** Rockingham lists fees in a popover, not a list.
+- **Tee names.** Clubs type rows like "1st TEE 18 HOLE SOCIAL PLAY" or "Monday 10th tee". BookOn shows "1st Tee" or "10th Tee".
+- **Days not released yet.** Past a club's window the calendar comes back with no rates. BookOn now reads that as "nothing released" and stops paging, instead of failing the course.
+
 ## Chronogolf (Lightspeed Golf)
 
 Two of the owner's launch courses are on neither MiClub nor Quick18:
@@ -196,7 +208,9 @@ Many indexed URLs use this exact form, for example [Hamersley](https://hamersley
 - Sagacity's [General Terms and Conditions](https://www.sagacitygolf.com/general-terms-and-conditions/) restrict automated extraction of _Sagacity AI outputs_ for training models or building a competing service. That clause is about their AI product, not the tee sheet, but it shows the direction of their thinking.
 - The [Terms of Service](https://www.sagacitygolf.com/terms-of-service/) cover the "whole suite of software products including... electronic tee sheet". The section on automated access, if any, was not visible. **Must be read in full.**
 
-## Perth public courses found
+## Perth public courses found (Milestone 0)
+
+Kept for the record. **The current list is [`courses.md`](./courses.md).**
 
 | Course                | Suburb             | Platform                                          | Public calendar URL                                                                            | Notes                                                                               |
 | --------------------- | ------------------ | ------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |

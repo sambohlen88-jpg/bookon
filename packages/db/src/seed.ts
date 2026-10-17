@@ -11,6 +11,294 @@ interface ClubSeed {
 }
 
 /**
+ * MiClub courses found on 17 October 2026 by probing `<club>.miclub.com.au`
+ * calendars. All read cleanly in a live test on 17 October 2026, so all are on. Hole counts
+ * come from the rates each course sells; booking windows are the clubs'
+ * published ones where known, otherwise 14 days (the longest search).
+ */
+interface MiClubSeed {
+  slug: string;
+  name: string;
+  suburb: string;
+  holes: number;
+  host: string;
+  resource?: string;
+  /** Club website, when it has its own. */
+  website?: string;
+  window: number;
+  enabled: boolean;
+  notes: string;
+  feeGroupPattern?: string;
+}
+
+const WA_MICLUB_COURSES: MiClubSeed[] = [
+  // Perth metro and Peel
+  {
+    slug: "marangaroo",
+    name: "Marangaroo Golf Course",
+    suburb: "Marangaroo",
+    holes: 18,
+    host: "marangaroo.miclub.com.au",
+    website: "https://www.marangaroogolf.com.au",
+    window: 11,
+    enabled: true,
+    notes:
+      "Run by Belgravia Leisure. Times open 11 days ahead from 9 am. Prepaid. Its old Chronogolf listing is gone.",
+  },
+  {
+    slug: "point-walter",
+    name: "Point Walter Golf Course",
+    suburb: "Bicton",
+    holes: 9,
+    host: "pointwalter.miclub.com.au",
+    website: "https://www.pointwaltergolf.com.au",
+    window: 11,
+    enabled: true,
+    notes: "9 holes. Run by Belgravia Leisure. Times open 11 days ahead. Left Quick18 in 2026.",
+  },
+  {
+    slug: "maylands",
+    name: "Maylands Peninsula Golf Course",
+    suburb: "Maylands",
+    holes: 18,
+    host: "maylandsembleton.miclub.com.au",
+    window: 14,
+    enabled: true,
+    notes:
+      "Shares a booking site with Embleton (resource 3900000), whose calendar was empty on 17 October 2026. Booking window not confirmed.",
+  },
+  {
+    slug: "kwinana",
+    name: "Kwinana Golf Club",
+    suburb: "Medina",
+    holes: 18,
+    host: "kwinana.miclub.com.au",
+    window: 14,
+    enabled: true,
+    notes: "Booking window not confirmed.",
+  },
+  {
+    slug: "rockingham",
+    name: "Rockingham Golf Club",
+    suburb: "Rockingham",
+    holes: 18,
+    host: "rockingham.miclub.com.au",
+    resource: "3900000",
+    window: 14,
+    enabled: true,
+    notes:
+      "Public bookings are the 'Social Golf Bookings' calendar (resource 3900000), prepaid. Booking window not confirmed.",
+  },
+  {
+    slug: "secret-harbour",
+    name: "Secret Harbour Golf Links",
+    suburb: "Secret Harbour",
+    holes: 18,
+    host: "secretharbour.miclub.com.au",
+    window: 14,
+    enabled: true,
+    notes: "Booking window not confirmed.",
+  },
+  {
+    slug: "kennedy-bay",
+    name: "Links Kennedy Bay",
+    suburb: "Port Kennedy",
+    holes: 18,
+    host: "kennedybay.miclub.com.au",
+    window: 14,
+    enabled: true,
+    notes: "Booking window not confirmed.",
+  },
+  {
+    slug: "hartfield",
+    name: "Hartfield Golf Club",
+    suburb: "Forrestfield",
+    holes: 18,
+    host: "hartfield.miclub.com.au",
+    website: "https://www.hartfieldgolf.com.au",
+    window: 14,
+    enabled: true,
+    notes: "Members' club that sells public tee times online. Booking window not confirmed.",
+  },
+  {
+    slug: "joondalup-resort",
+    name: "Joondalup Resort Golf",
+    suburb: "Connolly",
+    holes: 27,
+    host: "joondalup.miclub.com.au",
+    resource: "3900000",
+    window: 14,
+    enabled: true,
+    feeGroupPattern: "^()(18|9) holes(?: \\+ cart| walking)$",
+    notes:
+      "Three nines (Lake, Quarry, Dunes). Public calendar is resource 3900000. 18 hole rates always include a cart, so '18 Holes + Cart' is read. Booking window not confirmed.",
+  },
+  {
+    slug: "sun-city",
+    name: "Sun City Country Club",
+    suburb: "Yanchep",
+    holes: 18,
+    host: "suncity.miclub.com.au",
+    window: 14,
+    enabled: true,
+    notes: "Members' club that sells public tee times online. Booking window not confirmed.",
+  },
+  {
+    slug: "meadow-springs",
+    name: "Meadow Springs Golf & Country Club",
+    suburb: "Meadow Springs",
+    holes: 18,
+    host: "meadowsprings.miclub.com.au",
+    window: 14,
+    enabled: true,
+    notes: "Separate weekday and weekend rates. Booking window not confirmed.",
+  },
+  {
+    slug: "the-cut",
+    name: "The Cut Golf Course",
+    suburb: "Dawesville",
+    holes: 18,
+    host: "thecut.miclub.com.au",
+    website: "https://www.thecutgolf.com.au",
+    window: 14,
+    enabled: true,
+    notes:
+      "About 80 km south of the Perth CBD. Walking rates are read; cart packages are skipped. Booking window not confirmed.",
+  },
+  {
+    slug: "pinjarra",
+    name: "Pinjarra Golf Club",
+    suburb: "Pinjarra",
+    holes: 18,
+    host: "pinjarra.miclub.com.au",
+    window: 14,
+    enabled: true,
+    notes: "Booking window not confirmed.",
+  },
+  // South West and Great Southern
+  {
+    slug: "bunbury",
+    name: "Bunbury Golf Club",
+    suburb: "Bunbury",
+    holes: 18,
+    host: "bunbury.miclub.com.au",
+    window: 14,
+    enabled: true,
+    notes: "Booking window not confirmed.",
+  },
+  {
+    slug: "capel",
+    name: "Capel Golf Club",
+    suburb: "Capel",
+    holes: 18,
+    host: "capel.miclub.com.au",
+    window: 14,
+    enabled: true,
+    notes: "Booking window not confirmed.",
+  },
+  {
+    slug: "busselton",
+    name: "Busselton Golf Club",
+    suburb: "Busselton",
+    holes: 18,
+    host: "busselton.miclub.com.au",
+    window: 14,
+    enabled: true,
+    notes: "Booking window not confirmed.",
+  },
+  {
+    slug: "dunsborough-lakes",
+    name: "Dunsborough Lakes Golf Club",
+    suburb: "Dunsborough",
+    holes: 18,
+    host: "dunsborough.miclub.com.au",
+    window: 14,
+    enabled: true,
+    notes: "Booking window not confirmed.",
+  },
+  {
+    slug: "margaret-river",
+    name: "Margaret River Golf Club",
+    suburb: "Margaret River",
+    holes: 18,
+    host: "margaretriver.miclub.com.au",
+    window: 14,
+    enabled: true,
+    notes: "Booking window not confirmed.",
+  },
+  {
+    slug: "albany",
+    name: "Albany Golf Club",
+    suburb: "Albany",
+    holes: 18,
+    host: "albany.miclub.com.au",
+    website: "https://albanygolfclub.com.au",
+    window: 14,
+    enabled: true,
+    notes: "At Middleton Beach. Booking window not confirmed.",
+  },
+  // Mid West and North
+  {
+    slug: "geraldton",
+    name: "Geraldton Golf Club",
+    suburb: "Geraldton",
+    holes: 18,
+    host: "geraldton.miclub.com.au",
+    window: 14,
+    enabled: true,
+    notes: "Visitors register online before booking. Booking window not confirmed.",
+  },
+  {
+    slug: "karratha",
+    name: "Karratha Golf Course",
+    suburb: "Karratha",
+    holes: 18,
+    host: "karratha.miclub.com.au",
+    window: 14,
+    enabled: true,
+    notes: "Booking window not confirmed.",
+  },
+  {
+    slug: "broome",
+    name: "Broome Golf Club",
+    suburb: "Broome",
+    holes: 18,
+    host: "broome.miclub.com.au",
+    window: 14,
+    enabled: true,
+    notes: "Booking window not confirmed.",
+  },
+];
+
+function miclubClub(c: MiClubSeed): ClubSeed {
+  const resource = c.resource ?? "3000000";
+  const base = `https://${c.host}`;
+  return {
+    name: c.name,
+    slug: c.slug,
+    courses: [
+      {
+        name: c.name,
+        slug: c.slug,
+        suburb: c.suburb,
+        holes: c.holes,
+        platform: "miclub",
+        platformConfig: {
+          baseUrl: base,
+          bookingResourceId: resource,
+          ...(c.feeGroupPattern ? { feeGroupPattern: c.feeGroupPattern } : {}),
+        },
+        websiteUrl: c.website ?? `${base}/cms/`,
+        bookingUrl: `${base}/guests/bookings/ViewPublicCalendar.msp?bookingResourceId=${resource}`,
+        enabled: c.enabled,
+        bookingWindowDays: c.window,
+        notes: c.notes,
+      },
+    ],
+  };
+}
+
+/**
  * Courses chosen by the owner on 17 October 2026 (five launch courses, then Fremantle
  * Public, Whaleback and Point Walter). Sources are in
  * docs/platforms.md. Coordinates are left empty until verified.
@@ -135,67 +423,44 @@ export const SEED_CLUBS: ClubSeed[] = [
       },
     ],
   },
+  ...WA_MICLUB_COURSES.map(miclubClub),
+  // Quick18 blocks Claude-User, so these wait for the owner to run a check on their own computer.
   {
-    name: "Point Walter Golf Course",
-    slug: "point-walter",
+    name: "The Springs Club",
+    slug: "the-springs",
     courses: [
       {
-        name: "Point Walter Golf Course",
-        slug: "point-walter",
-        suburb: "Bicton",
+        name: "The Springs Club",
+        slug: "the-springs",
+        suburb: "Forrestdale",
         holes: 18,
-        platform: "chronogolf",
-        platformConfig: {},
-        websiteUrl: "https://www.pointwaltergolf.com.au",
-        bookingUrl: "https://www.chronogolf.com/club/point-walter-public-golf-course",
+        platform: "quick18",
+        platformConfig: { baseUrl: "https://springs.quick18.com" },
+        websiteUrl: "https://springs.quick18.com",
+        bookingUrl: "https://springs.quick18.com/teetimes/searchmatrix",
         enabled: false,
-        bookingWindowDays: 11,
+        bookingWindowDays: 14,
         notes:
-          "Left Quick18 (its old site says 'coming soon', October 2026). Its Chronogolf page returns " +
-          "404, so probably MiClub on its own domain like Marangaroo (same operator, Belgravia " +
-          "Leisure). Not yet checked live. Times open 11 days ahead.",
+          "Quick18. Parses correctly from a 2025 saved page; not yet checked live. Owner to run a check.",
       },
     ],
   },
   {
-    name: "Marangaroo Golf Course",
-    slug: "marangaroo",
+    name: "Lake Claremont Golf Course",
+    slug: "lake-claremont",
     courses: [
       {
-        name: "Marangaroo Golf Course",
-        slug: "marangaroo",
-        suburb: "Marangaroo",
-        holes: 18,
-        platform: "chronogolf",
-        platformConfig: {},
-        websiteUrl: "https://www.marangaroogolf.com.au",
-        bookingUrl: "https://www.chronogolf.com/club/marangaroo-golf-course",
+        name: "Lake Claremont Golf Course",
+        slug: "lake-claremont",
+        suburb: "Claremont",
+        holes: 9,
+        platform: "quick18",
+        platformConfig: { baseUrl: "https://lakeclaremont.quick18.com" },
+        websiteUrl: "https://lakeclaremont.quick18.com",
+        bookingUrl: "https://lakeclaremont.quick18.com/teetimes/searchmatrix",
         enabled: false,
-        bookingWindowDays: 11,
-        notes:
-          "Probably MiClub on its own domain (MiClub URL patterns, listed on TeeNet); its Chronogolf " +
-          "page returns 404 (October 2026). Not yet checked live. Times open 11 days ahead from 9 am.",
-      },
-    ],
-  },
-  {
-    name: "The Cut Golf Course",
-    slug: "the-cut",
-    courses: [
-      {
-        name: "The Cut Golf Course",
-        slug: "the-cut",
-        suburb: "Dawesville",
-        holes: 18,
-        platform: "chronogolf",
-        platformConfig: {},
-        websiteUrl: "https://www.thecutgolf.com.au",
-        bookingUrl: "https://www.chronogolf.com/club/the-cut-golf-course",
-        enabled: false,
-        bookingWindowDays: 7,
-        notes:
-          "Booking system not confirmed: its Chronogolf page now returns 404 (October 2026); Future " +
-          "Golf and GolfNow list it. In Dawesville, about 80 km south of the Perth CBD.",
+        bookingWindowDays: 14,
+        notes: "Quick18, 9 holes. Not yet checked live. Owner to run a check.",
       },
     ],
   },
@@ -211,14 +476,13 @@ export async function seed(db: Database): Promise<void> {
       .returning({ id: clubs.id });
 
     for (const course of club.courses) {
-      // Leave `enabled` alone on update, as an admin may have changed it since the first seed.
-      const { enabled: _enabled, ...rest } = course;
+      // Until the admin dashboard (Milestone 6) exists, this file decides which courses are on.
       await db
         .insert(courses)
         .values({ ...course, clubId: row!.id })
         .onConflictDoUpdate({
           target: courses.slug,
-          set: { ...rest, clubId: row!.id, updatedAt: sql`now()` },
+          set: { ...course, clubId: row!.id, updatedAt: sql`now()` },
         });
     }
   }

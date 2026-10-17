@@ -16,7 +16,8 @@ import {
   type PollableCourse,
 } from "@bookon/db";
 import { loadConfig } from "./config";
-import { pollAll, type CountingHttpClient, type PollResult } from "./poll";
+import type { HttpClient } from "@bookon/core";
+import { pollAll, type PollResult } from "./poll";
 import { RecordingHttpClient } from "./record";
 
 const { positionals, values } = parseArgs({
@@ -53,7 +54,7 @@ function report(results: PollResult[]) {
   }
 }
 
-async function pollOnce(client: CountingHttpClient) {
+async function pollOnce(client: HttpClient) {
   const courses = await coursesToPoll(handle.db);
   console.log(`[worker] polling ${courses.length} course(s)`);
   report(await pollAll(handle.db, courses, client, { days }));

@@ -2,7 +2,7 @@
 
 Find a tee time at Perth public golf courses, then book with the club. See [`SPEC.md`](./SPEC.md) for the full product spec.
 
-**Status:** Milestone 2 done (search). See [`docs/m2-review.md`](./docs/m2-review.md).
+**Status:** Milestone 2 done (search), covering 26 WA courses. See [`docs/m2-review.md`](./docs/m2-review.md) and [`docs/courses.md`](./docs/courses.md).
 
 ## Layout
 

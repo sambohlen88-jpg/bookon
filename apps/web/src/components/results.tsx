@@ -194,3 +194,44 @@ function groupByDay(teeTimes: ResultTeeTime[]): Map<string, ResultTeeTime[]> {
   }
   return days;
 }
+
+/** One line per course that had nothing matching, so a 26 course search stays short. */
+export function NoMatchList({
+  results,
+  now,
+  others,
+}: {
+  results: CourseResult[];
+  now: Date;
+  others: boolean;
+}) {
+  return (
+    <details className="rounded-xl border border-border bg-background">
+      <summary className="flex min-h-12 cursor-pointer items-center px-4 py-3 text-sm font-medium">
+        No matching times at {results.length} {others ? "other " : ""}
+        {results.length === 1 ? "course" : "courses"}
+      </summary>
+      <ul className="border-t border-border px-4">
+        {results.map((r) => (
+          <li
+            key={r.course.id}
+            className="flex items-baseline justify-between gap-3 border-t border-border py-3 text-sm first:border-t-0"
+          >
+            <span>
+              {r.course.name} <span className="text-muted">· {r.course.suburb}</span>
+            </span>
+            <span className="shrink-0 text-xs text-muted">{courseStatus(r, now)}</span>
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+}
+
+function courseStatus(result: CourseResult, now: Date): string {
+  if (result.notices.some((n) => n.kind === "stale")) return "Couldn't check";
+  if (result.notices.some((n) => n.kind === "not-checked")) return "Not checked yet";
+  if (result.checkedAt) return `Checked ${formatAgo(result.checkedAt, now)}`;
+  if (result.notices.every((n) => n.kind === "not-open")) return "Times not out yet";
+  return "";
+}

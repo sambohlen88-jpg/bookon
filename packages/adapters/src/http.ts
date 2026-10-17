@@ -96,10 +96,14 @@ export class PoliteHttpClient implements HttpClient {
     return this.requests;
   }
 
-  async getText(url: string): Promise<string> {
+  /** `accept` overrides the Accept header, e.g. "application/json" for a JSON endpoint. */
+  async getText(
+    url: string,
+    { accept = "text/html,text/plain" }: { accept?: string } = {},
+  ): Promise<string> {
     if (this.options.respectRobots) await this.checkRobots(url);
     return this.withRetries(url, async () => {
-      const response = await this.send(url);
+      const response = await this.send(url, accept);
       if (!response.ok) throw new HttpError(url, response.status);
       return response.text();
     });
@@ -156,7 +160,7 @@ export class PoliteHttpClient implements HttpClient {
   }
 
   /** One request, queued behind earlier requests to the same host. */
-  private send(url: string): Promise<Response> {
+  private send(url: string, accept = "text/plain"): Promise<Response> {
     const host = new URL(url).host;
     const previous = this.hostQueues.get(host) ?? Promise.resolve();
     const next = previous
@@ -170,7 +174,7 @@ export class PoliteHttpClient implements HttpClient {
         this.lastRequestAt.set(host, this.options.now());
         this.requests++;
         const response = await this.options.fetch(url, {
-          headers: { "User-Agent": this.options.userAgent, Accept: "text/html,text/plain" },
+          headers: { "User-Agent": this.options.userAgent, Accept: accept },
           redirect: "follow",
           signal: AbortSignal.timeout(this.options.timeoutMs),
         });
