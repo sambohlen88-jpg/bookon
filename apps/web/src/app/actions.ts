@@ -1,6 +1,6 @@
 "use server";
 
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import {
@@ -23,23 +23,9 @@ import {
 import { createMailer, signInEmail } from "@bookon/email";
 import { authToken, clearAuthCookie, currentUser, setAuthCookie } from "@/lib/auth";
 import { getDb } from "@/lib/db";
+import { siteOrigin } from "@/lib/site";
 import { parseSearchForm, toSearchParams } from "@/lib/search-form";
 import { SESSION_COOKIE, validSessionId } from "@/lib/session";
-
-/**
- * This site's address, for links in emails. In production it comes from
- * BOOKON_SITE_URL, never the request, so a forged Host header can't put
- * another site's address in a sign-in email. Locally it's wherever the site
- * is running, even if BOOKON_SITE_URL was copied from .env.example.
- */
-async function siteOrigin(): Promise<string> {
-  if (process.env.NODE_ENV === "production") {
-    if (!process.env.BOOKON_SITE_URL) throw new Error("BOOKON_SITE_URL must be set in production");
-    return process.env.BOOKON_SITE_URL.replace(/\/$/, "");
-  }
-  const h = await headers();
-  return `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host") ?? "localhost:3000"}`;
-}
 
 export async function requestSignIn(formData: FormData) {
   const email = normaliseEmail(String(formData.get("email") ?? ""));

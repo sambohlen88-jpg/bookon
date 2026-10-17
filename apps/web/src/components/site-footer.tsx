@@ -40,7 +40,20 @@ export function SiteFooter() {
           </ul>
         </nav>
         <div>
-          <p className={heading}>Contact</p>
+          <p className={heading}>Golf clubs</p>
+          <ul className="mt-3 flex flex-col gap-2">
+            <li>
+              <Link href="/clubs" className={link}>
+                For golf clubs
+              </Link>
+            </li>
+            <li>
+              <Link href="/clubs/join" className={link}>
+                List your club
+              </Link>
+            </li>
+          </ul>
+          <p className={`${heading} mt-6`}>Contact</p>
           <ul className="mt-3 flex flex-col gap-2">
             <li>
               <a href="mailto:info@bookon.com.au" className={link}>

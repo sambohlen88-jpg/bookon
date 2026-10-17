@@ -2,7 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { addPerthDays, formatPerthDay, perthDate } from "@bookon/core";
-import { courseDetails, searchTeeTimes, type CourseDetails } from "@bookon/db";
+import {
+  approvedCoursePhotos,
+  courseDetails,
+  searchTeeTimes,
+  type CourseDetails,
+} from "@bookon/db";
 import { CourseArt } from "@/components/course-art";
 import { SiteHeader } from "@/components/site-header";
 import { primaryButton, secondaryButton } from "@/components/ui";
@@ -34,6 +39,7 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
   if (!course) notFound();
   const now = new Date();
   const days = await upcomingDays(db, course, now);
+  const photoId = (await approvedCoursePhotos(db)).get(course.id) ?? null;
   const form = (date: string, extra: { days?: number } = {}) => ({
     date,
     days: extra.days ?? 1,
@@ -73,10 +79,18 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
       />
       <main className="pb-12">
         <div className="relative">
-          <CourseArt slug={course.slug} wide eager className="h-44 w-full md:h-80" />
-          <span className="absolute bottom-2 right-3 rounded bg-background/80 px-2 py-0.5 text-xs text-muted">
-            Illustration
-          </span>
+          <CourseArt
+            slug={course.slug}
+            photoId={photoId}
+            wide
+            eager
+            className="h-44 w-full md:h-80"
+          />
+          {!photoId && (
+            <span className="absolute bottom-2 right-3 rounded bg-background/80 px-2 py-0.5 text-xs text-muted">
+              Illustration
+            </span>
+          )}
         </div>
         <div className="mx-auto max-w-md px-4 md:grid md:max-w-6xl md:grid-cols-[minmax(0,1fr)_360px] md:gap-12 md:px-6">
           <div>

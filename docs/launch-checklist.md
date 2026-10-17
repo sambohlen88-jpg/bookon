@@ -15,12 +15,16 @@ Data is read from public booking pages with the owner's approval, ahead of forma
 
 - [ ] Create the **info@bookon.com.au** mailbox. It is already in the worker's user agent, so clubs may write to it.
 - [ ] Domain and brand.
+- [ ] **Club listing terms and approvals** (the wording on the onboarding Approvals step, in `packages/db/src/clubs.ts`), reviewed by a lawyer. Changing the wording means bumping `CONSENTS_VERSION`.
+- [ ] Decide who reviews new club listings and how fast. The pages promise clubs "usually within a week".
 - [ ] Privacy policy and terms pages, reviewed by a lawyer (Spam Act 2003 and Australian Privacy Principles; SPEC section 10). They must cover accounts (email address, favourites, alerts, the list of tee times looked at) and how to delete an account.
 
 ## Hosting and operations
 
 - [ ] Hosting: Vercel (website), a hosted Postgres such as Supabase or Neon, and Railway or Fly for the worker.
 - [ ] The worker running on a schedule, so results stay fresh.
+- [ ] `BOOKON_SITE_URL` set on the website host and the worker. Without it, signing in and starting a club listing fail on purpose, as emailed links must never use an address taken from the request.
+- [ ] `BOOKON_OWNER_EMAIL` set to whoever reviews new club listings (otherwise they go to info@bookon.com.au).
 - [ ] `CLICK_SIGNING_SECRET` set on the website host **and** the worker, the same value on both (`openssl rand -base64 32`). Without it, Book clicks still work but aren't tracked.
 - [ ] **Email sending (Postmark).** Until then, sign-in links and alerts go to the local outbox only, so nobody can sign in on a hosted site.
   - Sign up at postmarkapp.com and create a server. Copy its Server API token.

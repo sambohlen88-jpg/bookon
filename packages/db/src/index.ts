@@ -8,3 +8,4 @@ export * from "./accounts";
 export * from "./alerts";
 export * from "./outbox";
 export * from "./push";
+export * from "./clubs";

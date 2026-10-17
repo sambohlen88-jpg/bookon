@@ -1,7 +1,7 @@
 import { courseArtUrl } from "@/lib/course-art";
 
 /**
- * A course's illustrated landscape. A cached image rather than inline
+ * A course's approved photo, or its illustrated landscape. A cached image rather than inline
  * drawing, so phones don't download pictures only desktop shows (lazy images
  * that are hidden are never fetched).
  */
@@ -10,6 +10,7 @@ export function CourseArt({
   className = "",
   wide = false,
   eager = false,
+  photoId = null,
 }: {
   slug: string;
   className?: string;
@@ -17,11 +18,13 @@ export function CourseArt({
   wide?: boolean;
   /** At the top of the page: load straight away. */
   eager?: boolean;
+  /** A photo the club supplied and BookOn approved, shown instead of the drawing. */
+  photoId?: string | null;
 }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={courseArtUrl(slug, wide)}
+      src={photoId ? `/photos/${photoId}.webp` : courseArtUrl(slug, wide)}
       alt=""
       loading={eager ? "eager" : "lazy"}
       decoding="async"

@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   bigserial,
   boolean,
+  customType,
   date,
   doublePrecision,
   index,
@@ -333,3 +334,153 @@ export const appSettings = pgTable("app_settings", {
   value: jsonb("value").notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/* Club onboarding (Milestone 7). */
+
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({
+  dataType: () => "bytea",
+});
+
+export const clubApplicationStatusEnum = pgEnum("club_application_status", [
+  /** Being filled in. The club can come back to it with its private link. */
+  "draft",
+  /** Sent to BookOn, waiting for review. */
+  "submitted",
+  "approved",
+  "declined",
+  "withdrawn",
+]);
+
+export const paymentsInterestEnum = pgEnum("payments_interest", ["yes", "maybe", "no"]);
+
+/**
+ * A club signing up. The answers that aren't prices or photos live in
+ * `details` (typed as ClubApplicationDetails in clubs.ts); once approved,
+ * they are copied into clubs and courses.
+ */
+export const clubApplications = pgTable(
+  "club_applications",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    createdAt: createdAt(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }),
+    status: clubApplicationStatusEnum("status").notNull().default("draft"),
+    /** Hash of the private link the club uses to come back. */
+    resumeTokenHash: text("resume_token_hash").notNull().unique(),
+    clubName: text("club_name").notNull(),
+    contactName: text("contact_name").notNull(),
+    contactEmail: text("contact_email").notNull(),
+    details: jsonb("details").$type<Record<string, unknown>>().notNull().default({}),
+    /** Each approval the club gave: what it said, who gave it and when. */
+    consents: jsonb("consents").$type<Record<string, unknown>>().notNull().default({}),
+    paymentsInterest: paymentsInterestEnum("payments_interest"),
+    /** The club this became, once approved. */
+    clubId: uuid("club_id").references(() => clubs.id),
+    reviewNotes: text("review_notes"),
+  },
+  (t) => [index("club_applications_email_idx").on(t.contactEmail, t.createdAt)],
+);
+
+export const rateCategoryEnum = pgEnum("rate_category", [
+  "green_fee",
+  "cart",
+  "club_hire",
+  "trolley",
+  "range",
+  "deal",
+  "membership",
+  "other",
+]);
+export const rateDaysEnum = pgEnum("rate_days", [
+  "any",
+  /** Monday to Friday. */
+  "weekday",
+  "weekend",
+  "public_holiday",
+  /** The days in `days_of_week`. */
+  "custom",
+]);
+export const ratePlayerEnum = pgEnum("rate_player", [
+  "any",
+  "adult",
+  "senior",
+  "concession",
+  "junior",
+  "student",
+  "member_guest",
+]);
+export const rateUnitEnum = pgEnum("rate_unit", [
+  "per_player",
+  "per_cart",
+  "per_set",
+  "per_group",
+  "per_item",
+]);
+
+/**
+ * A club's price list: green fees, carts, club hire, deals and so on, with
+ * when each applies. Structured so BookOn can quote and one day take payment.
+ */
+export const clubRates = pgTable(
+  "club_rates",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    applicationId: uuid("application_id").references(() => clubApplications.id, {
+      onDelete: "cascade",
+    }),
+    clubId: uuid("club_id").references(() => clubs.id),
+    /** Null when it applies at every course the club has. */
+    courseName: text("course_name"),
+    sort: smallint("sort").notNull().default(0),
+    category: rateCategoryEnum("category").notNull(),
+    name: text("name").notNull(),
+    /** 9 or 18, or null when holes don't matter (club hire, a deal). */
+    holes: smallint("holes"),
+    days: rateDaysEnum("days").notNull().default("any"),
+    /** For `custom` days: 1 = Monday … 7 = Sunday. */
+    daysOfWeek: smallint("days_of_week").array(),
+    /** Perth times, e.g. twilight from 15:00. */
+    timeFrom: time("time_from"),
+    timeTo: time("time_to"),
+    player: ratePlayerEnum("player").notNull().default("any"),
+    priceCents: integer("price_cents").notNull(),
+    unit: rateUnitEnum("unit").notNull().default("per_player"),
+    gstIncluded: boolean("gst_included").notNull().default(true),
+    /** Seasonal prices and deals: Perth dates, inclusive. */
+    validFrom: date("valid_from"),
+    validTo: date("valid_to"),
+    notes: text("notes"),
+  },
+  (t) => [index("club_rates_application_idx").on(t.applicationId, t.sort)],
+);
+
+export const photoStatusEnum = pgEnum("photo_status", ["pending", "approved", "declined"]);
+
+/** Photos a club uploaded. Shown on the site only once BookOn approves them. */
+export const clubPhotos = pgTable(
+  "club_photos",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    applicationId: uuid("application_id")
+      .notNull()
+      .references(() => clubApplications.id, { onDelete: "cascade" }),
+    /** The course it shows, once approved. */
+    courseId: uuid("course_id").references(() => courses.id, { onDelete: "set null" }),
+    createdAt: createdAt(),
+    status: photoStatusEnum("status").notNull().default("pending"),
+    contentType: text("content_type").notNull(),
+    width: integer("width").notNull(),
+    height: integer("height").notNull(),
+    /** Resized, re-encoded and stripped of location data before saving. */
+    data: bytea("data").notNull(),
+    caption: text("caption"),
+    credit: text("credit"),
+    /** The club confirmed it owns the photo or may share it. */
+    rightsConfirmedBy: text("rights_confirmed_by").notNull(),
+  },
+  (t) => [
+    index("club_photos_application_idx").on(t.applicationId),
+    index("club_photos_course_idx").on(t.courseId, t.status),
+  ],
+);

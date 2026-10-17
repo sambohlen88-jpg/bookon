@@ -35,6 +35,9 @@ export async function SiteHeader() {
             <Link href="/courses" className={navLink}>
               Courses
             </Link>
+            <Link href="/clubs" className={navLink}>
+              For golf clubs
+            </Link>
           </nav>
           <Link
             href={user ? "/account" : "/signin"}

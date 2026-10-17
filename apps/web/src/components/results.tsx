@@ -29,6 +29,7 @@ export function CourseResults({
   dayHref,
   courseHref,
   bookHref,
+  photoId = null,
 }: {
   result: CourseResult;
   multiDay: boolean;
@@ -42,6 +43,8 @@ export function CourseResults({
   dayHref: (date: string) => string;
   /** The same search for just this course, for "more days" links. */
   courseHref: string;
+  /** The course's approved photo, if the club supplied one. */
+  photoId?: string | null;
   /** The tracked /go link for a tee time. */
   bookHref: (teeTime: ResultTeeTime) => string;
 }) {
@@ -60,6 +63,7 @@ export function CourseResults({
       <div className="flex items-start justify-between gap-3">
         <CourseArt
           slug={course.slug}
+          photoId={photoId}
           className="hidden h-16 w-28 shrink-0 overflow-hidden rounded-lg lg:block"
         />
         <div className="min-w-0 flex-1">

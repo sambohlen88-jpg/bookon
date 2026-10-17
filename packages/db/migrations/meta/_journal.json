@@ -29,6 +29,13 @@
       "when": 1792254894000,
       "tag": "0003_push_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792257346180,
+      "tag": "0004_club_onboarding",
+      "breakpoints": true
     }
   ]
 }

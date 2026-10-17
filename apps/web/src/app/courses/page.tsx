@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { listCourseDetails } from "@bookon/db";
+import { approvedCoursePhotos, listCourseDetails } from "@bookon/db";
 import { CourseCard } from "@/components/course-card";
 import { SiteHeader } from "@/components/site-header";
 import { getDb } from "@/lib/db";
@@ -13,6 +13,7 @@ export const metadata: Metadata = {
 
 export default async function CoursesPage() {
   const courses = await listCourseDetails(getDb());
+  const photos = await approvedCoursePhotos(getDb());
   const byArea = AREAS.map((area) => ({
     area,
     courses: courses.filter((c) => courseArea(c.slug) === area),
@@ -34,13 +35,13 @@ export default async function CoursesPage() {
             </h2>
             <div className="mt-4 grid gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-4">
               {group.courses.map((c) => (
-                <CourseCard key={c.slug} course={c} />
+                <CourseCard key={c.slug} course={c} photoId={photos.get(c.id)} />
               ))}
             </div>
           </section>
         ))}
         <p className="mt-10 text-sm text-muted">
-          Pictures are illustrations, not photos of the courses.
+          Pictures are drawings unless the club has given us a photo.
         </p>
       </main>
     </>

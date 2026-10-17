@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { listCourseDetails, type CourseDetails } from "@bookon/db";
+import { approvedCoursePhotos, listCourseDetails, type CourseDetails } from "@bookon/db";
 import { CourseArt } from "@/components/course-art";
 import { CourseCard } from "@/components/course-card";
 import { SearchForm } from "@/components/search-form";
@@ -26,6 +26,7 @@ export default async function Home() {
   const now = new Date();
   // The form must still show if the database is down; search will explain.
   const courses: CourseDetails[] = await listCourseDetails(getDb()).catch(() => []);
+  const photos = await approvedCoursePhotos(getDb()).catch(() => new Map<string, string>());
   const featured = FEATURED.map((slug) => courses.find((c) => c.slug === slug)).filter(
     (c): c is CourseDetails => Boolean(c),
   );
@@ -127,7 +128,7 @@ export default async function Home() {
               </div>
               <div className="mt-8 grid grid-cols-4 gap-6">
                 {featured.map((c) => (
-                  <CourseCard key={c.slug} course={c} />
+                  <CourseCard key={c.slug} course={c} photoId={photos.get(c.id)} />
                 ))}
               </div>
             </div>

@@ -10,13 +10,13 @@ import type { AlertMatch, SearchParams } from "@bookon/db";
 import type { EmailMessage } from "./mailer";
 
 /** The sender details every BookOn email ends with (Spam Act 2003: identify the sender). */
-const SENDER = "BookOn · Perth, Western Australia · info@bookon.com.au";
+export const SENDER = "BookOn · Perth, Western Australia · info@bookon.com.au";
 
-function escape(text: string): string {
+export function escape(text: string): string {
   return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
-function layout(body: string, footer: string): string {
+export function layout(body: string, footer: string): string {
   return `<!doctype html><html><body style="margin:0;background:#f3f6f4;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#14211a">
 <div style="max-width:520px;margin:0 auto;padding:24px 16px">
 <p style="font-size:20px;font-weight:700;color:#1f6f43;margin:0 0 16px">BookOn</p>
@@ -25,7 +25,7 @@ function layout(body: string, footer: string): string {
 </div></body></html>`;
 }
 
-function button(href: string, label: string): string {
+export function button(href: string, label: string): string {
   return `<a href="${escape(href)}" style="display:inline-block;background:#1f6f43;color:#fff;text-decoration:none;font-weight:600;padding:12px 20px;border-radius:8px">${escape(label)}</a>`;
 }
 

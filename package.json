@@ -18,6 +18,7 @@
     "db:dev": "pnpm --filter @bookon/db dev",
     "stats": "pnpm --filter @bookon/db stats",
     "alerts": "pnpm --filter @bookon/worker alerts",
+    "clubs": "pnpm --filter @bookon/worker clubs",
     "push:keys": "pnpm --filter @bookon/email exec web-push generate-vapid-keys"
   },
   "devDependencies": {

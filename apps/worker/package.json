@@ -9,6 +9,7 @@
     "poll": "tsx src/index.ts poll",
     "record": "tsx src/index.ts record",
     "alerts": "tsx src/index.ts alerts",
+    "clubs": "tsx src/clubs-cli.ts",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit",
     "test": "vitest run"

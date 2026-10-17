@@ -13,11 +13,12 @@
   "dependencies": {
     "@bookon/core": "workspace:*",
     "@bookon/db": "workspace:*",
+    "@bookon/email": "workspace:*",
     "next": "15.5.28",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "server-only": "^0.0.1",
-    "@bookon/email": "workspace:*"
+    "sharp": "0.35.5"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

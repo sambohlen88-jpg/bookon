@@ -3,6 +3,7 @@ import Link from "next/link";
 import { formatPerthDay } from "@bookon/core";
 import { cookies, headers } from "next/headers";
 import {
+  approvedCoursePhotos,
   courseIdsForSlugs,
   listFavourites,
   listPushSubscriptions,
@@ -70,6 +71,7 @@ export default async function SearchPage({
       : false;
   const offerPush = alertStatus === "created" && user && !hasDevices ? await pushPublicKey() : null;
   const result = await searchTeeTimes(db, params, now);
+  const photos = await approvedCoursePhotos(db);
   await recordSearch(db, params, result, now);
   const multiDay = params.dateFrom !== params.dateTo;
   const withTimes = result.courses.filter((c) => c.teeTimes.length > 0).length;
@@ -170,6 +172,7 @@ export default async function SearchPage({
                 back={here}
                 dayHref={(date) => searchHref({ ...form, date, days: 1, courses: [r.course.slug] })}
                 courseHref={searchHref({ ...form, courses: [r.course.slug] })}
+                photoId={photos.get(r.course.id)}
                 bookHref={(t) =>
                   bookLink({
                     courseId: r.course.id,

@@ -2,7 +2,7 @@
 
 Find a tee time at Perth public golf courses, then book with the club. See [`SPEC.md`](./SPEC.md) for the full product spec.
 
-**Status:** Milestone 6 done (the full website: desktop design, course pages and pictures), covering 26 WA courses. See [`docs/m6-review.md`](./docs/m6-review.md) and [`docs/courses.md`](./docs/courses.md).
+**Status:** Milestone 7 done (club onboarding with a full price list), covering 26 WA courses. See [`docs/m7-review.md`](./docs/m7-review.md) and [`docs/courses.md`](./docs/courses.md).
 
 ## Layout
 
@@ -28,6 +28,7 @@ pnpm --filter @bookon/worker poll          # fetch live tee times, then send ale
 pnpm dev                                   # website on http://localhost:3000
 pnpm alerts                                # send alert emails from stored times, without polling
 pnpm stats                                 # searches, impressions and clicks per course
+pnpm clubs                                 # club listings waiting for review (see docs/m7-review.md)
 ```
 
 Locally, emails (sign-in links and alerts) are not sent. Open http://localhost:3000/dev/outbox to read them.
