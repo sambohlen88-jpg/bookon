@@ -4,6 +4,7 @@ import { formatPerthDay } from "@bookon/core";
 import { cookies, headers } from "next/headers";
 import {
   courseIdsForSlugs,
+  listFavourites,
   listSearchableCourses,
   logSearch,
   searchTeeTimes,
@@ -11,10 +12,13 @@ import {
   type SearchParams,
   type SearchResult,
 } from "@bookon/db";
+import { createAlertFromSearch } from "@/app/actions";
 import { RefreshBar } from "@/components/refresh-bar";
 import { CourseResults, NoMatchList } from "@/components/results";
 import { SearchForm } from "@/components/search-form";
 import { SiteHeader } from "@/components/site-header";
+import { Notice, primaryButton } from "@/components/ui";
+import { currentUser } from "@/lib/auth";
 import { isBot } from "@/lib/bots";
 import { bookLink } from "@/lib/click-token";
 import { getDb } from "@/lib/db";
@@ -41,12 +45,21 @@ export default async function SearchPage({
   const now = new Date();
   const db = getDb();
   const courses = await listSearchableCourses(db);
-  const form = parseSearchForm(
-    await searchParams,
+  const query = await searchParams;
+  const user = await currentUser();
+  const favourites = user ? await listFavourites(db, user.id) : [];
+  const favouriteIds = new Set(favourites.map((c) => c.id));
+  const parsed = parseSearchForm(
+    query,
     now,
     courses.map((c) => c.slug),
   );
+  // "My courses only" swaps in the golfer's favourites.
+  const mine = query.mine === "1" && favourites.length > 0;
+  const form = mine ? { ...parsed, courses: favourites.map((c) => c.slug) } : parsed;
   const params = toSearchParams(form, now);
+  const here = searchHref(form);
+  const alertStatus = typeof query.alert === "string" ? query.alert : undefined;
   const result = await searchTeeTimes(db, params, now);
   await recordSearch(db, params, result, now);
   const multiDay = params.dateFrom !== params.dateTo;
@@ -67,7 +80,13 @@ export default async function SearchPage({
             <span className="shrink-0 text-sm font-semibold text-brand">Change</span>
           </summary>
           <div className="px-4 pb-4">
-            <SearchForm values={form} courses={courses} now={now} />
+            <SearchForm
+              values={form}
+              courses={courses}
+              now={now}
+              favourites={favourites.length}
+              mine={mine}
+            />
           </div>
         </details>
 
@@ -77,7 +96,32 @@ export default async function SearchPage({
             : `${result.totalTeeTimes.toLocaleString("en-AU")} tee ${result.totalTeeTimes === 1 ? "time" : "times"} at ${withTimes} ${withTimes === 1 ? "course" : "courses"}`}
         </h1>
 
+        {alertStatus === "created" && (
+          <div className="mt-4">
+            <Notice tone="info">
+              Alert set. We&apos;ll email {user?.email ?? "you"} when a new time appears.{" "}
+              <Link href="/account" className="underline">
+                Manage alerts
+              </Link>
+            </Notice>
+          </div>
+        )}
+        {alertStatus === "limit" && (
+          <div className="mt-4">
+            <Notice tone="warning">
+              You already have 10 alerts. Delete one in{" "}
+              <Link href="/account" className="underline">
+                My account
+              </Link>{" "}
+              to add another.
+            </Notice>
+          </div>
+        )}
+
         {result.totalTeeTimes === 0 && <EmptyState form={form} />}
+        {result.totalTeeTimes === 0 && alertStatus !== "created" && (
+          <AlertCard here={here} signedIn={Boolean(user)} empty />
+        )}
 
         <div className="mt-4 flex flex-col gap-4">
           {cards.map((r) => (
@@ -87,6 +131,8 @@ export default async function SearchPage({
               multiDay={multiDay}
               oneCourse={result.courses.length === 1}
               now={now}
+              favourite={user ? favouriteIds.has(r.course.id) : null}
+              back={here}
               dayHref={(date) => searchHref({ ...form, date, days: 1, courses: [r.course.slug] })}
               bookHref={(t) =>
                 bookLink({
@@ -102,6 +148,12 @@ export default async function SearchPage({
             <NoMatchList results={folded} now={now} others={cards.length > 0} />
           )}
         </div>
+
+        {result.totalTeeTimes > 0 && alertStatus !== "created" && (
+          <div className="mt-6">
+            <AlertCard here={here} signedIn={Boolean(user)} />
+          </div>
+        )}
 
         <p className="mt-8 pb-16 text-xs text-muted">
           Times and prices come from each club&apos;s booking page and can change. You book and pay
@@ -164,12 +216,42 @@ function EmptyState({ form }: { form: SearchFormValues }) {
           </ul>
         </div>
       )}
-      <div className="rounded-xl border border-border bg-surface p-4">
-        <h2 className="font-semibold">Get told when a time opens up</h2>
-        <p className="mt-1 text-sm text-muted">
-          Alerts are coming soon. We&apos;ll email you when a matching tee time appears.
-        </p>
-      </div>
+    </div>
+  );
+}
+
+/** Save this search as an alert, or sign in first and come back. */
+function AlertCard({
+  here,
+  signedIn,
+  empty = false,
+}: {
+  here: string;
+  signedIn: boolean;
+  empty?: boolean;
+}) {
+  return (
+    <div className={`${empty ? "mt-4 " : ""}rounded-xl border border-border bg-surface p-4`}>
+      <h2 className="font-semibold">
+        {empty ? "Get told when a time opens up" : "Want something else?"}
+      </h2>
+      <p className="mt-1 text-sm text-muted">
+        {empty
+          ? "We'll check for cancellations and new times, and email you when one matches this search."
+          : "We'll email you when a new time matches this search, like a cancellation."}
+      </p>
+      {signedIn ? (
+        <form action={createAlertFromSearch} className="mt-3">
+          <input type="hidden" name="query" value={here.replace(/^\/search\?/, "")} />
+          <button type="submit" className={primaryButton}>
+            Tell me when a time opens up
+          </button>
+        </form>
+      ) : (
+        <Link href={`/signin?next=${encodeURIComponent(here)}`} className={`${primaryButton} mt-3`}>
+          Sign in to set an alert
+        </Link>
+      )}
     </div>
   );
 }
@@ -181,6 +263,8 @@ async function recordSearch(db: Database, params: SearchParams, result: SearchRe
   if (!sessionId || isBot(requestHeaders.get("user-agent"))) return;
   if (requestHeaders.get("next-router-prefetch") || requestHeaders.get("purpose") === "prefetch")
     return;
+  // A star or alert button re-renders the page; that isn't a new search.
+  if (requestHeaders.get("next-action")) return;
   try {
     await logSearch(db, {
       sessionId,

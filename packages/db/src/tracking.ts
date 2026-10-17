@@ -84,6 +84,8 @@ export interface ClickLog {
   startTime: Date | null;
   source: "search" | "alert" | "directory";
   notificationId?: string | null;
+  /** The signed-in golfer, for their previous visits. */
+  userId?: string | null;
   now: Date;
 }
 
@@ -114,6 +116,7 @@ export async function logClick(db: Database, log: ClickLog): Promise<boolean> {
     startTime: log.startTime,
     source: log.source,
     notificationId: log.notificationId ?? null,
+    userId: log.userId ?? null,
   });
   return true;
 }

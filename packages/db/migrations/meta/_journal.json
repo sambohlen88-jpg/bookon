@@ -8,6 +8,20 @@
       "when": 1792235105887,
       "tag": "0000_initial_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792252401868,
+      "tag": "0001_accounts_and_alerts",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792253348361,
+      "tag": "0002_alert_clicks_survive_deletion",
+      "breakpoints": true
     }
   ]
 }

@@ -8,6 +8,7 @@
     "start": "tsx src/index.ts run",
     "poll": "tsx src/index.ts poll",
     "record": "tsx src/index.ts record",
+    "alerts": "tsx src/index.ts alerts",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit",
     "test": "vitest run"
@@ -15,7 +16,8 @@
   "dependencies": {
     "@bookon/core": "workspace:*",
     "@bookon/adapters": "workspace:*",
-    "@bookon/db": "workspace:*"
+    "@bookon/db": "workspace:*",
+    "@bookon/email": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

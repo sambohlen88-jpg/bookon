@@ -15,13 +15,18 @@ Data is read from public booking pages with the owner's approval, ahead of forma
 
 - [ ] Create the **info@bookon.com.au** mailbox. It is already in the worker's user agent, so clubs may write to it.
 - [ ] Domain and brand.
-- [ ] Privacy policy and terms pages, reviewed by a lawyer (Spam Act 2003 and Australian Privacy Principles; SPEC section 10).
+- [ ] Privacy policy and terms pages, reviewed by a lawyer (Spam Act 2003 and Australian Privacy Principles; SPEC section 10). They must cover accounts (email address, favourites, alerts, the list of tee times looked at) and how to delete an account.
 
 ## Hosting and operations
 
 - [ ] Hosting: Vercel (website), a hosted Postgres such as Supabase or Neon, and Railway or Fly for the worker.
 - [ ] The worker running on a schedule, so results stay fresh.
-- [ ] `CLICK_SIGNING_SECRET` set on the website host (`openssl rand -base64 32`). Without it, Book clicks still work but aren't tracked.
+- [ ] `CLICK_SIGNING_SECRET` set on the website host **and** the worker, the same value on both (`openssl rand -base64 32`). Without it, Book clicks still work but aren't tracked.
+- [ ] **Email sending (Postmark).** Until then, sign-in links and alerts go to the local outbox only, so nobody can sign in on a hosted site.
+  - Sign up at postmarkapp.com and create a server. Copy its Server API token.
+  - Add bookon.com.au as a sender domain and add the DKIM and Return-Path DNS records Postmark shows. Add a DMARC record if the domain has none.
+  - Ask Postmark to approve the account for sending to anyone (new accounts can only email their own domain).
+  - Set `EMAIL_PROVIDER=postmark`, `POSTMARK_SERVER_TOKEN`, `EMAIL_FROM` and `BOOKON_SITE_URL` on the website host and the worker.
 - [ ] Error monitoring (Sentry), uptime checks, rate limits on public pages, database backups.
 
 ## Product

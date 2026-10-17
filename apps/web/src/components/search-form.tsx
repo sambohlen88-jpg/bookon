@@ -20,10 +20,16 @@ export function SearchForm({
   values,
   courses,
   now,
+  favourites = 0,
+  mine = false,
 }: {
   values: SearchFormValues;
   courses: SearchableCourse[];
   now: Date;
+  /** How many courses the signed-in golfer has starred. */
+  favourites?: number;
+  /** Search only those courses. */
+  mine?: boolean;
 }) {
   const today = perthDate(now);
   return (
@@ -102,6 +108,21 @@ export function SearchForm({
           { value: "18", label: "18" },
         ]}
       />
+
+      {favourites > 0 && (
+        <label className="flex min-h-11 items-center gap-3 text-base">
+          <input
+            type="checkbox"
+            name="mine"
+            value="1"
+            defaultChecked={mine}
+            className="size-5 accent-brand"
+          />
+          <span>
+            My courses only <span className="text-muted">· {favourites} starred</span>
+          </span>
+        </label>
+      )}
 
       {courses.length > 1 && (
         <details className="rounded-lg border border-border">

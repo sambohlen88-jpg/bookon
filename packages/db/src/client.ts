@@ -31,8 +31,11 @@ function migrationsFolder(): string {
  */
 export function createDb(url: string): DbHandle {
   if (url.startsWith("postgres://") || url.startsWith("postgresql://")) {
+    // The local PGlite server is one database session, so queries from two connections can
+    // interleave and break each other. One connection keeps them in order.
+    const max = url === LOCAL_DATABASE_URL ? 1 : 5;
     // Silence NOTICEs such as "schema already exists, skipping" on every migrate.
-    const sql = postgres(url, { max: 5, onnotice: () => {} });
+    const sql = postgres(url, { max, onnotice: () => {} });
     const db = drizzlePostgres(sql, { schema });
     return {
       db: db as unknown as Database,

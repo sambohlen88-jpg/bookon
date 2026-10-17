@@ -16,7 +16,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "db:dev": "pnpm --filter @bookon/db dev",
-    "stats": "pnpm --filter @bookon/db stats"
+    "stats": "pnpm --filter @bookon/db stats",
+    "alerts": "pnpm --filter @bookon/worker alerts"
   },
   "devDependencies": {
     "prettier": "^3.3.3"

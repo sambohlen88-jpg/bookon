@@ -29,7 +29,13 @@ const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull(
 export const platformEnum = pgEnum("platform", ["miclub", "quick18", "chronogolf", "manual"]);
 export const checkStatusEnum = pgEnum("check_status", ["ok", "error"]);
 export const contactTypeEnum = pgEnum("contact_type", ["email", "push"]);
-export const alertStatusEnum = pgEnum("alert_status", ["pending", "active", "paused", "deleted"]);
+export const alertStatusEnum = pgEnum("alert_status", [
+  "pending",
+  "active",
+  "paused",
+  "deleted",
+  "ended",
+]);
 export const clickSourceEnum = pgEnum("click_source", ["search", "alert", "directory"]);
 
 /** A venue we report to. One club can have several bookable courses. */
@@ -167,9 +173,11 @@ export const dailyImpressions = pgTable(
 export const alerts = pgTable("alerts", {
   id: uuid("id").primaryKey().defaultRandom(),
   createdAt: createdAt(),
+  /** The golfer's account. Alerts need one, so the email address is already confirmed. */
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
   contactType: contactTypeEnum("contact_type").notNull(),
   contactValue: text("contact_value").notNull(),
-  /** Same shape as a search: dates, time window, players, holes, courses. */
+  /** A `SearchParams`: dates, time window, players, holes, courses. Ends after its last date. */
   filters: jsonb("filters").$type<Record<string, unknown>>().notNull(),
   /** `pending` until the email address is confirmed (double opt-in). */
   status: alertStatusEnum("status").notNull().default("pending"),
@@ -192,7 +200,10 @@ export const notifications = pgTable(
     holes: smallint("holes").notNull(),
     sentAt: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
     channel: contactTypeEnum("channel").notNull(),
-    clickToken: text("click_token").notNull().unique(),
+    /** The signed /go token in the email. Null for baseline rows. */
+    clickToken: text("click_token").unique(),
+    /** Already showing when the alert was set up, so never emailed. */
+    baseline: boolean("baseline").notNull().default(false),
   },
   // "Notify once per matching slot".
   (t) => [
@@ -206,12 +217,16 @@ export const clickEvents = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     createdAt: createdAt(),
     anonymousSessionId: text("anonymous_session_id"),
+    /** Set when a signed-in golfer clicks, for their "previous visits". Cleared on request. */
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
     courseId: uuid("course_id")
       .notNull()
       .references(() => courses.id),
     startTime: timestamp("start_time", { withTimezone: true }),
     source: clickSourceEnum("source").notNull(),
-    notificationId: uuid("notification_id").references(() => notifications.id),
+    notificationId: uuid("notification_id").references(() => notifications.id, {
+      onDelete: "set null",
+    }),
   },
   (t) => [index("click_events_course_created_idx").on(t.courseId, t.createdAt)],
 );
@@ -226,4 +241,65 @@ export const clubReports = pgTable("club_reports", {
   createdAt: createdAt(),
   /** The figures as generated, so a sent report can be reproduced exactly. */
   data: jsonb("data").$type<Record<string, unknown>>().notNull(),
+});
+
+/* Accounts (Milestone 4). Sign-in is by emailed link; there are no passwords. */
+
+export const users = pgTable("users", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  /** Stored lower case. */
+  email: text("email").notNull().unique(),
+  createdAt: createdAt(),
+  lastSignInAt: timestamp("last_sign_in_at", { withTimezone: true }),
+});
+
+/** One-use sign-in links. Only a hash of the token is stored. */
+export const signInTokens = pgTable(
+  "sign_in_tokens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    email: text("email").notNull(),
+    tokenHash: text("token_hash").notNull().unique(),
+    createdAt: createdAt(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    /** Where to go after signing in, e.g. back to a search. A path on this site. */
+    next: text("next"),
+  },
+  (t) => [index("sign_in_tokens_email_created_idx").on(t.email, t.createdAt)],
+);
+
+/** A signed-in device. Only a hash of the cookie value is stored. */
+export const userSessions = pgTable("user_sessions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  tokenHash: text("token_hash").notNull().unique(),
+  createdAt: createdAt(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+});
+
+export const favourites = pgTable(
+  "favourites",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    courseId: uuid("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.courseId] })],
+);
+
+/** Emails "sent" in development, shown at /dev/outbox instead of going out. */
+export const outboxEmails = pgTable("outbox_emails", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  createdAt: createdAt(),
+  to: text("to").notNull(),
+  subject: text("subject").notNull(),
+  text: text("text").notNull(),
+  html: text("html").notNull(),
 });

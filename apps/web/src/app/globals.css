@@ -18,6 +18,7 @@
   --info-bg: #eef4fb;
   --info-fg: #234a73;
   --info-border: #c9dbef;
+  --star: #b7791f;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -35,6 +36,7 @@
     --info-bg: #142231;
     --info-fg: #b9d3ef;
     --info-border: #29425d;
+    --star: #f2c14e;
   }
 }
 
@@ -52,6 +54,7 @@
   --color-info-bg: var(--info-bg);
   --color-info-fg: var(--info-fg);
   --color-info-border: var(--info-border);
+  --color-star: var(--star);
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 

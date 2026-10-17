@@ -1,4 +1,5 @@
 import { cookies, headers } from "next/headers";
+import { currentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { resolveGo } from "@/lib/go";
 import { SESSION_COOKIE, validSessionId } from "@/lib/session";
@@ -9,6 +10,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
   const { token } = await params;
   const { location } = await resolveGo(getDb(), token, {
     sessionId: validSessionId((await cookies()).get(SESSION_COOKIE)?.value),
+    userId: (await currentUser())?.id ?? null,
     userAgent: (await headers()).get("user-agent"),
     now: new Date(),
   });

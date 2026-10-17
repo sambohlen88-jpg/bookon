@@ -10,7 +10,15 @@ const target: ClickTarget = {
 
 describe("click tokens", () => {
   it("round-trip", () => {
-    expect(readClickToken(createClickToken(target, "k1"), "k1")).toEqual(target);
+    expect(readClickToken(createClickToken(target, "k1"), "k1")).toEqual({
+      ...target,
+      notificationId: null,
+    });
+  });
+
+  it("carry the alert email a click came from", () => {
+    const fromAlert = { ...target, source: "alert" as const, notificationId: "n-1" };
+    expect(readClickToken(createClickToken(fromAlert, "k1"), "k1")).toEqual(fromAlert);
   });
 
   it("reject a token signed with another key", () => {

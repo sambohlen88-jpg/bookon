@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { formatAgo, formatPerthDay, formatPerthTime, formatPrice } from "@bookon/core";
 import type { CourseResult, DayNotice, ResultTeeTime } from "@bookon/db";
+import { toggleFavourite } from "@/app/actions";
 
 /**
  * Keep pages light on mobile data: a two week search can match 1,500 times.
@@ -19,6 +20,8 @@ export function CourseResults({
   multiDay,
   oneCourse,
   now,
+  favourite,
+  back,
   dayHref,
   bookHref,
 }: {
@@ -26,6 +29,10 @@ export function CourseResults({
   multiDay: boolean;
   oneCourse: boolean;
   now: Date;
+  /** Whether the golfer has starred this course, or null when signed out. */
+  favourite: boolean | null;
+  /** This search, to come back to after starring or signing in. */
+  back: string;
   /** A search for just this course on one day, for "see all" links. */
   dayHref: (date: string) => string;
   /** The tracked /go link for a tee time. */
@@ -41,11 +48,14 @@ export function CourseResults({
       aria-labelledby={headingId}
       className="rounded-xl border border-border bg-background p-4"
     >
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 id={headingId} className="text-lg font-semibold leading-tight">
-          {course.name}
-        </h2>
-        <span className="shrink-0 text-sm text-muted">{course.suburb}</span>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 id={headingId} className="text-lg font-semibold leading-tight">
+            {course.name}
+          </h2>
+          <p className="text-sm text-muted">{course.suburb}</p>
+        </div>
+        <FavouriteStar courseId={course.id} name={course.name} on={favourite} back={back} />
       </div>
       {checkedAt && (
         <p className="mt-1 text-xs text-muted">
@@ -101,6 +111,50 @@ export function CourseResults({
         </div>
       ))}
     </section>
+  );
+}
+
+const starClass =
+  "-mr-2 -mt-2 flex size-11 shrink-0 items-center justify-center rounded-lg text-2xl leading-none";
+
+/** Star a course to find it fast. Signed out, the star leads to sign in. */
+function FavouriteStar({
+  courseId,
+  name,
+  on,
+  back,
+}: {
+  courseId: string;
+  name: string;
+  on: boolean | null;
+  back: string;
+}) {
+  if (on === null) {
+    return (
+      <Link
+        href={`/signin?next=${encodeURIComponent(back)}`}
+        prefetch={false}
+        aria-label={`Sign in to save ${name} to My courses`}
+        className={`${starClass} text-muted`}
+      >
+        <span aria-hidden>☆</span>
+      </Link>
+    );
+  }
+  return (
+    <form action={toggleFavourite}>
+      <input type="hidden" name="courseId" value={courseId} />
+      <input type="hidden" name="on" value={on ? "0" : "1"} />
+      <input type="hidden" name="back" value={back} />
+      <button
+        type="submit"
+        aria-pressed={on}
+        aria-label={`Save ${name} to My courses`}
+        className={`${starClass} ${on ? "text-star" : "text-muted"}`}
+      >
+        <span aria-hidden>{on ? "★" : "☆"}</span>
+      </button>
+    </form>
   );
 }
 

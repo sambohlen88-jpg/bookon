@@ -5,6 +5,9 @@
  *   poll [--course <slug>] [--days <n>]       one pass over enabled courses
  *   run                                       poll every POLL_INTERVAL_MINUTES
  *   record --course <slug> [--days <n>]       one pass, saving raw pages to recordings/
+ *   alerts                                    email alert matches from data already stored
+ *
+ * poll and run email alert matches after each pass.
  */
 import { parseArgs } from "node:util";
 import { PoliteHttpClient } from "@bookon/adapters";
@@ -15,6 +18,8 @@ import {
   type Database,
   type PollableCourse,
 } from "@bookon/db";
+import { createMailer, siteUrl } from "@bookon/email";
+import { sendAlertEmails } from "./alerts";
 import { loadConfig } from "./config";
 import type { HttpClient } from "@bookon/core";
 import { pollAll, type PollResult } from "./poll";
@@ -60,9 +65,25 @@ async function pollOnce(client: HttpClient) {
   report(await pollAll(handle.db, courses, client, { days }));
 }
 
+/** Never stops the worker: a problem here is logged and tried again next pass. */
+async function alertsOnce() {
+  try {
+    const result = await sendAlertEmails(handle.db, createMailer(handle.db), {
+      now: new Date(),
+      site: siteUrl(),
+    });
+    console.log(`[alerts] ${result.sent} sent, ${result.failed} failed, ${result.ended} ended`);
+  } catch (error) {
+    console.error("[alerts] could not check alerts", error);
+  }
+}
+
 try {
   if (command === "poll") {
     await pollOnce(http);
+    await alertsOnce();
+  } else if (command === "alerts") {
+    await alertsOnce();
   } else if (command === "record") {
     if (!values.course) throw new Error("record needs --course <slug>");
     const directory = new URL(`../recordings/${values.course}-${Date.now()}`, import.meta.url)
@@ -74,10 +95,11 @@ try {
     console.log(`[worker] polling every ${config.pollIntervalMinutes} minutes`);
     for (;;) {
       await pollOnce(http);
+      await alertsOnce();
       await new Promise((resolve) => setTimeout(resolve, intervalMs));
     }
   } else {
-    throw new Error(`Unknown command "${command}". Use poll, run or record.`);
+    throw new Error(`Unknown command "${command}". Use poll, run, record or alerts.`);
   }
 } finally {
   await handle.close();

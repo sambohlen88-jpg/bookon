@@ -1,5 +1,6 @@
 import { bookingHostsFor, logClick, type Database } from "@bookon/db";
 import { isBot } from "./bots";
+import { clickSigningKey } from "@bookon/core";
 import { readClickToken } from "./click-token";
 
 export interface GoResult {
@@ -15,8 +16,13 @@ export interface GoResult {
 export async function resolveGo(
   db: Database,
   token: string,
-  visitor: { sessionId: string | null; userAgent: string | null; now: Date },
-  key?: string,
+  visitor: {
+    sessionId: string | null;
+    userId?: string | null;
+    userAgent: string | null;
+    now: Date;
+  },
+  key: string | null = clickSigningKey(),
 ): Promise<GoResult> {
   const target = readClickToken(token, key);
   if (!target) return { location: "/", logged: false };
@@ -40,6 +46,8 @@ export async function resolveGo(
         courseId: target.courseId,
         startTime: target.startTime ? new Date(target.startTime) : null,
         source: target.source,
+        notificationId: target.notificationId ?? null,
+        userId: visitor.userId ?? null,
         now: visitor.now,
       });
     } catch (error) {
