@@ -144,3 +144,25 @@ describe("quick18Adapter.fetchAvailability", () => {
     expect(url).toBe(course.bookingUrl);
   });
 });
+
+describe("live pages recorded 17 October 2026", () => {
+  it("parses Hamersley's raw server HTML, including 18 hole rates", () => {
+    const url = "https://hamersley.quick18.com/teetimes/searchmatrix?teedate=20261019";
+    const slots = parseSearchMatrix(fixture("quick18/live-hamersley-2026-10-19.html"), url);
+    expect(slots).toHaveLength(56);
+    expect(slots[0]).toMatchObject({
+      time: "05:30",
+      date: "2026-10-19",
+      holes: 9,
+      layout: "Back 9 Morning",
+      priceCents: 2800,
+    });
+    expect(slots.filter((s) => s.holes === 18).every((s) => s.priceCents === 3700)).toBe(true);
+    expect(slots.some((s) => s.holes === 18)).toBe(true);
+  });
+
+  it("reads an evening page with nothing left to book as no times", () => {
+    const url = "https://hamersley.quick18.com/teetimes/searchmatrix?teedate=20261017";
+    expect(parseSearchMatrix(fixture("quick18/live-hamersley-2026-10-17.html"), url)).toEqual([]);
+  });
+});

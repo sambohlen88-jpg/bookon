@@ -26,7 +26,7 @@ const { positionals, values } = parseArgs({
   options: { course: { type: "string" }, days: { type: "string" } },
 });
 const command = positionals[0] ?? "poll";
-const maxDays = values.days ? Number(values.days) : undefined;
+const days = values.days ? Number(values.days) : undefined;
 
 const config = loadConfig();
 const handle = createDb(config.databaseUrl);
@@ -55,7 +55,7 @@ function report(results: PollResult[]) {
 async function pollOnce(client: CountingHttpClient) {
   const courses = await coursesToPoll(handle.db);
   console.log(`[worker] polling ${courses.length} course(s)`);
-  report(await pollAll(handle.db, courses, client, { maxDays }));
+  report(await pollAll(handle.db, courses, client, { days }));
 }
 
 try {

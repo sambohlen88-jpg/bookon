@@ -29,11 +29,11 @@ export interface CountingHttpClient extends HttpClient {
   readonly requestCount: number;
 }
 
-/** From today in Perth up to the club's booking window. */
-export function pollRange(course: PollableCourse, now: Date, maxDays?: number): DateRange {
+/** From today in Perth up to the club's booking window, or `days` when given (for testing a course). */
+export function pollRange(course: PollableCourse, now: Date, days?: number): DateRange {
   const today = perthDate(now);
-  const days = Math.max(1, Math.min(course.bookingWindowDays, maxDays ?? Infinity));
-  return { from: today, to: addPerthDays(today, days - 1) };
+  const count = Math.max(1, days ?? course.bookingWindowDays);
+  return { from: today, to: addPerthDays(today, count - 1) };
 }
 
 /**
@@ -44,7 +44,7 @@ export async function pollCourse(
   db: Database,
   course: PollableCourse,
   http: CountingHttpClient,
-  options: { now?: () => Date; maxDays?: number; adapter?: CourseAdapter } = {},
+  options: { now?: () => Date; days?: number; adapter?: CourseAdapter } = {},
 ): Promise<PollResult> {
   const now = options.now ?? (() => new Date());
   const adapter = options.adapter ?? adapterFor(course);
@@ -53,7 +53,7 @@ export async function pollCourse(
   }
 
   const startedAt = now();
-  const range = pollRange(course, startedAt, options.maxDays);
+  const range = pollRange(course, startedAt, options.days);
   const requestsBefore = http.requestCount;
   const runId = await startFetchRun(db, course.id, range.from, range.to, startedAt);
 
@@ -96,7 +96,7 @@ export async function pollAll(
   db: Database,
   courses: PollableCourse[],
   http: CountingHttpClient,
-  options: { now?: () => Date; maxDays?: number } = {},
+  options: { now?: () => Date; days?: number } = {},
 ): Promise<PollResult[]> {
   const results = await Promise.all(courses.map((course) => pollCourse(db, course, http, options)));
   await pruneOldSnapshots(db, perthDate((options.now ?? (() => new Date()))()));

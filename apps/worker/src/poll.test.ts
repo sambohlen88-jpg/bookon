@@ -34,10 +34,12 @@ afterEach(async () => {
 });
 
 describe("pollRange", () => {
-  it("runs from today in Perth to the end of the booking window", async () => {
+  it("runs from today in Perth to the end of the booking window by default", async () => {
     const course = (await findCourseBySlug(handle.db, "wembley"))!;
     expect(pollRange(course, now())).toEqual({ from: "2025-10-18", to: "2025-10-27" });
     expect(pollRange(course, now(), 2)).toEqual({ from: "2025-10-18", to: "2025-10-19" });
+    // An explicit day count can look past the window, to find where a club's window really ends.
+    expect(pollRange(course, now(), 12)).toEqual({ from: "2025-10-18", to: "2025-10-29" });
   });
 });
 
@@ -45,7 +47,7 @@ describe("pollCourse", () => {
   it("stores tee times read from the club's page and logs the run", async () => {
     const course = (await findCourseBySlug(handle.db, "hamersley"))!;
     const http = new FixtureHttp();
-    const result = await pollCourse(handle.db, course, http, { now, maxDays: 1 });
+    const result = await pollCourse(handle.db, course, http, { now, days: 1 });
 
     expect(result).toEqual({ course: "hamersley", status: "ok", teeTimes: 17 });
     const rows = await snapshotsFor(handle.db, [course.id], "2025-10-18");
@@ -58,7 +60,7 @@ describe("pollCourse", () => {
 
   it("records a failure for every date in range without throwing", async () => {
     const course = (await findCourseBySlug(handle.db, "hamersley"))!;
-    const result = await pollCourse(handle.db, course, new FixtureHttp(), { now, maxDays: 3 });
+    const result = await pollCourse(handle.db, course, new FixtureHttp(), { now, days: 3 });
 
     expect(result.status).toBe("error");
     expect(result.error).toContain("HTTP 503");
@@ -85,7 +87,7 @@ describe("pollAll", () => {
     const collier = (await findCourseBySlug(handle.db, "collier-park"))!;
     const results = await pollAll(handle.db, [collier, hamersleyCourse], new FixtureHttp(), {
       now,
-      maxDays: 1,
+      days: 1,
     });
     expect(results.map((r) => [r.course, r.status])).toEqual([
       ["collier-park", "error"],

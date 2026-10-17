@@ -11,6 +11,12 @@ Saved public booking pages used by the adapter tests, so tests never hit live cl
 | `quick18/hamersley-2025-10-18.html`                    | Hamersley Quick18 search matrix                      | Oct 2025  |
 | `quick18/springs-2025-10-16.html`                      | The Springs Quick18 search matrix                    | Oct 2025  |
 
-Source: the test data of [TeeTimeFinder](https://github.com/Ay1tsMe/TeeTimeFinder) by Adam Wyatt, MIT licence.
+| `miclub/live-collier-park-calendar-2026-10-17.html` | Collier Park calendar, raw server response | 17 Oct 2026 |
+| `miclub/live-collier-park-timesheet-2026-10-18-18holes.html` | Collier Park timesheet, 18 Holes greens coring rate, raw | 17 Oct 2026 |
+| `miclub/live-wembley-calendar-2026-10-17-captcha.html` | Wembley calendar with timesheet CAPTCHA switched on, raw | 17 Oct 2026 |
+| `quick18/live-hamersley-2026-10-17.html` | Hamersley search matrix, evening with nothing left, raw | 17 Oct 2026 |
+| `quick18/live-hamersley-2026-10-19.html` | Hamersley search matrix, raw | 17 Oct 2026 |
 
-These were saved from a browser, so they reflect the page after scripts ran, not the raw server response. Replace them with raw responses recorded by `pnpm --filter @bookon/worker record` once the worker has run against the live sites (see `apps/worker/README.md`).
+Source of the 2025 files: the test data of [TeeTimeFinder](https://github.com/Ay1tsMe/TeeTimeFinder) by Adam Wyatt, MIT licence.
+
+The 2025 files were saved from a browser, after scripts ran. The `live-*` files are raw server responses recorded by `pnpm --filter @bookon/worker record` (see `apps/worker/README.md`). Record new ones the same way when a club's page changes.

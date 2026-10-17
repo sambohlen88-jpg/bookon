@@ -10,7 +10,7 @@ import {
   type DayAvailability,
   type TeeTime,
 } from "@bookon/core";
-import { PageFormatError, collapse, readConfig } from "../shared";
+import { CaptchaRequiredError, PageFormatError, collapse, readConfig } from "../shared";
 
 /**
  * MiClub public booking pages. Two page types:
@@ -31,12 +31,13 @@ export interface MiClubConfig {
 }
 
 /**
- * Plain green fee rows only: "18 Holes", "9 Holes - Public Holiday",
- * "OLD Course 18 Holes". Skips twilight, packages and cart deals, which have
+ * Plain green fee rows only: "18 Holes", "OLD Course 18 Holes", and the
+ * same with a " - " note, which clubs use for rates that replace the normal
+ * one for a while ("9 Holes - Public Holiday", "18 Holes - Maintenance
+ * (Greens Coring)"). Skips twilight, "+" packages and cart deals, which have
  * conditions a search result cannot show.
  */
-export const DEFAULT_FEE_GROUP_PATTERN =
-  "^(?:(.+?)\\s+)?(9|18)\\s*holes?(?:\\s*-\\s*public holiday)?$";
+export const DEFAULT_FEE_GROUP_PATTERN = "^(?:(.+?)\\s+)?(9|18)\\s*holes?(?:\\s+-\\s+[^+]+)?$";
 
 export interface CalendarCell {
   feeGroupId: string;
@@ -94,6 +95,10 @@ export function parseCalendar(html: string, pattern?: string): CalendarPage {
   const rows = $("div.feeGroupRow");
   if (rows.length === 0) {
     throw new PageFormatError("MiClub calendar has no fee group rows");
+  }
+  // The calendar sets this flag when timesheets sit behind reCAPTCHA. Stop here, before requesting any.
+  if (/publicCaptchaEnabled\s*=\s*true\b/.test(html)) {
+    throw new CaptchaRequiredError("The club requires a CAPTCHA to view timesheets");
   }
 
   const dayCount = $(".cell-heading").length || 7;
@@ -166,6 +171,17 @@ function cleanLayout(text: string): string | null {
   return cleaned || null;
 }
 
+/** "Lake (9) or Lake & Island (18)" → "Lake" for 9 holes, "Lake & Island" for 18. Other names pass through. */
+export function layoutForHoles(layout: string | null, holes: 9 | 18): string | null {
+  const match = /^(.+?)\s*\(9\)\s+or\s+(.+?)\s*\(18\)$/i.exec(layout ?? "");
+  if (!match) return layout;
+  return holes === 9 ? match[1]! : match[2]!;
+}
+
+function isCheaper(price: number | null, than: number | null): boolean {
+  return price !== null && (than === null || price < than);
+}
+
 function titleCase(text: string): string {
   return collapse(text)
     .toLowerCase()
@@ -193,16 +209,16 @@ export const miclubAdapter: CourseAdapter = {
 
     const result: DayAvailability[] = [];
     for (const date of dates) {
-      const seen = new Set<string>();
-      const teeTimes: TeeTime[] = [];
+      // Two fee types can list the same slot (e.g. "9 Holes" and "9 Holes - Maintenance"). Keep the cheaper.
+      const bySlot = new Map<string, TeeTime>();
       for (const cell of cells.filter((c) => c.date === date)) {
         const url = timesheetUrl(config, cell.feeGroupId, date);
         for (const row of parseTimesheet(await http.getText(url))) {
-          const layout = cell.layout ?? row.layout;
+          const layout = cell.layout ?? layoutForHoles(row.layout, cell.holes);
           const key = `${row.time}|${cell.holes}|${layout}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
-          teeTimes.push({
+          const existing = bySlot.get(key);
+          if (existing && !isCheaper(row.priceCents, existing.priceCents)) continue;
+          bySlot.set(key, {
             courseId: course.id,
             startTime: perthToUtc(date, row.time),
             holes: cell.holes,
@@ -215,7 +231,9 @@ export const miclubAdapter: CourseAdapter = {
           });
         }
       }
-      teeTimes.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
+      const teeTimes = [...bySlot.values()].sort(
+        (a, b) => a.startTime.getTime() - b.startTime.getTime(),
+      );
       result.push({ date, teeTimes });
     }
     return result;

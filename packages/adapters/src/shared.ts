@@ -23,3 +23,8 @@ export function readConfig<T>(course: Course, required: (keyof T & string)[]): T
   }
   return config as T;
 }
+
+/** The club puts a human check (CAPTCHA) in front of these pages. We never try to get past one. */
+export class CaptchaRequiredError extends Error {
+  override name = "CaptchaRequiredError";
+}

@@ -28,7 +28,7 @@
 
 ## Things I was unsure about, or decided myself
 
-1. **Which fee types count.** Search only uses plain 9 and 18 hole adult rates. Twilight, concession, public holiday packages and cart deals are skipped, because their conditions do not fit a results list. Public holiday rates are included, as they replace the normal rate on those days. A course can override this with `feeGroupPattern`.
+1. **Which fee types count.** Search only uses plain 9 and 18 hole adult rates. Twilight, concession, "+" packages and cart deals are skipped, because their conditions do not fit a results list. Rates with a " - note" (public holiday, greens coring) are included, as they replace the normal rate for a while. When two fee types list the same slot, the cheaper one is kept. A course can override this with `feeGroupPattern`.
 2. **Price shown** is the adult rate. Concession prices are not stored.
 3. **MiClub spots** are counted from free player cells in a row. A row with 2 free cells means up to 2 players can join.
 4. **"Not yet released" and "fully booked"** look the same on MiClub calendars. The worker never polls past each course's booking window, which avoids most of the confusion.
@@ -37,11 +37,11 @@
 
 ## Open issues
 
-1. **Not yet run against the live sites.** This build environment blocks club websites, so everything is tested against pages saved in September and October 2025 by the TeeTimeFinder project. Those were saved from a browser after scripts ran, so the raw HTML could differ. **The first live run is the real test.** Run `record` for each course and check the output.
+1. **Live check done (17 October 2026).** Collier Park and Hamersley read correctly from the live sites, and their raw pages are now fixtures. See "Live check" in `docs/platforms.md`.
 2. **Marangaroo and The Cut are on Chronogolf (Lightspeed Golf)**, not MiClub. They are seeded but switched off. Lightspeed has an official partner API. I recommend applying for access rather than reading Chronogolf pages.
-3. **Wembley's `bookingResourceId`** is the MiClub default (`3000000`) and unconfirmed. If it is wrong, the first poll will show an error or no fee groups.
-4. **Hamersley's booking window** is a guess (7 days).
-5. **Request volume.** MiClub needs about 2 calendar pages and up to 2 timesheets per day, so about 20 requests per course per pass. Polling every 30 minutes, that is about 1,000 requests a day per MiClub course, spaced at least 3 seconds apart. Milestone 4 should poll more often only for dates with active alerts, and less often otherwise.
+3. **Wembley is switched off.** Its timesheets are behind a CAPTCHA, which we do not get past. Only two launch courses (Collier Park and Hamersley) are searchable until Wembley gives permission or Chronogolf access comes through.
+4. **Hamersley lists times at least 16 days ahead.** We read 14, the spec's longest search range.
+5. **Request volume.** Collier Park takes about 2 calendar pages and 2 to 3 timesheets per day, so about 20 requests per pass. Hamersley takes one page per day, so 14. Polling every 30 minutes, that is roughly 700 to 1,000 requests a day per course, spaced at least 3 seconds apart. Milestone 4 should poll more often only for dates with active alerts, and less often otherwise.
 6. **No hosted database yet.** Production needs `DATABASE_URL` set to Supabase or Neon, and somewhere to run the worker (Railway or Fly).
 
 ## How to demo
@@ -53,9 +53,8 @@ pnpm --filter @bookon/db seed                         # local database with the 
 pnpm --filter @bookon/worker poll -- --course hamersley --days 2
 ```
 
-On a machine with internet access, the last command fetches Hamersley's live tee times into the local database. In this build environment, it records a clean "robots.txt could not be read" error for each course instead, which shows the failure path working.
+This fetches Hamersley's live tee times into the local database. Behind an HTTP proxy (as in the Claude Code cloud environment), add `NODE_USE_ENV_PROXY=1` in front.
 
 ## Recommendation for Milestone 2 (search)
 
-- Run the worker against the live sites first (one `record` per course) and fix anything the raw pages reveal.
-- Then build the search page on top of `availability_snapshots` and `availability_checks`, with holes as a filter and the "last checked" label from day one.
+- Build the search page on top of `availability_snapshots` and `availability_checks`, with holes as a filter and the "last checked" label from day one.

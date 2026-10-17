@@ -4,7 +4,7 @@ import { quick18Adapter } from "./quick18";
 
 export { miclubAdapter } from "./miclub";
 export { quick18Adapter } from "./quick18";
-export { ConfigError, PageFormatError } from "./shared";
+export { CaptchaRequiredError, ConfigError, PageFormatError } from "./shared";
 export { PoliteHttpClient, HttpError, RobotsDisallowedError } from "./http";
 export type { PoliteHttpOptions } from "./http";
 

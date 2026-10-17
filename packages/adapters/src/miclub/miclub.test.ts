@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { formatPerthTime, perthDate } from "@bookon/core";
 import { FakeHttp, fixture, testCourse } from "../test-helpers";
-import { PageFormatError } from "../shared";
+import { CaptchaRequiredError, PageFormatError } from "../shared";
 import {
   calendarUrl,
   classifyFeeGroup,
+  layoutForHoles,
   miclubAdapter,
   parseCalendar,
   parseTimesheet,
@@ -22,6 +23,11 @@ describe("classifyFeeGroup", () => {
     expect(classifyFeeGroup("9 Holes - Public Holiday")).toEqual({ holes: 9, layout: null });
     expect(classifyFeeGroup("OLD Course 18 Holes")).toEqual({ holes: 18, layout: "Old Course" });
     expect(classifyFeeGroup("TUART Course 9 Holes")).toEqual({ holes: 9, layout: "Tuart Course" });
+    // Collier Park, October 2026: the normal rates while greens are cored.
+    expect(classifyFeeGroup("18 Holes - Maintenance (Greens Coring)")).toEqual({
+      holes: 18,
+      layout: null,
+    });
   });
 
   it("skips twilight, packages and cart deals", () => {
@@ -190,5 +196,86 @@ describe("miclubAdapter.fetchAvailability", () => {
         { http: collierHttp() },
       ),
     ).rejects.toThrow(/baseUrl is required/);
+  });
+});
+
+describe("live pages recorded 17 October 2026", () => {
+  const liveCalendar = fixture("miclub/live-collier-park-calendar-2026-10-17.html");
+  const liveTimesheet = fixture("miclub/live-collier-park-timesheet-2026-10-18-18holes.html");
+
+  it("reads Collier Park's greens coring rates as the normal 9 and 18 hole rates", () => {
+    const page = parseCalendar(liveCalendar);
+    expect(page.dayCount).toBe(6);
+    expect(page.cells).toHaveLength(11);
+    expect(page.cells.filter((c) => c.date === "2026-10-18")).toEqual([
+      expect.objectContaining({ feeGroupId: "1501783077", holes: 18 }),
+      expect.objectContaining({ feeGroupId: "1501791148", holes: 9 }),
+    ]);
+    // The normal 9 Holes rate comes back on the 21st alongside the coring rate.
+    expect(page.cells.filter((c) => c.date === "2026-10-21").map((c) => c.heading)).toContain(
+      "9 Holes",
+    );
+  });
+
+  it("parses the raw server HTML of a timesheet", () => {
+    const rows = parseTimesheet(liveTimesheet);
+    expect(rows).toHaveLength(10);
+    expect(rows[0]).toEqual({
+      time: "05:36",
+      layout: "Lake (9) or Lake & Island (18)",
+      spotsAvailable: 1,
+      priceCents: 4000,
+    });
+  });
+
+  it("stops at a calendar that puts timesheets behind a CAPTCHA", () => {
+    expect(() =>
+      parseCalendar(fixture("miclub/live-wembley-calendar-2026-10-17-captcha.html")),
+    ).toThrow(CaptchaRequiredError);
+  });
+
+  it("never requests a timesheet when the calendar needs a CAPTCHA", async () => {
+    const http = new FakeHttp(() =>
+      fixture("miclub/live-wembley-calendar-2026-10-17-captcha.html"),
+    );
+    const wembley = testCourse({
+      platformConfig: { baseUrl: "https://www.wembleygolf.com.au", bookingResourceId: "3000000" },
+    });
+    await expect(
+      miclubAdapter.fetchAvailability(wembley, { from: "2026-10-19", to: "2026-10-19" }, { http }),
+    ).rejects.toThrow(CaptchaRequiredError);
+    expect(http.requested).toHaveLength(1);
+  });
+
+  it("names the nines that match the holes booked", async () => {
+    const http = new FakeHttp((url) =>
+      url.pathname.endsWith("ViewPublicCalendar.msp")
+        ? liveCalendar
+        : url.searchParams.get("feeGroupId") === "1501783077"
+          ? liveTimesheet
+          : undefined,
+    );
+    const course = testCourse({
+      platformConfig: { ...config, feeGroupPattern: "^()(18)\\s*holes( - .*)?$" },
+    });
+    const [day] = await miclubAdapter.fetchAvailability(
+      course,
+      { from: "2026-10-18", to: "2026-10-18" },
+      { http },
+    );
+    expect(day!.teeTimes[0]).toMatchObject({
+      holes: 18,
+      layout: "Lake & Island",
+      priceCents: 4000,
+    });
+  });
+});
+
+describe("layoutForHoles", () => {
+  it("picks the 9 or 18 hole name from a combined label", () => {
+    expect(layoutForHoles("Lake (9) or Lake & Island (18)", 9)).toBe("Lake");
+    expect(layoutForHoles("Island (9) or Island & Pines(18)", 18)).toBe("Island & Pines");
+    expect(layoutForHoles("1st Tee", 18)).toBe("1st Tee");
+    expect(layoutForHoles(null, 9)).toBeNull();
   });
 });

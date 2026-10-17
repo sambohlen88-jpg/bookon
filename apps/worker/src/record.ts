@@ -29,9 +29,10 @@ export class RecordingHttpClient implements HttpClient {
 }
 
 function slugify(url: string): string {
-  const { hostname, pathname, search } = new URL(url);
-  return `${hostname}${pathname}${search}`
+  const { pathname, search } = new URL(url);
+  // Keep the end, where the date and fee group are.
+  return `${pathname}${search}`
     .replace(/[^a-zA-Z0-9]+/g, "-")
     .replace(/^-|-$/g, "")
-    .slice(0, 120);
+    .slice(-120);
 }

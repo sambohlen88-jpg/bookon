@@ -48,7 +48,19 @@ This session still could not reach the club sites. But the open-source [TeeTimeF
 
 ### Caveat
 
-These were saved from a browser after scripts ran, so the raw server HTML could differ. The first live run should use `pnpm --filter @bookon/worker record --course <slug>` to save raw pages, and the fixtures should be replaced with those.
+These were saved from a browser after scripts ran, so the raw server HTML could differ. The live check below confirmed it does not, for Collier Park and Hamersley.
+
+## Live check (17 October 2026)
+
+With the club sites allowed in the build environment, the worker read the live pages through `PoliteHttpClient`. Raw pages from this run are now test fixtures (`packages/adapters/fixtures/*/live-*`).
+
+| Course       | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Collier Park | **Works.** 308 tee times over 5 days. Raw server HTML matches the saved pages. Found a real-world variant: while greens are cored, the normal rates are named "18 Holes - Maintenance (Greens Coring)", so the adapter now accepts any " - note" after the hole count. Layouts read "Lake (9) or Lake & Island (18)"; BookOn shows the part that matches the holes booked.                                                                                                                                                                                |
+| Hamersley    | **Works.** 927 tee times over 16 days, with 9 hole ($28) and 18 hole ($37) adult rates. Times were listed at least 16 days ahead, so the window is longer than the 7 days first assumed. BookOn reads 14 days, the spec's longest search range.                                                                                                                                                                                                                                                                                                           |
+| Wembley      | **Blocked by a CAPTCHA. Switched off.** The calendar loads (and `bookingResourceId` 3000000 is right), but the calendar sets `publicCaptchaEnabled = true` and timesheets sit behind Google reCAPTCHA. A direct timesheet request returns the calendar instead. A CAPTCHA is a clear sign the club does not want automated reading, so **BookOn does not try to get past it.** The adapter now detects the flag on the calendar and stops before requesting any timesheet. Wembley needs the club's permission or a feed (the Town of Cambridge runs it). |
+
+Note for anyone running the worker behind an HTTP proxy: Node's built-in `fetch` ignores `HTTPS_PROXY` unless `NODE_USE_ENV_PROXY=1` is set (Node 22.21 or later).
 
 ## Chronogolf (Lightspeed Golf)
 
@@ -187,5 +199,6 @@ Not yet checked: Altone Park, Fremantle Public, Kwinana, Araluen, Hillview, The 
 - [ ] Read the terms linked from each launch club's booking pages, including the [Collier Park booking terms](https://collierparkgolf.com.au/wp-content/uploads/2025/06/Golf-Terms-Conditions-Feb-25-1.pdf).
 - [x] Find Marangaroo's booking page (Chronogolf).
 - [ ] Check the unlisted courses above.
-- [ ] Confirm Wembley's `bookingResourceId` and Hamersley's booking window.
+- [x] Confirm Wembley's `bookingResourceId` (3000000) and Hamersley's booking window (at least 16 days).
+- [ ] Ask Wembley (Town of Cambridge) for permission or a feed, given the CAPTCHA.
 - [ ] Add coordinates for the five launch courses (left empty in the seed data).

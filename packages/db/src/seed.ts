@@ -28,12 +28,13 @@ export const SEED_CLUBS: ClubSeed[] = [
         platformConfig: { baseUrl: "https://www.wembleygolf.com.au", bookingResourceId: "3000000" },
         websiteUrl: "https://www.wembleygolf.com.au",
         bookingUrl: "https://www.wembleygolf.com.au/guests/bookings/ViewPublicCalendar.msp",
-        enabled: true,
+        enabled: false,
         bookingWindowDays: 10,
         notes:
-          "Old and Tuart courses share one MiClub calendar. Times open 10 days ahead from 6 am. " +
-          "No public bookings in school holidays. Golfers must register with the club to book. " +
-          "bookingResourceId 3000000 is the MiClub default and is not yet confirmed for Wembley.",
+          "Old and Tuart courses share one MiClub calendar (bookingResourceId 3000000, confirmed). " +
+          "Times open 10 days ahead from 6 am. No public bookings in school holidays. " +
+          "Switched off: since at least October 2026 the club puts timesheets behind a CAPTCHA, " +
+          "so we do not read them. Needs the club's permission or a feed.",
       },
     ],
   },
@@ -76,8 +77,10 @@ export const SEED_CLUBS: ClubSeed[] = [
         websiteUrl: "https://hamersley.quick18.com",
         bookingUrl: "https://hamersley.quick18.com/teetimes/searchmatrix",
         enabled: true,
-        bookingWindowDays: 7,
-        notes: "City of Stirling course. Booking window and club website not yet confirmed.",
+        bookingWindowDays: 14,
+        notes:
+          "City of Stirling course. Times were listed at least 16 days ahead on 17 October 2026; " +
+          "we read 14, the longest search range. Club website not yet confirmed.",
       },
     ],
   },

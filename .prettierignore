@@ -4,3 +4,4 @@ dist
 coverage
 SPEC.md
 packages/db/migrations/meta
+packages/adapters/fixtures
