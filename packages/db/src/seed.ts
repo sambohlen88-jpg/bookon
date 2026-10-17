@@ -126,12 +126,12 @@ export const SEED_CLUBS: ClubSeed[] = [
         },
         websiteUrl: "https://www.whalebackgolfcourse.com.au",
         bookingUrl: "https://www.whalebackgolfcourse.com.au/guests/bookings/ViewPublicCalendar.msp",
-        enabled: false,
+        enabled: true,
         bookingWindowDays: 10,
         notes:
-          "Not yet checked live: www.whalebackgolfcourse.com.au is not on the build environment's " +
-          "allowed domains. Times open up to 10 days ahead, refreshed " +
-          "at 6 am. Prepaid, with a 48 hour cancellation policy.",
+          "City of Canning course. Checked live 17 October 2026: no CAPTCHA, rates named '18 Hole' " +
+          "and '9 Hole'. Times open up to 10 days ahead, refreshed at 6 am. Prepaid, with a 48 hour " +
+          "cancellation policy.",
       },
     ],
   },
@@ -151,9 +151,9 @@ export const SEED_CLUBS: ClubSeed[] = [
         enabled: false,
         bookingWindowDays: 11,
         notes:
-          "Moved from Quick18 to Chronogolf (the old Quick18 site says 'coming soon', October 2026). " +
-          "Run by Belgravia Leisure. Times open 11 days ahead. Not searchable until Lightspeed " +
-          "partner API access is arranged.",
+          "Left Quick18 (its old site says 'coming soon', October 2026). Its Chronogolf page returns " +
+          "404, so probably MiClub on its own domain like Marangaroo (same operator, Belgravia " +
+          "Leisure). Not yet checked live. Times open 11 days ahead.",
       },
     ],
   },
@@ -173,8 +173,8 @@ export const SEED_CLUBS: ClubSeed[] = [
         enabled: false,
         bookingWindowDays: 11,
         notes:
-          "Books through Chronogolf (Lightspeed Golf), not MiClub. Not searchable until Lightspeed " +
-          "partner API access is arranged. Times open 11 days ahead from 9 am.",
+          "Probably MiClub on its own domain (MiClub URL patterns, listed on TeeNet); its Chronogolf " +
+          "page returns 404 (October 2026). Not yet checked live. Times open 11 days ahead from 9 am.",
       },
     ],
   },
@@ -189,13 +189,13 @@ export const SEED_CLUBS: ClubSeed[] = [
         holes: 18,
         platform: "chronogolf",
         platformConfig: {},
-        websiteUrl: "https://www.the-cut.com.au",
+        websiteUrl: "https://www.thecutgolf.com.au",
         bookingUrl: "https://www.chronogolf.com/club/the-cut-golf-course",
         enabled: false,
         bookingWindowDays: 7,
         notes:
-          "Books through Chronogolf (Lightspeed Golf). Not searchable until partner API access is " +
-          "arranged. In Dawesville, about 80 km south of the Perth CBD. Booking window not confirmed.",
+          "Booking system not confirmed: its Chronogolf page now returns 404 (October 2026); Future " +
+          "Golf and GolfNow list it. In Dawesville, about 80 km south of the Perth CBD.",
       },
     ],
   },

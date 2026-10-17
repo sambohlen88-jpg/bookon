@@ -84,6 +84,22 @@ Note for anyone running the worker behind an HTTP proxy: Node's built-in `fetch`
 
 Quick18's list of blocked scraper tools shows it does not welcome automated reading in general, even though BookOnBot is not named. That makes written permission from Sagacity more important before launch. Claude fetched Hamersley pages earlier on 17 October 2026, before reading this file closely; it will not again.
 
+## Chronogolf turned out to be a dead end (17 October 2026, later)
+
+After the owner approved Chronogolf, the live check found:
+
+- **All three Chronogolf club pages now return 404:** `chronogolf.com/club/marangaroo-golf-course`, `.../point-walter-public-golf-course` and `.../the-cut-golf-course`. The Chronogolf homepage and other clubs' pages still load. The listings found in search results appear to be out of date.
+- **Marangaroo looks like MiClub on its own domain.** Search results show `marangaroogolf.com.au/?bookingResourceId=` and `?doAction=displayHomePage`, which are MiClub patterns, and TeeNet (MiClub's own search) listed Marangaroo in Milestone 0. Point Walter's site is built the same way by the same operator (Belgravia Leisure), so it probably is too.
+- **The Cut's own site is `thecutgolf.com.au`** (not `the-cut.com.au`). Its booking system is not confirmed; Future Golf and GolfNow both list it.
+- The build environment blocks `www.marangaroogolf.com.au`, `www.pointwaltergolf.com.au` and `www.thecutgolf.com.au`, so none of this could be confirmed yet.
+
+No Chronogolf adapter has been built. If these courses are on MiClub, the existing adapter covers them.
+
+Also checked:
+
+- **Whaleback works. Switched on.** MiClub, no CAPTCHA, rates named "18 Hole" ($39 weekday) and "9 Hole" ($26).
+- **Carramar's site answers HTTP 403 to BookOnBot,** even for robots.txt. The network policy did not block it; the club's site did. That is a block, so Carramar stays out.
+
 ## Chronogolf (Lightspeed Golf)
 
 Two of the owner's launch courses are on neither MiClub nor Quick18:

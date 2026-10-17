@@ -42,9 +42,14 @@ function teeTime(courseId: string, iso: string, overrides: Partial<TeeTime> = {}
 }
 
 describe("seed", () => {
-  it("creates the courses, with Wembley, Whaleback and the Chronogolf courses switched off", async () => {
+  it("creates the courses, with Wembley and the not-yet-readable courses switched off", async () => {
     const enabled = await listEnabledCourses(handle.db);
-    expect(enabled.map((c) => c.slug)).toEqual(["collier-park", "fremantle-public", "hamersley"]);
+    expect(enabled.map((c) => c.slug)).toEqual([
+      "collier-park",
+      "fremantle-public",
+      "hamersley",
+      "whaleback",
+    ]);
     expect(await findCourseBySlug(handle.db, "wembley")).toMatchObject({
       platform: "miclub",
       enabled: false,
@@ -60,12 +65,11 @@ describe("seed", () => {
       platform: "chronogolf",
       enabled: false,
     });
-    expect(await findCourseBySlug(handle.db, "whaleback")).toMatchObject({ enabled: false });
   });
 
   it("can run twice without duplicating", async () => {
     await seed(handle.db);
-    expect(await listEnabledCourses(handle.db)).toHaveLength(3);
+    expect(await listEnabledCourses(handle.db)).toHaveLength(4);
   });
 });
 

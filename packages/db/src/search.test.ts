@@ -94,6 +94,7 @@ describe("searchTeeTimes", () => {
       "hamersley",
       "collier-park",
       "fremantle-public",
+      "whaleback",
     ]);
     expect(times(result, "hamersley")).toEqual(["2026-10-17T23:30:00.000Z"]);
     expect(times(result, "collier-park")).toEqual([
@@ -196,6 +197,7 @@ describe("listSearchableCourses", () => {
       "collier-park",
       "fremantle-public",
       "hamersley",
+      "whaleback",
     ]);
   });
 });
