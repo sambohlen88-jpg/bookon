@@ -18,8 +18,8 @@ import {
   type Database,
   type PollableCourse,
 } from "@bookon/db";
-import { createMailer, siteUrl } from "@bookon/email";
-import { sendAlertEmails } from "./alerts";
+import { WebPushSender, createMailer, siteUrl, vapidKeys } from "@bookon/email";
+import { sendAlertNotifications } from "./alerts";
 import { loadConfig } from "./config";
 import type { HttpClient } from "@bookon/core";
 import { pollAll, type PollResult } from "./poll";
@@ -68,11 +68,19 @@ async function pollOnce(client: HttpClient) {
 /** Never stops the worker: a problem here is logged and tried again next pass. */
 async function alertsOnce() {
   try {
-    const result = await sendAlertEmails(handle.db, createMailer(handle.db), {
-      now: new Date(),
-      site: siteUrl(),
-    });
-    console.log(`[alerts] ${result.sent} sent, ${result.failed} failed, ${result.ended} ended`);
+    const keys = await vapidKeys(handle.db);
+    if (!keys) console.error("[alerts] VAPID keys are not set, so push notifications are off");
+    const result = await sendAlertNotifications(
+      handle.db,
+      {
+        mailer: createMailer(handle.db),
+        push: keys ? new WebPushSender(keys, `mailto:${config.contactEmail}`) : null,
+      },
+      { now: new Date(), site: siteUrl() },
+    );
+    console.log(
+      `[alerts] ${result.sent} sent (${result.pushed} by push, ${result.emailed} by email), ${result.failed} failed, ${result.ended} ended`,
+    );
   } catch (error) {
     console.error("[alerts] could not check alerts", error);
   }

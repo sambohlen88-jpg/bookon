@@ -3,6 +3,7 @@ import { LOCAL_DATABASE_URL } from "@bookon/db";
 export interface WorkerConfig {
   databaseUrl: string;
   userAgent: string;
+  contactEmail: string;
   minRequestIntervalMs: number;
   pollIntervalMinutes: number;
   /** Robots.txt agents obeyed as well as our own. */
@@ -19,6 +20,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): WorkerConfig {
   return {
     databaseUrl: env.DATABASE_URL?.trim() || LOCAL_DATABASE_URL,
     userAgent: `BookOnBot/0.1 (+${site}; ${contact})`,
+    contactEmail: contact,
     minRequestIntervalMs: Number(env.MIN_REQUEST_INTERVAL_MS) || 3000,
     pollIntervalMinutes: Number(env.POLL_INTERVAL_MINUTES) || 30,
     // When Claude Code runs the worker, it is Claude fetching for a user, so obey sites' rules for Claude-User too.

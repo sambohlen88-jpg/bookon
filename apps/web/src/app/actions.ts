@@ -12,9 +12,11 @@ import {
   deleteUser,
   endSession,
   listAlerts,
+  listPushSubscriptions,
   listSearchableCourses,
   normaliseEmail,
   safeNextPath,
+  setAlertChannels,
   setAlertStatus,
   setFavourite,
 } from "@bookon/db";
@@ -102,7 +104,15 @@ export async function createAlertFromSearch(formData: FormData) {
   const form = parseSearchForm(Object.fromEntries(new URLSearchParams(query)), now, slugs);
   const courses = new URLSearchParams(query).getAll("course").filter((s) => slugs.includes(s));
   const filters = toSearchParams({ ...form, courses }, now);
-  const result = await createAlert(db, { userId: user.id, email: user.email, filters, now });
+  // Golfers who allowed notifications on a device get them for new alerts too.
+  const push = (await listPushSubscriptions(db, user.id)).length > 0;
+  const result = await createAlert(db, {
+    userId: user.id,
+    email: user.email,
+    filters,
+    now,
+    push,
+  });
   redirect(`${back}&alert=${"error" in result ? "limit" : "created"}`);
 }
 
@@ -114,6 +124,23 @@ export async function changeAlert(formData: FormData) {
   const db = getDb();
   if (!(await listAlerts(db, user.id)).some((a) => a.id === alertId)) return;
   await setAlertStatus(db, alertId, status);
+  revalidatePath("/account");
+}
+
+/** Turn email or push on or off for one alert. One of them always stays on. */
+export async function changeAlertChannel(formData: FormData) {
+  const user = await requireUser("/account");
+  const alertId = String(formData.get("alertId"));
+  const channel = String(formData.get("channel"));
+  const on = formData.get("on") === "1";
+  if (channel !== "email" && channel !== "push") return;
+  const db = getDb();
+  const alert = (await listAlerts(db, user.id)).find((a) => a.id === alertId);
+  if (!alert) return;
+  await setAlertChannels(db, alertId, {
+    email: channel === "email" ? on : alert.notifyEmail,
+    push: channel === "push" ? on : alert.notifyPush,
+  });
   revalidatePath("/account");
 }
 

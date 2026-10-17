@@ -4,16 +4,19 @@ import type { CourseResult, DayNotice, ResultTeeTime } from "@bookon/db";
 import { toggleFavourite } from "@/app/actions";
 
 /**
- * Keep pages light on mobile data: a two week search can match 1,500 times.
- * One day shows 6 per course with up to 40 more folded away; longer searches
- * show 4 per course per day. Beyond that, link to that course and day, where
- * every time is listed (one course rarely has more than 200 in a day).
+ * Keep pages light on mobile data: a two week search can match 18,000 times.
+ * One day shows 6 per course with up to 10 more folded away; longer searches
+ * show 4 per course per day, for the first 3 days with times when several
+ * courses are listed. Beyond that, link to that course, where every time is
+ * listed (one course rarely has more than 200 in a day).
  */
 const LIMITS = {
   multiDay: { visible: 4, max: 4 },
-  singleDay: { visible: 6, max: 46 },
+  singleDay: { visible: 6, max: 16 },
   oneCourseOneDay: { visible: 6, max: Infinity },
 };
+/** Days listed per course in a multi-day search across several courses. */
+const DAYS_PER_COURSE = 3;
 
 export function CourseResults({
   result,
@@ -23,6 +26,7 @@ export function CourseResults({
   favourite,
   back,
   dayHref,
+  courseHref,
   bookHref,
 }: {
   result: CourseResult;
@@ -35,13 +39,17 @@ export function CourseResults({
   back: string;
   /** A search for just this course on one day, for "see all" links. */
   dayHref: (date: string) => string;
+  /** The same search for just this course, for "more days" links. */
+  courseHref: string;
   /** The tracked /go link for a tee time. */
   bookHref: (teeTime: ResultTeeTime) => string;
 }) {
   const limits = multiDay ? LIMITS.multiDay : oneCourse ? LIMITS.oneCourseOneDay : LIMITS.singleDay;
   const { course, teeTimes, checkedAt, notices } = result;
   const headingId = `course-${course.slug}`;
-  const byDay = groupByDay(teeTimes);
+  const byDay = [...groupByDay(teeTimes)];
+  const shownDays = multiDay && !oneCourse ? byDay.slice(0, DAYS_PER_COURSE) : byDay;
+  const hiddenDays = byDay.slice(shownDays.length);
 
   return (
     <section
@@ -69,7 +77,7 @@ export function CourseResults({
         <p className="mt-3 text-sm text-muted">No times here match your search.</p>
       )}
 
-      {[...byDay].map(([day, times]) => (
+      {shownDays.map(([day, times]) => (
         <div key={day} className="mt-3">
           {multiDay && <h3 className="text-sm font-semibold">{formatPerthDay(day)}</h3>}
           <ul>
@@ -100,16 +108,18 @@ export function CourseResults({
             </details>
           )}
           {times.length > limits.max && (
-            <Link
-              href={dayHref(day)}
-              prefetch={false}
-              className="flex min-h-11 items-center text-sm font-medium text-brand underline-offset-4 hover:underline"
-            >
+            <Link href={dayHref(day)} prefetch={false} className="more-link">
               See all {times.length} times{multiDay ? ` on ${formatPerthDay(day)}` : ""}
             </Link>
           )}
         </div>
       ))}
+      {hiddenDays.length > 0 && (
+        <Link href={courseHref} prefetch={false} className="more-link">
+          {hiddenDays.reduce((n, [, times]) => n + times.length, 0)} more times on{" "}
+          {hiddenDays.length} more {hiddenDays.length === 1 ? "day" : "days"}
+        </Link>
+      )}
     </section>
   );
 }
@@ -170,15 +180,14 @@ function TeeTimeRow({
   const time = formatPerthTime(teeTime.startTime);
   const spots = `${teeTime.spotsAvailable} ${teeTime.spotsAvailable === 1 ? "spot" : "spots"}`;
   return (
-    <li className="flex items-center gap-3 border-t border-border py-3 first:border-t-0">
-      <span className="w-[5.5rem] shrink-0 whitespace-nowrap text-lg font-semibold tabular-nums">
-        {time}
-      </span>
-      <span className="min-w-0 flex-1 text-sm">
-        <span className="block">
+    // Short class names: a results page can list hundreds of these (styles in globals.css).
+    <li className="tee-row">
+      <span className="tee-time">{time}</span>
+      <span className="tee-info">
+        <span>
           {teeTime.holes} holes{teeTime.layout ? ` · ${teeTime.layout}` : ""}
         </span>
-        <span className="block text-muted">
+        <span className="text-muted">
           {spots} ·{" "}
           {teeTime.priceCents === null ? "Price at club" : formatPrice(teeTime.priceCents)}
         </span>
@@ -187,8 +196,8 @@ function TeeTimeRow({
         href={href}
         target="_blank"
         rel="noopener"
-        aria-label={`Book ${time} at ${course} on the club's site (opens in a new tab)`}
-        className="flex min-h-11 shrink-0 items-center rounded-lg bg-brand px-4 text-sm font-semibold text-brand-foreground"
+        aria-label={`Book ${time} at ${course} (opens the club's site)`}
+        className="tee-book"
       >
         Book
       </a>

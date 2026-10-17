@@ -23,7 +23,14 @@ export function alertFilters(alert: Alert): SearchParams {
  */
 export async function createAlert(
   db: Database,
-  input: { userId: string; email: string; filters: SearchParams; now: Date },
+  input: {
+    userId: string;
+    email: string;
+    filters: SearchParams;
+    now: Date;
+    /** Also notify by push, when the golfer has allowed it on a device. */
+    push?: boolean;
+  },
 ): Promise<{ alert: Alert } | { error: "limit" }> {
   const [live] = await db
     .select({ n: count() })
@@ -42,6 +49,7 @@ export async function createAlert(
       status: "active",
       confirmedAt: input.now,
       manageToken: randomBytes(24).toString("base64url"),
+      notifyPush: input.push ?? false,
     })
     .returning();
 
@@ -173,18 +181,19 @@ export function newNotificationId(): string {
   return randomUUID();
 }
 
-/** Record that these slots were emailed, so each is only ever sent once. */
-export async function recordAlertEmail(
+/** Record that these slots were sent, so each is only ever sent once. */
+export async function recordAlertRound(
   db: Database,
   alertId: string,
   rows: NotificationRow[],
   now: Date,
+  channel: "email" | "push" = "email",
 ): Promise<void> {
   await db.transaction(async (tx) => {
     if (rows.length > 0) {
       await tx
         .insert(notifications)
-        .values(rows.map((r) => ({ ...r, alertId, channel: "email" as const, sentAt: now })))
+        .values(rows.map((r) => ({ ...r, alertId, channel, sentAt: now })))
         .onConflictDoNothing();
     }
     await tx.update(alerts).set({ lastNotifiedAt: now }).where(eq(alerts.id, alertId));

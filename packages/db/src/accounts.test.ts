@@ -15,7 +15,7 @@ import {
 } from "./accounts";
 import { createDb, type DbHandle } from "./client";
 import { findCourseBySlug } from "./queries";
-import { createAlert, newNotificationId, recordAlertEmail } from "./alerts";
+import { createAlert, newNotificationId, recordAlertRound } from "./alerts";
 import { clickEvents, signInTokens, users } from "./schema";
 import { seed } from "./seed";
 import { logClick } from "./tracking";
@@ -191,7 +191,7 @@ describe("deleteUser", () => {
     });
     const alertId = "alert" in created ? created.alert.id : "";
     const notificationId = newNotificationId();
-    await recordAlertEmail(
+    await recordAlertRound(
       handle.db,
       alertId,
       [{ id: notificationId, courseId: collier, startTime: now, holes: 18, clickToken: "t" }],

@@ -27,6 +27,8 @@ Data is read from public booking pages with the owner's approval, ahead of forma
   - Add bookon.com.au as a sender domain and add the DKIM and Return-Path DNS records Postmark shows. Add a DMARC record if the domain has none.
   - Ask Postmark to approve the account for sending to anyone (new accounts can only email their own domain).
   - Set `EMAIL_PROVIDER=postmark`, `POSTMARK_SERVER_TOKEN`, `EMAIL_FROM` and `BOOKON_SITE_URL` on the website host and the worker.
+- [ ] **Push notification keys.** Run `pnpm push:keys` once and set `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` on the website host and the worker. Never change them after launch: every golfer's notifications would stop until they turn them on again.
+- [ ] **Test push on a real iPhone** once the site is on https: add BookOn to the Home Screen, open it from there, turn on notifications, set an alert.
 - [ ] Error monitoring (Sentry), uptime checks, rate limits on public pages, database backups.
 
 ## Product

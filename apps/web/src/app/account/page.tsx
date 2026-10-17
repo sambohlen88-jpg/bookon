@@ -2,19 +2,29 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { formatAgo, formatPerthDay, formatPerthTime, perthDate } from "@bookon/core";
-import { listAlerts, listFavourites, listSearchableCourses, listVisits } from "@bookon/db";
+import {
+  listAlerts,
+  listFavourites,
+  listPushSubscriptions,
+  listSearchableCourses,
+  listVisits,
+  type Alert,
+} from "@bookon/db";
 import {
   changeAlert,
+  changeAlertChannel,
   clearMyVisits,
   deleteMyAccount,
   signOut,
   toggleFavourite,
 } from "@/app/actions";
 import { AlertSummary } from "@/components/alert-summary";
+import { PushToggle } from "@/components/push-toggle";
 import { SiteHeader } from "@/components/site-header";
 import { Notice, secondaryButton } from "@/components/ui";
 import { currentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
+import { pushPublicKey } from "@/lib/push";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "My account · BookOn" };
@@ -35,11 +45,13 @@ export default async function AccountPage({
   const { error } = await searchParams;
   const db = getDb();
   const now = new Date();
-  const [favourites, alerts, visits, courses] = [
+  const [favourites, alerts, visits, courses, devices, publicKey] = [
     await listFavourites(db, user.id),
     await listAlerts(db, user.id),
     await listVisits(db, user.id),
     await listSearchableCourses(db),
+    await listPushSubscriptions(db, user.id),
+    await pushPublicKey(),
   ];
   const courseNames = new Map(courses.map((c) => [c.slug, c.name]));
 
@@ -92,6 +104,21 @@ export default async function AccountPage({
           )}
         </section>
 
+        <section className={section} aria-labelledby="notifications">
+          <h2 id="notifications" className={heading}>
+            Notifications
+          </h2>
+          <div className={`${card} flex flex-col gap-2 p-4`}>
+            <PushToggle publicKey={publicKey} />
+            {devices.length > 0 && (
+              <p className="text-sm text-muted">
+                On for {devices.length === 1 ? "1 device" : `${devices.length} devices`}:{" "}
+                {devices.map((d) => d.deviceLabel ?? "a device").join(", ")}.
+              </p>
+            )}
+          </div>
+        </section>
+
         <section className={section} aria-labelledby="alerts">
           <h2 id="alerts" className={heading}>
             Alerts
@@ -109,6 +136,7 @@ export default async function AccountPage({
                   className="flex flex-col gap-3 border-t border-border px-4 py-3 first:border-t-0"
                 >
                   <AlertSummary alert={a} courseNames={courseNames} />
+                  {a.status !== "ended" && <AlertChannels alert={a} canPush={devices.length > 0} />}
                   {a.status !== "ended" && (
                     <div className="flex gap-2">
                       <form action={changeAlert}>
@@ -213,5 +241,46 @@ export default async function AccountPage({
         </section>
       </main>
     </>
+  );
+}
+
+/** "Tell me by: Email, Push". One stays on, so the golfer can always be reached. */
+function AlertChannels({ alert, canPush }: { alert: Alert; canPush: boolean }) {
+  const channels = [
+    { key: "email", label: "Email", on: alert.notifyEmail },
+    { key: "push", label: "Push", on: alert.notifyPush && canPush },
+  ];
+  const onCount = channels.filter((c) => c.on).length;
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-sm">
+      <span className="text-muted">Tell me by</span>
+      {channels.map((c) =>
+        c.key === "push" && !canPush ? (
+          <span key={c.key} className="text-muted">
+            · Push (turn on notifications above)
+          </span>
+        ) : (
+          <form key={c.key} action={changeAlertChannel}>
+            <input type="hidden" name="alertId" value={alert.id} />
+            <input type="hidden" name="channel" value={c.key} />
+            <input type="hidden" name="on" value={c.on ? "0" : "1"} />
+            <button
+              type="submit"
+              aria-pressed={c.on}
+              disabled={c.on && onCount === 1}
+              title={c.on && onCount === 1 ? "One way to reach you stays on" : undefined}
+              className={`inline-flex min-h-9 items-center rounded-full border px-3 font-medium disabled:cursor-not-allowed ${
+                c.on
+                  ? "border-brand bg-brand text-brand-foreground"
+                  : "border-border text-foreground"
+              }`}
+            >
+              {c.on ? "✓ " : ""}
+              {c.label}
+            </button>
+          </form>
+        ),
+      )}
+    </div>
   );
 }

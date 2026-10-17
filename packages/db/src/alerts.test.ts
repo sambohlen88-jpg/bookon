@@ -8,7 +8,7 @@ import {
   findNewAlertMatches,
   listAlerts,
   newNotificationId,
-  recordAlertEmail,
+  recordAlertRound,
   setAlertStatus,
 } from "./alerts";
 import { createDb, type DbHandle } from "./client";
@@ -108,7 +108,7 @@ describe("alerts", () => {
     );
     const [first] = await findNewAlertMatches(handle.db, minutes(31));
     const match = first!.matches[0]!;
-    await recordAlertEmail(
+    await recordAlertRound(
       handle.db,
       alert.id,
       [

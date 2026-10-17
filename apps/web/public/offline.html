@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en-AU">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#1f6f43" />
+    <title>You're offline · BookOn</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #ffffff;
+        --fg: #14211a;
+        --muted: #5b6b62;
+        --brand: #1f6f43;
+        --brand-fg: #ffffff;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0e1511;
+          --fg: #e8efe9;
+          --muted: #9fb0a5;
+          --brand: #4cc283;
+          --brand-fg: #0e1511;
+        }
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+      }
+      main {
+        max-width: 28rem;
+        margin: 0 auto;
+        padding: 3rem 1rem;
+      }
+      img {
+        width: 56px;
+        height: 56px;
+      }
+      h1 {
+        font-size: 1.75rem;
+        margin: 1.5rem 0 0.5rem;
+      }
+      p {
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      button {
+        margin-top: 1rem;
+        min-height: 3rem;
+        padding: 0 1.25rem;
+        border: 0;
+        border-radius: 0.5rem;
+        background: var(--brand);
+        color: var(--brand-fg);
+        font: inherit;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img src="/icons/icon-192.png" alt="" />
+      <h1>You're offline</h1>
+      <p>
+        BookOn needs a connection to show tee times. We don't show saved times, because they change
+        by the minute and an old one could already be booked.
+      </p>
+      <button type="button" onclick="location.reload()">Try again</button>
+    </main>
+  </body>
+</html>

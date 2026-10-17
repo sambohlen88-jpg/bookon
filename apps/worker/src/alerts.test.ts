@@ -2,6 +2,10 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { readClickToken, type TeeTime } from "@bookon/core";
 import {
   createAlert,
+  latestAlertRound,
+  listPushSubscriptions,
+  savePushSubscription,
+  setAlertChannels,
   createDb,
   findCourseBySlug,
   saveDayAvailability,
@@ -10,8 +14,8 @@ import {
   type DbHandle,
   type SearchParams,
 } from "@bookon/db";
-import type { EmailMessage, Mailer } from "@bookon/email";
-import { sendAlertEmails } from "./alerts";
+import type { EmailMessage, Mailer, PushPayload, PushSender, PushTarget } from "@bookon/email";
+import { sendAlertNotifications } from "./alerts";
 
 // 7:00 am Perth, Saturday 17 October 2026.
 const now = new Date("2026-10-16T23:00:00Z");
@@ -38,9 +42,39 @@ class TestMailer implements Mailer {
   }
 }
 
+/** Answers per endpoint: "ok", "gone" (uninstalled) or "down" (push service error). */
+class TestPush implements PushSender {
+  sent: { endpoint: string; payload: PushPayload }[] = [];
+  constructor(private readonly answers: Record<string, "ok" | "gone" | "down">) {}
+  async send(target: PushTarget, payload: PushPayload) {
+    const answer = this.answers[target.endpoint] ?? "ok";
+    if (answer === "ok") {
+      this.sent.push({ endpoint: target.endpoint, payload });
+      return { ok: true as const };
+    }
+    return { ok: false as const, gone: answer === "gone", error: answer };
+  }
+}
+
+async function addDevice(endpoint: string) {
+  await savePushSubscription(handle.db, userId, { endpoint, p256dh: "k", auth: "a" }, now);
+}
+
+async function newTime() {
+  await saveDayAvailability(
+    handle.db,
+    collier,
+    "2026-10-18",
+    [slot("08:00"), slot("09:00")],
+    later(30),
+  );
+}
+
 let handle: DbHandle;
 let collier: string;
 let mailer: TestMailer;
+let userId: string;
+let alertId: string;
 
 function slot(perthTime: string): TeeTime {
   return {
@@ -67,19 +101,25 @@ beforeEach(async () => {
     .insert(schema.users)
     .values({ email: "sam@example.com" })
     .returning();
-  await createAlert(handle.db, { userId: user!.id, email: "sam@example.com", filters, now });
+  userId = user!.id;
+  const created = await createAlert(handle.db, { userId, email: "sam@example.com", filters, now });
+  alertId = "alert" in created ? created.alert.id : "";
 });
 
 afterEach(async () => {
   await handle.close();
 });
 
-describe("sendAlertEmails", () => {
+describe("sendAlertNotifications", () => {
   it("emails a new tee time once, with a tracked link and a manage link", async () => {
-    expect(await sendAlertEmails(handle.db, mailer, { now: later(1), site, key })).toEqual({
+    expect(
+      await sendAlertNotifications(handle.db, { mailer }, { now: later(1), site, key }),
+    ).toEqual({
       ended: 0,
       sent: 0,
       failed: 0,
+      pushed: 0,
+      emailed: 0,
     });
 
     await saveDayAvailability(
@@ -89,7 +129,11 @@ describe("sendAlertEmails", () => {
       [slot("08:00"), slot("09:00")],
       later(30),
     );
-    const result = await sendAlertEmails(handle.db, mailer, { now: later(31), site, key });
+    const result = await sendAlertNotifications(
+      handle.db,
+      { mailer },
+      { now: later(31), site, key },
+    );
     expect(result.sent).toBe(1);
     const [email] = mailer.sent;
     expect(email!.to).toBe("sam@example.com");
@@ -109,7 +153,7 @@ describe("sendAlertEmails", () => {
     expect(emailed[0]!.clickToken).toBe(token);
 
     // Still showing two hours later: not sent again.
-    await sendAlertEmails(handle.db, mailer, { now: later(150), site, key });
+    await sendAlertNotifications(handle.db, { mailer }, { now: later(150), site, key });
     expect(mailer.sent).toHaveLength(1);
   });
 
@@ -122,12 +166,16 @@ describe("sendAlertEmails", () => {
       later(30),
     );
     mailer.fail = true;
-    expect(await sendAlertEmails(handle.db, mailer, { now: later(31), site, key })).toMatchObject({
+    expect(
+      await sendAlertNotifications(handle.db, { mailer }, { now: later(31), site, key }),
+    ).toMatchObject({
       sent: 0,
       failed: 1,
     });
     mailer.fail = false;
-    expect(await sendAlertEmails(handle.db, mailer, { now: later(32), site, key })).toMatchObject({
+    expect(
+      await sendAlertNotifications(handle.db, { mailer }, { now: later(32), site, key }),
+    ).toMatchObject({
       sent: 1,
     });
   });
@@ -140,17 +188,77 @@ describe("sendAlertEmails", () => {
       [slot("08:00"), slot("09:00")],
       later(30),
     );
-    await sendAlertEmails(handle.db, mailer, { now: later(31), site, key: null });
+    await sendAlertNotifications(handle.db, { mailer }, { now: later(31), site, key: null });
     expect(mailer.sent[0]!.text).toContain("Book: https://bookings.collierparkgolf.com.au/x");
     expect(mailer.sent[0]!.text).not.toContain("/go/");
   });
 
   it("ends alerts once their last day has passed", async () => {
     const nextWeek = new Date("2026-10-20T00:00:00Z");
-    expect(await sendAlertEmails(handle.db, mailer, { now: nextWeek, site, key })).toEqual({
+    expect(
+      await sendAlertNotifications(handle.db, { mailer }, { now: nextWeek, site, key }),
+    ).toEqual({
       ended: 1,
       sent: 0,
       failed: 0,
+      pushed: 0,
+      emailed: 0,
     });
+  });
+
+  it("pushes to every device, and the tap opens the alert's new times", async () => {
+    await addDevice("https://push.example/phone");
+    await addDevice("https://push.example/laptop");
+    await setAlertChannels(handle.db, alertId, { email: false, push: true });
+    await newTime();
+    const push = new TestPush({});
+    const result = await sendAlertNotifications(
+      handle.db,
+      { mailer, push },
+      { now: later(31), site, key },
+    );
+    expect(result).toMatchObject({ sent: 1, pushed: 1, emailed: 0 });
+    expect(mailer.sent).toHaveLength(0);
+    expect(push.sent.map((p) => p.endpoint).sort()).toEqual([
+      "https://push.example/laptop",
+      "https://push.example/phone",
+    ]);
+    const { payload } = push.sent[0]!;
+    expect(payload.title).toBe("New tee time: Collier Park Golf Course");
+    expect(payload.body).toContain("9:00 am");
+    expect(payload.url).toMatch(/^https:\/\/bookon\.test\/alerts\/.+\?new=1$/);
+
+    const [alert] = await handle.db.select().from(schema.alerts);
+    const round = await latestAlertRound(handle.db, alert!);
+    expect(round.map((r) => r.startTime)).toEqual([new Date("2026-10-18T09:00:00+08:00")]);
+    expect(round[0]!.clickToken).not.toBeNull();
+  });
+
+  it("sends both when the golfer wants both", async () => {
+    await addDevice("https://push.example/phone");
+    await setAlertChannels(handle.db, alertId, { email: true, push: true });
+    await newTime();
+    const push = new TestPush({});
+    expect(
+      await sendAlertNotifications(handle.db, { mailer, push }, { now: later(31), site, key }),
+    ).toMatchObject({ sent: 1, pushed: 1, emailed: 1 });
+  });
+
+  it("forgets uninstalled devices and emails instead when push reached nobody", async () => {
+    await addDevice("https://push.example/gone");
+    await addDevice("https://push.example/down");
+    await setAlertChannels(handle.db, alertId, { email: false, push: true });
+    await newTime();
+    const push = new TestPush({
+      "https://push.example/gone": "gone",
+      "https://push.example/down": "down",
+    });
+    expect(
+      await sendAlertNotifications(handle.db, { mailer, push }, { now: later(31), site, key }),
+    ).toMatchObject({ sent: 1, pushed: 0, emailed: 1 });
+    expect(mailer.sent).toHaveLength(1);
+    expect((await listPushSubscriptions(handle.db, userId)).map((d) => d.endpoint)).toEqual([
+      "https://push.example/down",
+    ]);
   });
 });

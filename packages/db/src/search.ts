@@ -1,4 +1,4 @@
-import { and, between, eq, gt, gte, inArray, lte } from "drizzle-orm";
+import { and, between, eq, gt, gte, inArray, lte, or } from "drizzle-orm";
 import { addPerthDays, eachPerthDate, perthDate, perthToUtc } from "@bookon/core";
 import type { Database } from "./client";
 import { availabilityChecks, availabilitySnapshots, courses } from "./schema";
@@ -107,9 +107,28 @@ export async function searchTeeTimes(
         gte(availabilitySnapshots.spotsAvailable, params.players),
         lte(availabilitySnapshots.minPlayers, params.players),
         params.holes ? eq(availabilitySnapshots.holes, params.holes) : undefined,
+        // The golfer's time window on each day, so rows outside it never leave the database.
+        or(
+          ...dates.map((date) =>
+            between(
+              availabilitySnapshots.startTime,
+              perthToUtc(date, params.timeFrom),
+              perthToUtc(date, params.timeTo),
+            ),
+          ),
+        ),
       ),
     )
     .orderBy(availabilitySnapshots.startTime);
+
+  // Grouped once, rather than scanning every row for every course.
+  const checkFor = new Map(checks.map((c) => [`${c.courseId}|${c.playDate}`, c]));
+  const snapshotsFor = new Map<string, typeof snapshots>();
+  for (const s of snapshots) {
+    const list = snapshotsFor.get(s.courseId);
+    if (list) list.push(s);
+    else snapshotsFor.set(s.courseId, [s]);
+  }
 
   const results: CourseResult[] = courseRows.map((course) => {
     const lastOpenDate = addPerthDays(today, course.bookingWindowDays - 1);
@@ -126,7 +145,7 @@ export async function searchTeeTimes(
         });
         continue;
       }
-      const check = checks.find((c) => c.courseId === course.id && c.playDate === date);
+      const check = checkFor.get(`${course.id}|${date}`);
       if (!check) {
         notices.push({ date, kind: "not-checked" });
       } else if (
@@ -140,13 +159,8 @@ export async function searchTeeTimes(
       }
     }
 
-    const teeTimes = snapshots
-      .filter((s) => s.courseId === course.id && freshDates.has(s.playDate))
-      .filter((s) => {
-        const from = perthToUtc(s.playDate, params.timeFrom);
-        const to = perthToUtc(s.playDate, params.timeTo);
-        return s.startTime >= from && s.startTime <= to;
-      })
+    const teeTimes = (snapshotsFor.get(course.id) ?? [])
+      .filter((s) => freshDates.has(s.playDate))
       .map((s) => ({
         startTime: s.startTime,
         playDate: s.playDate,

@@ -184,6 +184,9 @@ export const alerts = pgTable("alerts", {
   manageToken: text("manage_token").notNull().unique(),
   confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
   lastNotifiedAt: timestamp("last_notified_at", { withTimezone: true }),
+  /** How the golfer hears about new times. At least one is on. */
+  notifyEmail: boolean("notify_email").notNull().default(true),
+  notifyPush: boolean("notify_push").notNull().default(false),
 });
 
 export const notifications = pgTable(
@@ -302,4 +305,31 @@ export const outboxEmails = pgTable("outbox_emails", {
   subject: text("subject").notNull(),
   text: text("text").notNull(),
   html: text("html").notNull(),
+});
+
+/** A device (browser or installed app) that agreed to push notifications. */
+export const pushSubscriptions = pgTable(
+  "push_subscriptions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: createdAt(),
+    /** The push service URL for this device. */
+    endpoint: text("endpoint").notNull().unique(),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    /** To tell devices apart on the account page, e.g. "iPhone" or "Chrome on Mac". */
+    deviceLabel: text("device_label"),
+    lastSuccessAt: timestamp("last_success_at", { withTimezone: true }),
+  },
+  (t) => [index("push_subscriptions_user_idx").on(t.userId)],
+);
+
+/** Small values the app keeps for itself, such as development push keys. */
+export const appSettings = pgTable("app_settings", {
+  key: text("key").primaryKey(),
+  value: jsonb("value").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

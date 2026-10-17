@@ -68,3 +68,31 @@ body {
   outline: 3px solid var(--brand);
   outline-offset: 2px;
 }
+
+/*
+ * Tee time rows. A results page can list hundreds, so they use short class
+ * names rather than a long list of utilities on every row.
+ */
+@layer components {
+  .tee-row {
+    @apply flex items-center gap-3 border-t border-border py-3;
+  }
+  .tee-row:first-child {
+    border-top-width: 0;
+  }
+  .tee-time {
+    @apply w-[5.5rem] shrink-0 whitespace-nowrap text-lg font-semibold tabular-nums;
+  }
+  .tee-info {
+    @apply min-w-0 flex-1 text-sm;
+  }
+  .tee-info > span {
+    display: block;
+  }
+  .tee-book {
+    @apply flex min-h-11 shrink-0 items-center rounded-lg bg-brand px-4 text-sm font-semibold text-brand-foreground;
+  }
+  .more-link {
+    @apply flex min-h-11 items-center text-sm font-medium text-brand underline-offset-4 hover:underline;
+  }
+}

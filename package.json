@@ -17,7 +17,8 @@
     "format:check": "prettier --check .",
     "db:dev": "pnpm --filter @bookon/db dev",
     "stats": "pnpm --filter @bookon/db stats",
-    "alerts": "pnpm --filter @bookon/worker alerts"
+    "alerts": "pnpm --filter @bookon/worker alerts",
+    "push:keys": "pnpm --filter @bookon/email exec web-push generate-vapid-keys"
   },
   "devDependencies": {
     "prettier": "^3.3.3"

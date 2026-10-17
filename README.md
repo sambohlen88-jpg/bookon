@@ -2,7 +2,7 @@
 
 Find a tee time at Perth public golf courses, then book with the club. See [`SPEC.md`](./SPEC.md) for the full product spec.
 
-**Status:** Milestone 4 done (accounts, favourites and email alerts), covering 26 WA courses. See [`docs/m4-review.md`](./docs/m4-review.md) and [`docs/courses.md`](./docs/courses.md).
+**Status:** Milestone 5 done (installable app, push notifications and a speed pass), covering 26 WA courses. See [`docs/m5-review.md`](./docs/m5-review.md) and [`docs/courses.md`](./docs/courses.md).
 
 ## Layout
 
@@ -12,7 +12,7 @@ apps/worker       Background jobs: availability checks and alert matching
 packages/adapters MiClub and Quick18 readers, polite HTTP client
 packages/core     Shared types, adapter interface, Perth time helpers
 packages/db       Drizzle schema, migrations, seed data, queries
-packages/email    Email templates, the development outbox and Postmark sending
+packages/email    Email and push: templates, the development outbox, Postmark and Web Push
 docs/             Research and milestone write-ups
 ```
 

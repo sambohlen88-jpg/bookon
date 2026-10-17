@@ -22,6 +22,13 @@
       "when": 1792253348361,
       "tag": "0002_alert_clicks_survive_deletion",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792254894000,
+      "tag": "0003_push_notifications",
+      "breakpoints": true
     }
   ]
 }

@@ -5,6 +5,7 @@ import { cookies, headers } from "next/headers";
 import {
   courseIdsForSlugs,
   listFavourites,
+  listPushSubscriptions,
   listSearchableCourses,
   logSearch,
   searchTeeTimes,
@@ -17,11 +18,13 @@ import { RefreshBar } from "@/components/refresh-bar";
 import { CourseResults, NoMatchList } from "@/components/results";
 import { SearchForm } from "@/components/search-form";
 import { SiteHeader } from "@/components/site-header";
+import { PushToggle } from "@/components/push-toggle";
 import { Notice, primaryButton } from "@/components/ui";
 import { currentUser } from "@/lib/auth";
 import { isBot } from "@/lib/bots";
 import { bookLink } from "@/lib/click-token";
 import { getDb } from "@/lib/db";
+import { pushPublicKey } from "@/lib/push";
 import { SESSION_COOKIE, validSessionId } from "@/lib/session";
 import {
   EARLIEST_TIME,
@@ -60,6 +63,12 @@ export default async function SearchPage({
   const params = toSearchParams(form, now);
   const here = searchHref(form);
   const alertStatus = typeof query.alert === "string" ? query.alert : undefined;
+  // Just set an alert, with no device getting notifications yet: offer them.
+  const hasDevices =
+    alertStatus === "created" && user
+      ? (await listPushSubscriptions(db, user.id)).length > 0
+      : false;
+  const offerPush = alertStatus === "created" && user && !hasDevices ? await pushPublicKey() : null;
   const result = await searchTeeTimes(db, params, now);
   await recordSearch(db, params, result, now);
   const multiDay = params.dateFrom !== params.dateTo;
@@ -99,11 +108,19 @@ export default async function SearchPage({
         {alertStatus === "created" && (
           <div className="mt-4">
             <Notice tone="info">
-              Alert set. We&apos;ll email {user?.email ?? "you"} when a new time appears.{" "}
+              Alert set. We&apos;ll{" "}
+              {hasDevices ? "send a notification and an email" : `email ${user?.email ?? "you"}`}{" "}
+              when a new time appears.{" "}
               <Link href="/account" className="underline">
                 Manage alerts
               </Link>
             </Notice>
+            {offerPush && (
+              <div className="mt-3 rounded-xl border border-border p-4">
+                <p className="mb-2 font-semibold">Want to hear even faster?</p>
+                <PushToggle publicKey={offerPush} />
+              </div>
+            )}
           </div>
         )}
         {alertStatus === "limit" && (
@@ -134,6 +151,7 @@ export default async function SearchPage({
               favourite={user ? favouriteIds.has(r.course.id) : null}
               back={here}
               dayHref={(date) => searchHref({ ...form, date, days: 1, courses: [r.course.slug] })}
+              courseHref={searchHref({ ...form, courses: [r.course.slug] })}
               bookHref={(t) =>
                 bookLink({
                   courseId: r.course.id,
