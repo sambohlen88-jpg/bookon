@@ -23,7 +23,7 @@ Needs Node 22 and pnpm 10 (`corepack enable` sets up pnpm).
 pnpm install
 pnpm --filter @bookon/db seed   # local database (PGlite in .data/) with the launch courses
 pnpm dev                        # web app on http://localhost:3000
-pnpm dev:worker                 # worker, needs BOOKON_CONTACT_EMAIL (see apps/worker/README.md)
+pnpm dev:worker                 # worker (see apps/worker/README.md)
 ```
 
 Checks (the same ones CI runs):

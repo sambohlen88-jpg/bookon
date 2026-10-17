@@ -50,7 +50,7 @@
 pnpm install
 pnpm test                                             # all tests, no network needed
 pnpm --filter @bookon/db seed                         # local database with the launch courses
-BOOKON_CONTACT_EMAIL=you@example.com pnpm --filter @bookon/worker poll -- --course hamersley --days 2
+pnpm --filter @bookon/worker poll -- --course hamersley --days 2
 ```
 
 On a machine with internet access, the last command fetches Hamersley's live tee times into the local database. In this build environment, it records a clean "robots.txt could not be read" error for each course instead, which shows the failure path working.

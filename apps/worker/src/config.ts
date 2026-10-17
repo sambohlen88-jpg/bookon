@@ -7,14 +7,12 @@ export interface WorkerConfig {
   pollIntervalMinutes: number;
 }
 
-/** Read worker settings from the environment. Live fetching needs a contact email in the user agent. */
+/** Goes in the user agent so clubs can contact us. */
+export const DEFAULT_CONTACT_EMAIL = "info@bookon.com.au";
+
+/** Read worker settings from the environment. */
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): WorkerConfig {
-  const contact = env.BOOKON_CONTACT_EMAIL?.trim();
-  if (!contact) {
-    throw new Error(
-      "Set BOOKON_CONTACT_EMAIL so clubs can identify and contact us from our user agent.",
-    );
-  }
+  const contact = env.BOOKON_CONTACT_EMAIL?.trim() || DEFAULT_CONTACT_EMAIL;
   const site = env.BOOKON_SITE_URL?.trim() || "https://bookon.com.au";
   return {
     databaseUrl: env.DATABASE_URL?.trim() || LOCAL_DATABASE_URL,

@@ -22,7 +22,7 @@ pnpm --filter @bookon/worker start                    # poll every POLL_INTERVAL
 
 | Variable                  | Default                  |                                                 |
 | ------------------------- | ------------------------ | ----------------------------------------------- |
-| `BOOKON_CONTACT_EMAIL`    | required                 | Goes in the user agent so clubs can contact us. |
+| `BOOKON_CONTACT_EMAIL`    | `info@bookon.com.au`     | Goes in the user agent so clubs can contact us. |
 | `BOOKON_SITE_URL`         | `https://bookon.com.au`  | Also in the user agent.                         |
 | `DATABASE_URL`            | local PGlite in `.data/` | `postgres://...` for Supabase or Neon.          |
 | `POLL_INTERVAL_MINUTES`   | 30                       | For `start`.                                    |
