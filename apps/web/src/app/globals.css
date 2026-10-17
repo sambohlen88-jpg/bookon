@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+/*
+ * Brand tokens. Placeholder values until the owner supplies the BookOn brand.
+ * Change colours here, not in components.
+ */
+:root {
+  --background: #ffffff;
+  --foreground: #14211a;
+  --muted: #5b6b62;
+  --surface: #f3f6f4;
+  --border: #d9e2dc;
+  --brand: #1f6f43;
+  --brand-foreground: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0e1511;
+    --foreground: #e8efe9;
+    --muted: #9fb0a5;
+    --surface: #17211b;
+    --border: #2a3830;
+    --brand: #4cc283;
+    --brand-foreground: #0e1511;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
