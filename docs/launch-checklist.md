@@ -21,6 +21,7 @@ Data is read from public booking pages with the owner's approval, ahead of forma
 
 - [ ] Hosting: Vercel (website), a hosted Postgres such as Supabase or Neon, and Railway or Fly for the worker.
 - [ ] The worker running on a schedule, so results stay fresh.
+- [ ] `CLICK_SIGNING_SECRET` set on the website host (`openssl rand -base64 32`). Without it, Book clicks still work but aren't tracked.
 - [ ] Error monitoring (Sentry), uptime checks, rate limits on public pages, database backups.
 
 ## Product

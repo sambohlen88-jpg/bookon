@@ -15,7 +15,8 @@
     "test": "pnpm -r test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "db:dev": "pnpm --filter @bookon/db dev"
+    "db:dev": "pnpm --filter @bookon/db dev",
+    "stats": "pnpm --filter @bookon/db stats"
   },
   "devDependencies": {
     "prettier": "^3.3.3"

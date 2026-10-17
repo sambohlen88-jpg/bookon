@@ -1,11 +1,24 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { formatPerthDay } from "@bookon/core";
-import { listSearchableCourses, searchTeeTimes } from "@bookon/db";
+import { cookies, headers } from "next/headers";
+import {
+  courseIdsForSlugs,
+  listSearchableCourses,
+  logSearch,
+  searchTeeTimes,
+  type Database,
+  type SearchParams,
+  type SearchResult,
+} from "@bookon/db";
+import { RefreshBar } from "@/components/refresh-bar";
 import { CourseResults, NoMatchList } from "@/components/results";
 import { SearchForm } from "@/components/search-form";
 import { SiteHeader } from "@/components/site-header";
+import { isBot } from "@/lib/bots";
+import { bookLink } from "@/lib/click-token";
 import { getDb } from "@/lib/db";
+import { SESSION_COOKIE, validSessionId } from "@/lib/session";
 import {
   EARLIEST_TIME,
   LATEST_TIME,
@@ -35,6 +48,7 @@ export default async function SearchPage({
   );
   const params = toSearchParams(form, now);
   const result = await searchTeeTimes(db, params, now);
+  await recordSearch(db, params, result, now);
   const multiDay = params.dateFrom !== params.dateTo;
   const withTimes = result.courses.filter((c) => c.teeTimes.length > 0).length;
   // A handful of courses each get a card, so their notices show. Beyond that, courses with
@@ -74,6 +88,14 @@ export default async function SearchPage({
               oneCourse={result.courses.length === 1}
               now={now}
               dayHref={(date) => searchHref({ ...form, date, days: 1, courses: [r.course.slug] })}
+              bookHref={(t) =>
+                bookLink({
+                  courseId: r.course.id,
+                  startTime: t.startTime.toISOString(),
+                  url: t.bookingUrl,
+                  source: "search",
+                })
+              }
             />
           ))}
           {folded.length > 0 && (
@@ -81,10 +103,11 @@ export default async function SearchPage({
           )}
         </div>
 
-        <p className="mt-8 text-xs text-muted">
+        <p className="mt-8 pb-16 text-xs text-muted">
           Times and prices come from each club&apos;s booking page and can change. You book and pay
           with the club.
         </p>
+        <RefreshBar renderedAt={now.toISOString()} />
       </main>
     </>
   );
@@ -131,6 +154,7 @@ function EmptyState({ form }: { form: SearchFormValues }) {
               <li key={w.label}>
                 <Link
                   href={w.href}
+                  prefetch={false}
                   className="flex min-h-11 items-center rounded-full border border-border px-4 text-sm font-medium"
                 >
                   {w.label}
@@ -148,4 +172,25 @@ function EmptyState({ form }: { form: SearchFormValues }) {
       </div>
     </div>
   );
+}
+
+/** Log the search for club reports. Skips bots and prefetches, and never breaks the page. */
+async function recordSearch(db: Database, params: SearchParams, result: SearchResult, now: Date) {
+  const requestHeaders = await headers();
+  const sessionId = validSessionId((await cookies()).get(SESSION_COOKIE)?.value);
+  if (!sessionId || isBot(requestHeaders.get("user-agent"))) return;
+  if (requestHeaders.get("next-router-prefetch") || requestHeaders.get("purpose") === "prefetch")
+    return;
+  try {
+    await logSearch(db, {
+      sessionId,
+      params,
+      courseIds: await courseIdsForSlugs(db, params.courseSlugs ?? []),
+      resultCount: result.totalTeeTimes,
+      shownCourseIds: result.courses.filter((c) => c.teeTimes.length > 0).map((c) => c.course.id),
+      now,
+    });
+  } catch (error) {
+    console.error("[search] could not log search", error);
+  }
 }

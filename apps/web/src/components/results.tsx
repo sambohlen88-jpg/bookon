@@ -20,6 +20,7 @@ export function CourseResults({
   oneCourse,
   now,
   dayHref,
+  bookHref,
 }: {
   result: CourseResult;
   multiDay: boolean;
@@ -27,6 +28,8 @@ export function CourseResults({
   now: Date;
   /** A search for just this course on one day, for "see all" links. */
   dayHref: (date: string) => string;
+  /** The tracked /go link for a tee time. */
+  bookHref: (teeTime: ResultTeeTime) => string;
 }) {
   const limits = multiDay ? LIMITS.multiDay : oneCourse ? LIMITS.oneCourseOneDay : LIMITS.singleDay;
   const { course, teeTimes, checkedAt, notices } = result;
@@ -65,6 +68,7 @@ export function CourseResults({
                 key={`${t.startTime.toISOString()}-${t.holes}-${t.layout}`}
                 teeTime={t}
                 course={course.name}
+                href={bookHref(t)}
               />
             ))}
           </ul>
@@ -79,6 +83,7 @@ export function CourseResults({
                     key={`${t.startTime.toISOString()}-${t.holes}-${t.layout}`}
                     teeTime={t}
                     course={course.name}
+                    href={bookHref(t)}
                   />
                 ))}
               </ul>
@@ -87,6 +92,7 @@ export function CourseResults({
           {times.length > limits.max && (
             <Link
               href={dayHref(day)}
+              prefetch={false}
               className="flex min-h-11 items-center text-sm font-medium text-brand underline-offset-4 hover:underline"
             >
               See all {times.length} times{multiDay ? ` on ${formatPerthDay(day)}` : ""}
@@ -98,7 +104,15 @@ export function CourseResults({
   );
 }
 
-function TeeTimeRow({ teeTime, course }: { teeTime: ResultTeeTime; course: string }) {
+function TeeTimeRow({
+  teeTime,
+  course,
+  href,
+}: {
+  teeTime: ResultTeeTime;
+  course: string;
+  href: string;
+}) {
   const time = formatPerthTime(teeTime.startTime);
   const spots = `${teeTime.spotsAvailable} ${teeTime.spotsAvailable === 1 ? "spot" : "spots"}`;
   return (
@@ -116,7 +130,7 @@ function TeeTimeRow({ teeTime, course }: { teeTime: ResultTeeTime; course: strin
         </span>
       </span>
       <a
-        href={teeTime.bookingUrl}
+        href={href}
         target="_blank"
         rel="noopener"
         aria-label={`Book ${time} at ${course} on the club's site (opens in a new tab)`}

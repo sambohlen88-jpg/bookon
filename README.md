@@ -2,7 +2,7 @@
 
 Find a tee time at Perth public golf courses, then book with the club. See [`SPEC.md`](./SPEC.md) for the full product spec.
 
-**Status:** Milestone 2 done (search), covering 26 WA courses. See [`docs/m2-review.md`](./docs/m2-review.md) and [`docs/courses.md`](./docs/courses.md).
+**Status:** Milestone 3 done (handoff and tracking), covering 26 WA courses. See [`docs/m3-review.md`](./docs/m3-review.md) and [`docs/courses.md`](./docs/courses.md).
 
 ## Layout
 
@@ -25,6 +25,7 @@ pnpm db:dev                                # 1st terminal: local database, keep 
 pnpm db:seed                               # once: tables and courses
 pnpm --filter @bookon/worker poll          # fetch live tee times (or `pnpm dev:worker` to keep polling)
 pnpm dev                                   # website on http://localhost:3000
+pnpm stats                                 # searches, impressions and clicks per course
 ```
 
 Checks (the same ones CI runs):
