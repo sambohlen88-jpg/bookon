@@ -30,7 +30,7 @@ export default async function OutboxPage() {
             </header>
             <iframe
               title={e.subject}
-              srcDoc={e.html}
+              srcDoc={openLinksInPage(e.html)}
               sandbox="allow-top-navigation-by-user-activation allow-popups"
               className="h-96 w-full"
             />
@@ -39,4 +39,15 @@ export default async function OutboxPage() {
       </main>
     </>
   );
+}
+
+/**
+ * Links in the preview would otherwise open inside its small sandboxed frame,
+ * where the sign-in button can't work. Open them in the page, like an email app would.
+ */
+function openLinksInPage(html: string): string {
+  const base = '<base target="_top">';
+  return /<head[^>]*>/i.test(html)
+    ? html.replace(/<head[^>]*>/i, (head) => `${head}${base}`)
+    : `${base}${html}`;
 }

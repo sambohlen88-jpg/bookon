@@ -36,6 +36,7 @@
 
 1. **Deleting an account failed after clicking a link in an alert email.** The click pointed at the email's record, which is deleted with the account. Clicks now keep counting but drop that link (migration `0002`).
 2. **The local database mixed up queries from the same page.** The page header (signed in or not) and the results now load at the same time, and PGlite's server is a single database session. The website and worker now use one connection each to the local server. Hosted Postgres is unaffected.
+3. **Links in the outbox opened inside the email preview** (found by the owner). The sign-in page loaded in the small preview box, where its button can't work, so it looked like it was asking to sign in again. Links in the outbox now open in the main window, as they would from an email app.
 
 ## Decisions I made
 
