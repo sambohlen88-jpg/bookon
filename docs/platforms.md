@@ -28,6 +28,8 @@ Before Milestone 1, the owner (or a session with those hosts allowed) should che
 
 The owner decided to start reading MiClub and Quick18 public availability, ahead of approaching the platforms for permission. The worker reads only public pages that need no login, identifies itself in its user agent with a contact email, honours robots.txt, waits at least 3 seconds between requests to the same site, backs off on errors, and never books. Approaching MiClub (TeeNet feed) and Sagacity for written permission is still recommended.
 
+**Update, 17 October 2026:** the owner also approved reading Chronogolf (Lightspeed Golf) public availability on the same terms, for Marangaroo, The Cut and Point Walter. **Before full launch, get verified access or written permission from all three platforms: MiClub, Sagacity (Quick18) and Lightspeed (Chronogolf).** This is tracked in [`launch-checklist.md`](./launch-checklist.md).
+
 ## What the saved pages confirmed (Milestone 1)
 
 This session still could not reach the club sites. But the open-source [TeeTimeFinder](https://github.com/Ay1tsMe/TeeTimeFinder) (MIT licence) includes browser-saved pages from Collier Park, Fremantle Public, Hamersley and The Springs (September and October 2025). They confirm the structure below, and the adapters are tested against them.
