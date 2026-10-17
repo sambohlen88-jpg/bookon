@@ -7,7 +7,8 @@ Reads tee time availability from club booking pages and stores it. Runs separate
 From the repo root:
 
 ```sh
-pnpm --filter @bookon/db seed                         # create the local database and launch courses
+pnpm db:dev                                           # local database server; keep it running
+pnpm db:seed                                          # tables and courses
 pnpm --filter @bookon/worker poll                     # one pass over every enabled course
 pnpm --filter @bookon/worker poll -- --course hamersley --days 2
 pnpm --filter @bookon/worker record -- --course collier-park --days 1
@@ -22,13 +23,13 @@ Behind an HTTP proxy, put `NODE_USE_ENV_PROXY=1` in front of these commands. Nod
 
 ## Settings
 
-| Variable                  | Default                  |                                                 |
-| ------------------------- | ------------------------ | ----------------------------------------------- |
-| `BOOKON_CONTACT_EMAIL`    | `info@bookon.com.au`     | Goes in the user agent so clubs can contact us. |
-| `BOOKON_SITE_URL`         | `https://bookon.com.au`  | Also in the user agent.                         |
-| `DATABASE_URL`            | local PGlite in `.data/` | `postgres://...` for Supabase or Neon.          |
-| `POLL_INTERVAL_MINUTES`   | 30                       | For `start`.                                    |
-| `MIN_REQUEST_INTERVAL_MS` | 3000                     | Gap between requests to the same site.          |
+| Variable                  | Default                             |                                                 |
+| ------------------------- | ----------------------------------- | ----------------------------------------------- |
+| `BOOKON_CONTACT_EMAIL`    | `info@bookon.com.au`                | Goes in the user agent so clubs can contact us. |
+| `BOOKON_SITE_URL`         | `https://bookon.com.au`             | Also in the user agent.                         |
+| `DATABASE_URL`            | local PGlite server (`pnpm db:dev`) | `postgres://...` for Supabase or Neon.          |
+| `POLL_INTERVAL_MINUTES`   | 30                                  | For `start`.                                    |
+| `MIN_REQUEST_INTERVAL_MS` | 3000                                | Gap between requests to the same site.          |
 
 ## How it behaves
 

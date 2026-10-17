@@ -1,14 +1,32 @@
-export default function Home() {
+import { listSearchableCourses, type SearchableCourse } from "@bookon/db";
+import { SearchForm } from "@/components/search-form";
+import { SiteHeader } from "@/components/site-header";
+import { getDb } from "@/lib/db";
+import { defaultForm } from "@/lib/search-form";
+
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const now = new Date();
+  // The form must still show if the database is down; search will explain.
+  const courses: SearchableCourse[] = await listSearchableCourses(getDb()).catch(() => []);
+
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-6 px-4 py-12">
-      <h1 className="text-4xl font-bold tracking-tight">BookOn</h1>
-      <p className="text-lg text-muted">
-        Pick a day, a time and how many of you are playing. We&apos;ll show you which Perth public
-        courses have a tee time that fits.
-      </p>
-      <p className="rounded-lg border border-border bg-surface p-4 text-sm text-muted">
-        Coming soon. Search arrives in Milestone 2.
-      </p>
-    </main>
+    <>
+      <SiteHeader />
+      <main className="mx-auto max-w-md px-4 pb-12 pt-6">
+        <h1 className="text-3xl font-bold tracking-tight">Find a tee time</h1>
+        <p className="mt-2 text-muted">Every Perth public course we check, in one search.</p>
+        <div className="mt-6">
+          <SearchForm values={defaultForm(now)} courses={courses} now={now} />
+        </div>
+        {courses.length > 0 && (
+          <p className="mt-8 text-sm text-muted">
+            Checking {courses.map((c) => c.name.replace(/ Golf Course$/, "")).join(", ")}. More
+            courses coming soon.
+          </p>
+        )}
+      </main>
+    </>
   );
 }

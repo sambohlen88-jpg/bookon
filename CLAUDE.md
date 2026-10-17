@@ -17,6 +17,7 @@ Read `SPEC.md` before starting work. The product is BookOn (the spec's working t
 - Shared types and the `CourseAdapter` interface live in `packages/core`. Platform-specific code stays inside its adapter in `packages/adapters`.
 - Schema changes: edit `packages/db/src/schema.ts`, then `pnpm --filter @bookon/db generate --name <what_changed>` and commit the migration.
 - In the Claude Code cloud environment, run live worker commands with `NODE_USE_ENV_PROXY=1`.
+- Local database: `pnpm db:dev` (PGlite server on port 5433). It mixes up overlapping queries on one connection, so run a request's queries one after another, not with `Promise.all`.
 - Times: store UTC, display Perth time via helpers in `packages/core/src/time.ts`. Do not hand-roll offsets elsewhere.
 - Colours come from CSS tokens in `apps/web/src/app/globals.css`, not hard-coded values in components.
 - Before finishing: `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build`.

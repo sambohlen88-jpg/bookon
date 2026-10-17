@@ -1,4 +1,5 @@
 import { mkdirSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { PGlite } from "@electric-sql/pglite";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
@@ -17,13 +18,16 @@ export interface DbHandle {
   close(): Promise<void>;
 }
 
-const migrationsFolder = fileURLToPath(new URL("../migrations", import.meta.url));
+/** Resolved only when migrating. Written this way so bundlers don't try to bundle the folder. */
+function migrationsFolder(): string {
+  return join(dirname(fileURLToPath(import.meta.url)), "..", "migrations");
+}
 
 /**
  * Connect to the database named by `url`:
  * - `postgres://...` for Supabase, Neon or any Postgres.
  * - `pglite:memory` for an in-memory database (tests).
- * - `pglite:<dir>` for a local file database (development, no server needed).
+ * - `pglite:<dir>` for a file database only one process will open.
  */
 export function createDb(url: string): DbHandle {
   if (url.startsWith("postgres://") || url.startsWith("postgresql://")) {
@@ -31,7 +35,7 @@ export function createDb(url: string): DbHandle {
     const db = drizzlePostgres(sql, { schema });
     return {
       db: db as unknown as Database,
-      migrate: () => migratePostgres(db, { migrationsFolder }),
+      migrate: () => migratePostgres(db, { migrationsFolder: migrationsFolder() }),
       close: () => sql.end(),
     };
   }
@@ -43,7 +47,7 @@ export function createDb(url: string): DbHandle {
     const db = drizzlePglite(client, { schema });
     return {
       db: db as unknown as Database,
-      migrate: () => migratePglite(db, { migrationsFolder }),
+      migrate: () => migratePglite(db, { migrationsFolder: migrationsFolder() }),
       close: () => client.close(),
     };
   }
@@ -51,5 +55,8 @@ export function createDb(url: string): DbHandle {
   throw new Error("DATABASE_URL must start with postgres://, postgresql:// or pglite:");
 }
 
-/** The default for local development when DATABASE_URL is not set. */
-export const LOCAL_DATABASE_URL = `pglite:${fileURLToPath(new URL("../../../.data/pglite", import.meta.url))}`;
+/**
+ * The default when DATABASE_URL is not set: the local PGlite server started by
+ * `pnpm db:dev`, which lets the web app and the worker share one database.
+ */
+export const LOCAL_DATABASE_URL = "postgres://postgres@127.0.0.1:5433/postgres";

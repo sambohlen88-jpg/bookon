@@ -5,6 +5,7 @@ import { CaptchaRequiredError, PageFormatError } from "../shared";
 import {
   calendarUrl,
   classifyFeeGroup,
+  cleanLayout,
   layoutForHoles,
   miclubAdapter,
   parseCalendar,
@@ -228,6 +229,14 @@ describe("live pages recorded 17 October 2026", () => {
     });
   });
 
+  it("uses a lone price even when its label says concession", () => {
+    // Fremantle, October 2026: each row lists one fee, "Cored and Sanded Greens Concession Rate Applies".
+    const rows = parseTimesheet(fixture("miclub/live-fremantle-timesheet-2026-10-18-9holes.html"));
+    expect(rows[0]).toMatchObject({ time: "06:30", priceCents: 2050 });
+    // Late rows carry the twilight version of the same lone rate.
+    expect(new Set(rows.map((r) => r.priceCents))).toEqual(new Set([2050, 1600]));
+  });
+
   it("stops at a calendar that puts timesheets behind a CAPTCHA", () => {
     expect(() =>
       parseCalendar(fixture("miclub/live-wembley-calendar-2026-10-17-captcha.html")),
@@ -275,7 +284,20 @@ describe("layoutForHoles", () => {
   it("picks the 9 or 18 hole name from a combined label", () => {
     expect(layoutForHoles("Lake (9) or Lake & Island (18)", 9)).toBe("Lake");
     expect(layoutForHoles("Island (9) or Island & Pines(18)", 18)).toBe("Island & Pines");
+    expect(layoutForHoles("Island (9) Island & Pines (18)", 18)).toBe("Island & Pines");
     expect(layoutForHoles("1st Tee", 18)).toBe("1st Tee");
     expect(layoutForHoles(null, 9)).toBeNull();
+  });
+});
+
+describe("cleanLayout", () => {
+  it("drops the hole count clubs type after the course name", () => {
+    expect(cleanLayout("Pine Lake 18 Holes")).toBe("Pine Lake");
+    expect(cleanLayout("Pines 9 Holes ONLY")).toBe("Pines");
+    expect(cleanLayout("Pines 9 ONLY")).toBe("Pines");
+    expect(cleanLayout("Lake Island 9 or 18 holes")).toBe("Lake Island");
+    expect(cleanLayout("Back 9")).toBe("Back 9");
+    expect(cleanLayout("1st Tee")).toBe("1st Tee");
+    expect(cleanLayout("  ")).toBeNull();
   });
 });

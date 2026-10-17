@@ -159,21 +159,27 @@ function adultPrice($: cheerio.CheerioAPI, $row: ReturnType<cheerio.CheerioAPI>)
     const label = collapse($(li).text().replace(priceText, ""));
     prices.push({ label, cents: parsePriceCents(priceText) });
   });
-  const adult = prices.find((p) => p.cents !== null && !/concession|junior|child/i.test(p.label));
-  return adult?.cents ?? null;
+  const priced = prices.filter((p) => p.cents !== null);
+  const adult = priced.find((p) => !/concession|junior|child/i.test(p.label));
+  // A lone price is the rate for everyone, even when labelled e.g. "Cored Greens Concession Rate Applies".
+  return adult?.cents ?? (priced.length === 1 ? priced[0]!.cents : null);
 }
 
 /** "Pine Lake 18 Holes" → "Pine Lake". "1st Tee" stays as is. */
-function cleanLayout(text: string): string | null {
+/** "Pine Lake 18 Holes", "Pines 9 Holes ONLY", "Pines 9 ONLY" → the course name alone. "1st Tee" stays. */
+export function cleanLayout(text: string): string | null {
   const cleaned = collapse(text)
-    .replace(/\s*\b(9|18)(\s+or\s+(9|18))?\s*holes?\b\s*$/i, "")
+    .replace(/\s*\b(9|18)(\s+or\s+(9|18))?\s*(holes?(\s+only)?|only)\s*$/i, "")
     .trim();
   return cleaned || null;
 }
 
-/** "Lake (9) or Lake & Island (18)" → "Lake" for 9 holes, "Lake & Island" for 18. Other names pass through. */
+/**
+ * "Lake (9) or Lake & Island (18)" → "Lake" for 9 holes, "Lake & Island" for 18.
+ * The "or" is optional, as clubs type these by hand. Other names pass through.
+ */
 export function layoutForHoles(layout: string | null, holes: 9 | 18): string | null {
-  const match = /^(.+?)\s*\(9\)\s+or\s+(.+?)\s*\(18\)$/i.exec(layout ?? "");
+  const match = /^(.+?)\s*\(9\)\s*(?:or\s+)?(.+?)\s*\(18\)$/i.exec(layout ?? "");
   if (!match) return layout;
   return holes === 9 ? match[1]! : match[2]!;
 }

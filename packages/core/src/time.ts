@@ -74,3 +74,26 @@ export function parseClockTime(text: string): string | null {
   }
   return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }
+
+/** A Perth date for display, e.g. "Sun 18 Oct". */
+export function formatPerthDay(date: string): string {
+  return new Intl.DateTimeFormat("en-AU", {
+    timeZone: PERTH_TIME_ZONE,
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  })
+    .format(perthToUtc(date, "12:00"))
+    .replace(",", "");
+}
+
+/** How long ago, in short plain words: "just now", "5 min ago", "2 hours ago", "3 days ago". */
+export function formatAgo(then: Date, now: Date): string {
+  const minutes = Math.floor((now.getTime() - then.getTime()) / 60_000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} ${days === 1 ? "day" : "days"} ago`;
+}

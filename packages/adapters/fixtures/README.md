@@ -13,6 +13,7 @@ Saved public booking pages used by the adapter tests, so tests never hit live cl
 
 | `miclub/live-collier-park-calendar-2026-10-17.html` | Collier Park calendar, raw server response | 17 Oct 2026 |
 | `miclub/live-collier-park-timesheet-2026-10-18-18holes.html` | Collier Park timesheet, 18 Holes greens coring rate, raw | 17 Oct 2026 |
+| `miclub/live-fremantle-timesheet-2026-10-18-9holes.html` | Fremantle Public timesheet, single "concession" rate while greens are cored, raw | 17 Oct 2026 |
 | `miclub/live-wembley-calendar-2026-10-17-captcha.html` | Wembley calendar with timesheet CAPTCHA switched on, raw | 17 Oct 2026 |
 | `quick18/live-hamersley-2026-10-17.html` | Hamersley search matrix, evening with nothing left, raw | 17 Oct 2026 |
 | `quick18/live-hamersley-2026-10-19.html` | Hamersley search matrix, raw | 17 Oct 2026 |

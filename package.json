@@ -14,7 +14,8 @@
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "db:dev": "pnpm --filter @bookon/db dev"
   },
   "devDependencies": {
     "prettier": "^3.3.3"

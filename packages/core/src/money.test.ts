@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parsePriceCents } from "./money";
+import { formatPrice, parsePriceCents } from "./money";
 
 describe("parsePriceCents", () => {
   it("reads dollar amounts", () => {
@@ -11,5 +11,12 @@ describe("parsePriceCents", () => {
 
   it("returns null without a price", () => {
     expect(parsePriceCents("N/A")).toBeNull();
+  });
+});
+
+describe("formatPrice", () => {
+  it("drops cents for whole dollars", () => {
+    expect(formatPrice(4000)).toBe("$40");
+    expect(formatPrice(2350)).toBe("$23.50");
   });
 });

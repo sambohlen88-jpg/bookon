@@ -2,7 +2,7 @@
 
 Find a tee time at Perth public golf courses, then book with the club. See [`SPEC.md`](./SPEC.md) for the full product spec.
 
-**Status:** Milestone 1 done (data foundation). See [`docs/m1-review.md`](./docs/m1-review.md).
+**Status:** Milestone 2 done (search). See [`docs/m2-review.md`](./docs/m2-review.md).
 
 ## Layout
 
@@ -17,13 +17,14 @@ docs/             Research and milestone write-ups
 
 ## Getting started
 
-Needs Node 22 and pnpm 10 (`corepack enable` sets up pnpm).
+Needs Node 22.21 or later and pnpm 10 (`corepack enable` sets up pnpm). No Postgres install is needed: local development uses PGlite, served on port 5433 so the website and worker can share it.
 
 ```sh
 pnpm install
-pnpm --filter @bookon/db seed   # local database (PGlite in .data/) with the launch courses
-pnpm dev                        # web app on http://localhost:3000
-pnpm dev:worker                 # worker (see apps/worker/README.md)
+pnpm db:dev                                # 1st terminal: local database, keep it running
+pnpm db:seed                               # once: tables and courses
+pnpm --filter @bookon/worker poll          # fetch live tee times (or `pnpm dev:worker` to keep polling)
+pnpm dev                                   # website on http://localhost:3000
 ```
 
 Checks (the same ones CI runs):

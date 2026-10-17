@@ -12,11 +12,13 @@
     "test": "vitest run",
     "generate": "drizzle-kit generate",
     "migrate": "tsx src/scripts/migrate.ts",
-    "seed": "tsx src/scripts/seed.ts"
+    "seed": "tsx src/scripts/seed.ts",
+    "dev": "node -e \"require('fs').mkdirSync('../../.data',{recursive:true})\" && pglite-server --db=../../.data/pglite --port=5433 --max-connections=10"
   },
   "dependencies": {
     "@bookon/core": "workspace:*",
     "@electric-sql/pglite": "^0.5.10",
+    "@electric-sql/pglite-socket": "0.2.13",
     "drizzle-orm": "^0.45.4",
     "postgres": "^3.4.9"
   },

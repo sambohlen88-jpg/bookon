@@ -1,0 +1,196 @@
+import Link from "next/link";
+import { formatAgo, formatPerthDay, formatPerthTime, formatPrice } from "@bookon/core";
+import type { CourseResult, DayNotice, ResultTeeTime } from "@bookon/db";
+
+/**
+ * Keep pages light on mobile data: a two week search can match 1,500 times.
+ * One day shows 6 per course with up to 40 more folded away; longer searches
+ * show 4 per course per day. Beyond that, link to that course and day, where
+ * every time is listed (one course rarely has more than 200 in a day).
+ */
+const LIMITS = {
+  multiDay: { visible: 4, max: 4 },
+  singleDay: { visible: 6, max: 46 },
+  oneCourseOneDay: { visible: 6, max: Infinity },
+};
+
+export function CourseResults({
+  result,
+  multiDay,
+  oneCourse,
+  now,
+  dayHref,
+}: {
+  result: CourseResult;
+  multiDay: boolean;
+  oneCourse: boolean;
+  now: Date;
+  /** A search for just this course on one day, for "see all" links. */
+  dayHref: (date: string) => string;
+}) {
+  const limits = multiDay ? LIMITS.multiDay : oneCourse ? LIMITS.oneCourseOneDay : LIMITS.singleDay;
+  const { course, teeTimes, checkedAt, notices } = result;
+  const headingId = `course-${course.slug}`;
+  const byDay = groupByDay(teeTimes);
+
+  return (
+    <section
+      aria-labelledby={headingId}
+      className="rounded-xl border border-border bg-background p-4"
+    >
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 id={headingId} className="text-lg font-semibold leading-tight">
+          {course.name}
+        </h2>
+        <span className="shrink-0 text-sm text-muted">{course.suburb}</span>
+      </div>
+      {checkedAt && (
+        <p className="mt-1 text-xs text-muted">
+          <time dateTime={checkedAt.toISOString()}>Checked {formatAgo(checkedAt, now)}</time>
+        </p>
+      )}
+
+      <Notices notices={notices} now={now} />
+
+      {teeTimes.length === 0 && notices.length === 0 && (
+        <p className="mt-3 text-sm text-muted">No times here match your search.</p>
+      )}
+
+      {[...byDay].map(([day, times]) => (
+        <div key={day} className="mt-3">
+          {multiDay && <h3 className="text-sm font-semibold">{formatPerthDay(day)}</h3>}
+          <ul>
+            {times.slice(0, limits.visible).map((t) => (
+              <TeeTimeRow
+                key={`${t.startTime.toISOString()}-${t.holes}-${t.layout}`}
+                teeTime={t}
+                course={course.name}
+              />
+            ))}
+          </ul>
+          {times.length > limits.visible && limits.max > limits.visible && (
+            <details>
+              <summary className="min-h-11 cursor-pointer py-3 text-sm font-medium text-brand">
+                Show {Math.min(times.length, limits.max) - limits.visible} more
+              </summary>
+              <ul>
+                {times.slice(limits.visible, limits.max).map((t) => (
+                  <TeeTimeRow
+                    key={`${t.startTime.toISOString()}-${t.holes}-${t.layout}`}
+                    teeTime={t}
+                    course={course.name}
+                  />
+                ))}
+              </ul>
+            </details>
+          )}
+          {times.length > limits.max && (
+            <Link
+              href={dayHref(day)}
+              className="flex min-h-11 items-center text-sm font-medium text-brand underline-offset-4 hover:underline"
+            >
+              See all {times.length} times{multiDay ? ` on ${formatPerthDay(day)}` : ""}
+            </Link>
+          )}
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function TeeTimeRow({ teeTime, course }: { teeTime: ResultTeeTime; course: string }) {
+  const time = formatPerthTime(teeTime.startTime);
+  const spots = `${teeTime.spotsAvailable} ${teeTime.spotsAvailable === 1 ? "spot" : "spots"}`;
+  return (
+    <li className="flex items-center gap-3 border-t border-border py-3 first:border-t-0">
+      <span className="w-[5.5rem] shrink-0 whitespace-nowrap text-lg font-semibold tabular-nums">
+        {time}
+      </span>
+      <span className="min-w-0 flex-1 text-sm">
+        <span className="block">
+          {teeTime.holes} holes{teeTime.layout ? ` · ${teeTime.layout}` : ""}
+        </span>
+        <span className="block text-muted">
+          {spots} ·{" "}
+          {teeTime.priceCents === null ? "Price at club" : formatPrice(teeTime.priceCents)}
+        </span>
+      </span>
+      <a
+        href={teeTime.bookingUrl}
+        target="_blank"
+        rel="noopener"
+        aria-label={`Book ${time} at ${course} on the club's site (opens in a new tab)`}
+        className="flex min-h-11 shrink-0 items-center rounded-lg bg-brand px-4 text-sm font-semibold text-brand-foreground"
+      >
+        Book
+      </a>
+    </li>
+  );
+}
+
+function Notices({ notices, now }: { notices: DayNotice[]; now: Date }) {
+  if (notices.length === 0) return null;
+  const stale = notices.filter((n) => n.kind === "stale" || n.kind === "not-checked");
+  const notOpen = notices.filter(
+    (n): n is Extract<DayNotice, { kind: "not-open" }> => n.kind === "not-open",
+  );
+
+  return (
+    <div className="mt-3 flex flex-col gap-2">
+      {stale.length > 0 && (
+        <p
+          role="status"
+          className="rounded-lg border border-warning-border bg-warning-bg px-3 py-2 text-sm text-warning-fg"
+        >
+          {staleMessage(stale, now)}
+        </p>
+      )}
+      {notOpen.length > 0 && (
+        <p className="rounded-lg border border-info-border bg-info-bg px-3 py-2 text-sm text-info-fg">
+          {notOpenMessage(notOpen)}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function notOpenMessage(notices: Extract<DayNotice, { kind: "not-open" }>[]): string {
+  const first = notices[0]!;
+  const daysAhead = daysBetween(first.opensOn, first.date);
+  const when = `This club releases times ${daysAhead} days ahead`;
+  return notices.length === 1
+    ? `Times for ${formatPerthDay(first.date)} aren't out yet. ${when}, so expect them around ${formatPerthDay(first.opensOn)}.`
+    : `Times for ${dayList(notices.map((n) => n.date))} aren't out yet. ${when}, so the first should appear around ${formatPerthDay(first.opensOn)}.`;
+}
+
+function daysBetween(from: string, to: string): number {
+  return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
+}
+
+function staleMessage(notices: DayNotice[], now: Date): string {
+  const days = dayList(notices.map((n) => n.date));
+  const lastSuccess = notices
+    .map((n) => (n.kind === "stale" ? n.lastSuccessAt : null))
+    .filter((d): d is Date => d !== null)
+    .sort((a, b) => b.getTime() - a.getTime())[0];
+  return lastSuccess
+    ? `We couldn't check ${days} just now, so we're not showing old times. Last checked ${formatAgo(lastSuccess, now)}.`
+    : `We haven't been able to check ${days} yet.`;
+}
+
+/** "Sun 18 Oct", "Sun 18 Oct and Mon 19 Oct", or "Sun 18 Oct to Sat 24 Oct". */
+function dayList(dates: string[]): string {
+  if (dates.length === 1) return formatPerthDay(dates[0]!);
+  if (dates.length === 2) return `${formatPerthDay(dates[0]!)} and ${formatPerthDay(dates[1]!)}`;
+  return `${formatPerthDay(dates[0]!)} to ${formatPerthDay(dates.at(-1)!)}`;
+}
+
+function groupByDay(teeTimes: ResultTeeTime[]): Map<string, ResultTeeTime[]> {
+  const days = new Map<string, ResultTeeTime[]>();
+  for (const t of teeTimes) {
+    const list = days.get(t.playDate) ?? [];
+    list.push(t);
+    days.set(t.playDate, list);
+  }
+  return days;
+}

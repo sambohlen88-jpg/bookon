@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   addPerthDays,
+  formatAgo,
+  formatPerthDay,
   eachPerthDate,
   formatPerthTime,
   parseClockTime,
@@ -74,5 +76,24 @@ describe("parseClockTime", () => {
     expect(parseClockTime("Taken")).toBeNull();
     expect(parseClockTime("13:00 pm")).toBeNull();
     expect(parseClockTime("25:00")).toBeNull();
+  });
+});
+
+describe("formatPerthDay", () => {
+  it("formats a Perth date with its weekday", () => {
+    expect(formatPerthDay("2026-10-18")).toBe("Sun 18 Oct");
+    expect(formatPerthDay("2027-01-01")).toBe("Fri 1 Jan");
+  });
+});
+
+describe("formatAgo", () => {
+  const now = new Date("2026-10-17T00:00:00Z");
+  const ago = (ms: number) => formatAgo(new Date(now.getTime() - ms), now);
+  it("uses short plain words", () => {
+    expect(ago(20_000)).toBe("just now");
+    expect(ago(5 * 60_000)).toBe("5 min ago");
+    expect(ago(60 * 60_000)).toBe("1 hour ago");
+    expect(ago(150 * 60_000)).toBe("2 hours ago");
+    expect(ago(49 * 60 * 60_000)).toBe("2 days ago");
   });
 });
