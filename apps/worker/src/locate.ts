@@ -27,7 +27,12 @@ async function search(query: string): Promise<Place[]> {
     countrycodes: "au",
     limit: "5",
   }).toString();
-  const response = await fetch(url, { headers: { "User-Agent": config.userAgent } });
+  let response = await fetch(url, { headers: { "User-Agent": config.userAgent } });
+  if (response.status === 429) {
+    // Asked too often (perhaps by another run just before): wait, then try once more.
+    await new Promise((r) => setTimeout(r, 10_000));
+    response = await fetch(url, { headers: { "User-Agent": config.userAgent } });
+  }
   if (!response.ok) throw new Error(`HTTP ${response.status} from OpenStreetMap`);
   return (await response.json()) as Place[];
 }
@@ -43,14 +48,14 @@ try {
   const found = { ...COURSE_LOCATIONS };
   for (const course of courses) {
     await pause();
-    let place = pickGolfCourse(await search(`${course.name}, ${course.suburb}, Western Australia`));
+    // Only the course's own name: "any golf course in that suburb" can find a different club.
+    const place = pickGolfCourse(
+      await search(`${course.name}, ${course.suburb}, Western Australia`),
+    );
     if (!place) {
-      // Clubs often go by a different name on the map.
-      await pause();
-      place = pickGolfCourse(await search(`golf, ${course.suburb}, Western Australia`));
-    }
-    if (!place) {
-      console.log(`✗ ${course.name} (${course.suburb}): not found. Set it in admin instead.`);
+      console.log(
+        `✗ ${course.name} (${course.suburb}): not found. Search openstreetmap.org for the name the map uses, and set it in admin.`,
+      );
       continue;
     }
     const location = placeLocation(place);

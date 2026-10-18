@@ -13,7 +13,7 @@ Data is read from public booking pages with the owner's approval, ahead of forma
 
 ## Other data sources (Milestone 10)
 
-- [ ] **Course locations.** Run `pnpm courses:locate`, check each link it prints, then `pnpm courses:locate -- --save` and commit `packages/db/src/course-locations.ts`. Until then Near me stays hidden and there's no weather. Fix any course in admin (Courses → the course → Latitude and Longitude).
+- [x] **Course locations.** All 29 found and checked on 18 October 2026. For a new course, run `pnpm courses:locate` (then `-- --save`), or set it in admin (Courses → the course → Latitude and Longitude).
 - [ ] **Weather.** Check the worker logs `[weather] N updated` on the host. MET Norway asks that our user agent names us and gives a contact (it does: `BOOKON_CONTACT_EMAIL`), and that the credit "Weather from MET Norway" stays wherever forecasts show.
 - [ ] The privacy policy mentions Near me: the phone's location is rounded to about a kilometre, used for that search only and never saved.
 

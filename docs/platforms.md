@@ -267,11 +267,11 @@ The owner approved weather and Near me on 18 October 2026. Neither is a booking 
 - **Terms:** free, including commercial use, under CC BY 4.0. Credit them where the weather shows ("Weather from MET Norway", linked). Identify ourselves in the user agent with a contact, don't ask again before the `Expires` time, send `If-Modified-Since`, use at most 4 decimals for locations, keep traffic gentle. See https://api.met.no/doc/TermsOfService.
 - **How we use it:** `apps/worker/src/weather.ts`, once per course per forecast update (about hourly), one request a second. Stored in `weather_forecasts`.
 - **Why not others:** Open-Meteo's free service is for non-commercial use only. The Bureau of Meteorology has no public feed for businesses without a paid agreement.
-- **Not checked live yet:** the cloud environment couldn't reach api.met.no, so the code was tested against MET Norway's documented response format. Check the first live run (`pnpm weather`).
+- **Checked live 18 October 2026:** all 26 live courses fetched. For Australia MET Norway gives rain amounts but no chance of rain, so the site shows millimetres.
 
 ### OpenStreetMap course locations (nominatim.openstreetmap.org)
 
 - **What:** Nominatim search, to find each course's latitude and longitude once.
 - **Terms:** light use is allowed (at most one request a second, a user agent that names us, no bulk or repeated geocoding). Data © OpenStreetMap contributors, ODbL. See https://operations.osmfoundation.org/policies/nominatim/.
 - **How we use it:** `pnpm courses:locate` (`apps/worker/src/locate.ts`) prints what it finds for a person to check, and saves only with `--save`. Results go in `packages/db/src/course-locations.ts` and the database. Admins can correct any course.
-- **Not run yet:** the cloud environment couldn't reach nominatim.openstreetmap.org.
+- **Run 18 October 2026:** 21 courses found by name. 8 that the map names differently were found and checked by hand. All 29 are in `course-locations.ts`.

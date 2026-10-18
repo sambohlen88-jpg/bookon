@@ -54,7 +54,12 @@ function fakeMet(responses: Response[]) {
 describe("refreshWeather", () => {
   it("fetches courses with a location, saves the forecast, then waits until it expires", async () => {
     const collier = (await findCourseBySlug(handle.db, "collier-park"))!;
-    const wembley = (await findCourseBySlug(handle.db, "wembley"))!;
+    // A course with no location yet is skipped.
+    const unplaced = {
+      ...(await findCourseBySlug(handle.db, "wembley"))!,
+      latitude: null,
+      longitude: null,
+    };
     const met = fakeMet([
       new Response(JSON.stringify(body), {
         headers: {
@@ -64,7 +69,7 @@ describe("refreshWeather", () => {
       }),
     ]);
     const options = { userAgent: "BookOnBot/test", now, fetch: met.fetch, gapMs: 0 };
-    const first = await refreshWeather(handle.db, [collier, wembley], options);
+    const first = await refreshWeather(handle.db, [collier, unplaced], options);
     expect(first).toEqual({ fetched: 1, unchanged: 0, skipped: 1, failed: 0 });
     expect(met.calls[0]!.url).toBe(
       "https://api.met.no/weatherapi/locationforecast/2.0/complete?lat=-32.0000&lon=115.8712",

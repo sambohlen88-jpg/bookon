@@ -8,16 +8,12 @@
 
 The tee time search itself works as before. Hardening and launch move to Milestone 11 (recorded in SPEC.md).
 
-**Two things still need doing outside the code.** This cloud environment can't reach OpenStreetMap or MET Norway, so:
-
-1. **Course locations aren't filled in yet.** Until they are, Near me stays hidden and there's no weather. Run `pnpm courses:locate`, check the links, then `pnpm courses:locate -- --save` (see "How to demo"). Or allow those two sites for this environment and I'll do it.
-2. **The weather code was tested against MET Norway's documented format, not a live reply.** Check the first live run.
+**Update, later on 18 October:** once you opened up network access, I looked up every course's location on OpenStreetMap and fetched live forecasts from MET Norway. See "Locations and live weather" below.
 
 **About the screenshots:**
 
-- Near me and weather screenshots use **sample locations and a made-up forecast**, added to my local test database only. They're not in the code or your data.
-- The "with club details" course page uses a **sample club profile and price list**, also removed afterwards.
-- Tee times are real, from a worker check that morning.
+- The Near me results, Courses with Near me and course page screenshots use **real locations, real weather and real tee times**.
+- The "with club details" course page uses a **sample club profile and price list**, added to my local test database and removed afterwards.
 
 ## What was done
 
@@ -95,6 +91,22 @@ Below the search, in this order. [Screenshot](./m10/m10-home-phone.png).
   - Golfers' pages only read what's saved, so they never wait on it. "Weather from MET Norway" is credited wherever it shows.
 - **Loading placeholders** on the courses, course and account pages.
 
+## Locations and live weather
+
+**Locations:** all 29 courses, including the three switched off, are in `packages/db/src/course-locations.ts`. New databases get them from the seed.
+
+- 21 courses were found by `pnpm courses:locate` under their own names.
+- 8 are mapped under different names, so I found and checked those by hand: Busselton, Dunsborough Lakes, Lake Claremont ("Claremont Golf Course", beside the lake), Secret Harbour, Capel (Stratham), Hamersley (Marmion Avenue, Trigg), Hartfield ("Hartfield Country Club") and Rockingham (Cooloongup).
+- Every match is an OpenStreetMap golf course with the right name and street. The file links each one.
+- The lookup used to fall back to "any golf course in that suburb". That matched three test clubs to Royal Perth Golf Club, so I removed it. A course it can't find is now reported for a person to set.
+
+**Weather:**
+
+- All 26 live courses got a forecast: hourly for about 2½ days, then 6-hourly out to 9 days.
+- A second run straight after asked for nothing, because it waits for MET Norway's "expires" time.
+- **MET Norway doesn't give a chance of rain for Australia**, only expected millimetres. So the site shows "dry" or "2 mm rain" rather than a percentage.
+- On a Near me search from the Perth CBD for Monday morning, Maylands (3.9 km) showed "☁️ 18° · dry · 6 km/h wind".
+
 ## Checked
 
 | Check                      | Result                                                                                                                                                                                                                            |
@@ -124,17 +136,15 @@ The phone run went through:
 ## Decisions I made
 
 1. **Weather shows the worst sky in your window** (rain beats sunshine), the warmest temperature, and the highest chance of rain and wind. That way nobody is caught out.
-2. **Rain chance where MET Norway gives it, otherwise millimetres.** Further out, MET Norway gives rain amounts rather than chances, so it reads "4 mm rain".
+2. **Rain in millimetres.** MET Norway only gives a chance of rain for some countries, not Australia, so it reads "dry" or "4 mm rain". If it ever sends a chance, that shows instead.
 3. **Free soon** uses 2 players and leaves out times starting within 15 minutes.
 4. **Near me only appears once courses have locations,** so it's never a button that does nothing.
 5. **Courses without an area** show under "Other", so a newly approved club is never hidden.
 
 ## Open issues
 
-1. **Course locations:** run the lookup (above). Wembley, The Springs and Lake Claremont are switched off but will be located too.
-2. **Live weather check:** after the locations are in, run `pnpm weather` and look at a course page.
-3. **Share pictures don't include the weather.** I left that out to keep the picture simple; say if you'd like it.
-4. **The seeded clubs have no details or prices yet.** Their pages fill in once each club adds them, or an admin adds a club contact who does.
+1. **Share pictures don't include the weather.** I left that out to keep the picture simple; say if you'd like it.
+2. **The seeded clubs have no details or prices yet.** Their pages fill in once each club adds them, or an admin adds a club contact who does.
 
 ## How to demo (on your PC)
 
@@ -146,12 +156,6 @@ pnpm dev:worker                # window 2, keep running
 pnpm dev                       # window 3
 ```
 
-To turn on Near me and the weather, in another window:
-
-```powershell
-pnpm courses:locate                  # prints each course it found, with a map link
-pnpm courses:locate -- --save        # once the links look right
-pnpm weather                         # fetch forecasts now (the worker also does this)
-```
+Locations come with the update, and the worker fetches the weather when it starts (or run `pnpm weather`).
 
 Then open http://localhost:3000 on a narrow window or your phone (`http://<your PC's name>:3000`, same wifi). Try the menu bar, quick days, the Where row and Near me, the Courses tab, a course page and My account. On a phone, Near me needs the site on https (or localhost) to ask for your location, so it fully works once hosted.

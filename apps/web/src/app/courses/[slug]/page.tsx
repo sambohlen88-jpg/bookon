@@ -239,9 +239,13 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
                               {weatherEmoji(w.symbol)}
                             </span>{" "}
                             {w.temperature}°
-                            {w.rainChance !== null && w.rainChance >= 20
-                              ? ` · ${w.rainChance}% rain`
-                              : ""}
+                            {w.rainChance !== null
+                              ? w.rainChance >= 20
+                                ? ` · ${w.rainChance}% rain`
+                                : ""
+                              : w.rainMm >= 0.5
+                                ? ` · ${w.rainMm} mm rain`
+                                : ""}
                           </span>
                         )}
                       </span>
