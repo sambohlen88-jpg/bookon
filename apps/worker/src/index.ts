@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { PoliteHttpClient } from "@bookon/adapters";
 import {
+  LOCAL_DATABASE_URL,
   createDb,
   findCourseBySlug,
   listEnabledCourses,
@@ -39,7 +40,29 @@ const days = values.days ? Number(values.days) : undefined;
 
 const config = loadConfig();
 const handle = createDb(config.databaseUrl);
-await handle.migrate();
+try {
+  await handle.migrate();
+} catch (error) {
+  if (!refusedConnection(error)) throw error;
+  console.error(
+    config.databaseUrl === LOCAL_DATABASE_URL
+      ? "[worker] Can't reach the local database. Start it in another window with `pnpm db:dev`, leave it running, then start the worker again."
+      : "[worker] Can't reach the database in DATABASE_URL. Check it's running and the address is right.",
+  );
+  process.exit(1);
+}
+
+/** Nothing listening at the database's address, anywhere in the error's causes. */
+function refusedConnection(error: unknown): boolean {
+  for (
+    let e = error as { code?: string; cause?: unknown } | undefined;
+    e;
+    e = e.cause as typeof e
+  ) {
+    if (e.code === "ECONNREFUSED") return true;
+  }
+  return false;
+}
 
 const http = new PoliteHttpClient({
   userAgent: config.userAgent,
