@@ -10,7 +10,7 @@ Read `SPEC.md` before starting work. The product is BookOn (the spec's working t
 - A page that does not look like the expected platform page is an error, never "no tee times".
 - Never get past a CAPTCHA, login wall or other block a club puts up. Record it and tell the owner.
 - When Claude runs the worker or fetches pages, obey robots.txt rules for `Claude-User` as well as BookOnBot (the worker does this when `CLAUDECODE` is set). Quick18 blocks `Claude-User`, so Claude must not fetch Quick18 pages; the owner runs Quick18 checks.
-- Before any launch work (Milestone 7, a public link, or telling golfers about the site), remind the owner of the open items in `docs/launch-checklist.md`, starting with verified platform access.
+- Before any launch work (Milestone 10, a public link, or telling golfers about the site), remind the owner of the open items in `docs/launch-checklist.md`, starting with verified platform access.
 - Copy is plain Australian English, short and friendly.
 
 ## Code
@@ -23,6 +23,6 @@ Read `SPEC.md` before starting work. The product is BookOn (the spec's working t
 - Times: store UTC, display Perth time via helpers in `packages/core/src/time.ts`. Do not hand-roll offsets elsewhere.
 - Admin and club pages check access in every page, action and download (`requireAdmin`, `requireClub`, `clubAccess`, `isAdminRequest` in `apps/web/src/lib/access.ts`), never only in a layout. Give each form button that makes a different decision its own server action.
 - Emails go through `createMailer` in `packages/email`. Locally they land in the outbox (`/dev/outbox`); never send real email to anyone but the owner without their say-so.
-- Colours come from CSS tokens in `apps/web/src/app/globals.css`, not hard-coded values in components. The one exception is the course illustrations (`apps/web/src/lib/course-art.ts`), which are served as images and can't see page CSS, so they carry their own light and dark palette.
+- Colours come from CSS tokens in `apps/web/src/app/globals.css`, not hard-coded values in components. The exceptions are the course illustrations (`apps/web/src/lib/course-art.ts`) and the share pictures (`apps/web/src/lib/share-picture.tsx`), which are served as images and can't see page CSS, so they carry their own palette.
 - Never copy photos or logos from club websites. Course pictures are drawn, or supplied by the club with permission.
 - Before finishing: `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build`.

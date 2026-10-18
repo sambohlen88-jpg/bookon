@@ -18,6 +18,8 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import type { SearchParams } from "./search";
+import type { SharedCourse } from "./shares";
 
 /**
  * BookOn schema (SPEC section 7, with the changes from docs/m0-review.md).
@@ -37,7 +39,7 @@ export const alertStatusEnum = pgEnum("alert_status", [
   "deleted",
   "ended",
 ]);
-export const clickSourceEnum = pgEnum("click_source", ["search", "alert", "directory"]);
+export const clickSourceEnum = pgEnum("click_source", ["search", "alert", "directory", "share"]);
 
 /** A venue we report to. One club can have several bookable courses. */
 export const clubs = pgTable("clubs", {
@@ -561,4 +563,29 @@ export const changeLog = pgTable(
     details: jsonb("details").$type<Record<string, unknown>>().notNull().default({}),
   },
   (t) => [index("change_log_at_idx").on(t.at), index("change_log_club_idx").on(t.clubId, t.at)],
+);
+
+/* Sharing (Milestone 9). A frozen copy of the times a golfer saw, for a link they send mates. */
+
+export const sharedSearches = pgTable(
+  "shared_searches",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** The unguessable part of the link, /s/<code>. */
+    code: text("code").notNull().unique(),
+    createdAt: createdAt(),
+    /** A week after the last play date. Expired shares are deleted by the worker. */
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    /** Only to limit how many shares one visitor makes. Never shown. */
+    anonymousSessionId: text("anonymous_session_id"),
+    /** The search, as /search?<query>, for "See latest times". */
+    query: text("query").notNull(),
+    params: jsonb("params").$type<SearchParams>().notNull(),
+    courses: jsonb("courses").$type<SharedCourse[]>().notNull(),
+    totalTeeTimes: integer("total_tee_times").notNull(),
+  },
+  (t) => [
+    index("shared_searches_expires_idx").on(t.expiresAt),
+    index("shared_searches_session_idx").on(t.anonymousSessionId, t.createdAt),
+  ],
 );

@@ -35,9 +35,10 @@ export function activityCsv(rows: CourseActivity[], from: string, to: string): s
     "Clicks",
     "Golfers",
     "From alerts",
+    "From shares",
   ];
   const lines = rows.map((r) =>
-    [r.name, from, to, r.searches, r.impressions, r.clicks, r.golfers, r.alertClicks]
+    [r.name, from, to, r.searches, r.impressions, r.clicks, r.golfers, r.alertClicks, r.shareClicks]
       .map(cell)
       .join(","),
   );

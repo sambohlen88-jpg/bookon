@@ -43,6 +43,13 @@
       "when": 1792289268415,
       "tag": "0005_admin_and_club_logins",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792292345208,
+      "tag": "0006_shared_searches",
+      "breakpoints": true
     }
   ]
 }

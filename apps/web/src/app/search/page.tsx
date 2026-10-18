@@ -20,6 +20,7 @@ import { CourseResults, NoMatchList } from "@/components/results";
 import { SearchForm } from "@/components/search-form";
 import { SiteHeader } from "@/components/site-header";
 import { PushToggle } from "@/components/push-toggle";
+import { ShareButton } from "@/components/share-button";
 import { Notice, primaryButton } from "@/components/ui";
 import { currentUser } from "@/lib/auth";
 import { isBot } from "@/lib/bots";
@@ -132,16 +133,16 @@ export default async function SearchPage({
             </div>
           </details>
 
-          <h1
-            className="mt-6 text-2xl font-bold tracking-tight lg:mt-0 lg:text-3xl"
-            aria-live="polite"
-          >
-            {nothingChecked
-              ? "We can't show times right now"
-              : result.totalTeeTimes === 0
-                ? "No tee times match"
-                : `${result.totalTeeTimes.toLocaleString("en-AU")} tee ${result.totalTeeTimes === 1 ? "time" : "times"} at ${withTimes} ${withTimes === 1 ? "course" : "courses"}`}
-          </h1>
+          <div className="mt-6 flex items-start justify-between gap-3 lg:mt-0">
+            <h1 className="text-2xl font-bold tracking-tight lg:text-3xl" aria-live="polite">
+              {nothingChecked
+                ? "We can't show times right now"
+                : result.totalTeeTimes === 0
+                  ? "No tee times match"
+                  : `${result.totalTeeTimes.toLocaleString("en-AU")} tee ${result.totalTeeTimes === 1 ? "time" : "times"} at ${withTimes} ${withTimes === 1 ? "course" : "courses"}`}
+            </h1>
+            {result.totalTeeTimes > 0 && <ShareButton query={here} />}
+          </div>
 
           {alertStatus === "created" && (
             <div className="mt-4">
@@ -208,6 +209,7 @@ export default async function SearchPage({
                 dayHref={(date) => searchHref({ ...form, date, days: 1, courses: [r.course.slug] })}
                 courseHref={searchHref({ ...form, courses: [r.course.slug] })}
                 photoId={photos.get(r.course.id)}
+                shareQuery={here}
                 bookHref={(t) =>
                   bookLink({
                     courseId: r.course.id,

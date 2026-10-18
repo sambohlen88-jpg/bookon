@@ -46,6 +46,7 @@ export function ReportTable({ rows }: { rows: CourseActivity[] }) {
             <th className={`${thClass} text-right`}>Clicks to book</th>
             <th className={`${thClass} text-right`}>Golfers</th>
             <th className={`${thClass} text-right`}>From alerts</th>
+            <th className={`${thClass} text-right`}>From shares</th>
           </tr>
         </thead>
         <tbody className="tabular-nums">
@@ -57,6 +58,7 @@ export function ReportTable({ rows }: { rows: CourseActivity[] }) {
               <td className={`${tdClass} text-right`}>{r.clicks.toLocaleString("en-AU")}</td>
               <td className={`${tdClass} text-right`}>{r.golfers.toLocaleString("en-AU")}</td>
               <td className={`${tdClass} text-right`}>{r.alertClicks.toLocaleString("en-AU")}</td>
+              <td className={`${tdClass} text-right`}>{r.shareClicks.toLocaleString("en-AU")}</td>
             </tr>
           ))}
           {rows.length > 1 && (
@@ -70,6 +72,9 @@ export function ReportTable({ rows }: { rows: CourseActivity[] }) {
               <td className={`${tdClass} text-right`}>—</td>
               <td className={`${tdClass} text-right`}>
                 {total("alertClicks").toLocaleString("en-AU")}
+              </td>
+              <td className={`${tdClass} text-right`}>
+                {total("shareClicks").toLocaleString("en-AU")}
               </td>
             </tr>
           )}

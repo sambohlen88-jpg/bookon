@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { and, count, desc, eq, gt, isNull } from "drizzle-orm";
+import type { ClickSource } from "@bookon/core";
 import type { Database } from "./client";
 import { clickEvents, courses, favourites, signInTokens, users, userSessions } from "./schema";
 
@@ -197,7 +198,7 @@ export interface Visit {
   startTime: Date | null;
   courseSlug: string;
   courseName: string;
-  source: "search" | "alert" | "directory";
+  source: ClickSource;
 }
 
 /** Tee times the golfer clicked through to, newest first. */

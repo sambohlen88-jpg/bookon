@@ -31,6 +31,7 @@ describe("activityCsv", () => {
           clicks: 1,
           golfers: 1,
           alertClicks: 0,
+          shareClicks: 0,
         },
         {
           courseId: "2",
@@ -41,14 +42,17 @@ describe("activityCsv", () => {
           clicks: 0,
           golfers: 0,
           alertClicks: 0,
+          shareClicks: 0,
         },
       ],
       "2026-10-01",
       "2026-10-31",
     );
     const lines = csv.trim().split("\r\n");
-    expect(lines[0]).toBe("Course,From,To,Searches,Times shown,Clicks,Golfers,From alerts");
-    expect(lines[1]).toBe('"Lake, Pines",2026-10-01,2026-10-31,3,2,1,1,0');
+    expect(lines[0]).toBe(
+      "Course,From,To,Searches,Times shown,Clicks,Golfers,From alerts,From shares",
+    );
+    expect(lines[1]).toBe('"Lake, Pines",2026-10-01,2026-10-31,3,2,1,1,0,0');
     // A name that looks like a formula is never run by Excel.
     expect(lines[2]!.startsWith(`"'=HYPERLINK(""x"")"`)).toBe(true);
   });

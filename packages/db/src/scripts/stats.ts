@@ -36,6 +36,7 @@ if (rows.length === 0) {
         Clicks: r.clicks,
         Golfers: r.golfers,
         "From alerts": r.alertClicks,
+        "From shares": r.shareClicks,
       })),
   );
 }

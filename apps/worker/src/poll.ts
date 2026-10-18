@@ -9,6 +9,7 @@ import {
 import { adapterFor } from "@bookon/adapters";
 import {
   finishFetchRun,
+  pruneExpiredShares,
   pruneOldSnapshots,
   recordDayFailures,
   saveDayAvailability,
@@ -124,6 +125,8 @@ export async function pollAll(
   options: { now?: () => Date; days?: number } = {},
 ): Promise<PollResult[]> {
   const results = await Promise.all(courses.map((course) => pollCourse(db, course, http, options)));
-  await exclusive(() => pruneOldSnapshots(db, perthDate((options.now ?? (() => new Date()))())));
+  const now = (options.now ?? (() => new Date()))();
+  await exclusive(() => pruneOldSnapshots(db, perthDate(now)));
+  await exclusive(() => pruneExpiredShares(db, now));
   return results;
 }

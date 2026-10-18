@@ -5,6 +5,8 @@ const nextConfig: NextConfig = {
   // PGlite ships WebAssembly and is only used in tests, so keep it out of the bundle.
   serverExternalPackages: ["@electric-sql/pglite", "web-push", "sharp"],
   poweredByHeader: false,
+  // Share pictures read their fonts and logo from disk, so ship them with those routes.
+  outputFileTracingIncludes: { "/s/**": ["./src/fonts/**", "./src/app/icon.svg"] },
   async headers() {
     return [
       {

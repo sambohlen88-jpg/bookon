@@ -5,12 +5,16 @@ import { createHmac, timingSafeEqual } from "node:crypto";
  * token carries the course, slot and club URL, signed so nobody can turn
  * BookOn into a redirect to another site.
  */
+/** Where a Book click came from: search results, an alert, a course page or a shared list. */
+export type ClickSource = "search" | "alert" | "directory" | "share";
+const SOURCES: ClickSource[] = ["search", "alert", "directory", "share"];
+
 export interface ClickTarget {
   courseId: string;
   /** ISO start time, or null for a link to the course rather than a slot. */
   startTime: string | null;
   url: string;
-  source: "search" | "alert" | "directory";
+  source: ClickSource;
   /** The alert email this link was in. */
   notificationId?: string | null;
 }
@@ -51,7 +55,7 @@ export function readClickToken(token: string, key: string | null): ClickTarget |
   try {
     const data = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
     if (typeof data.c !== "string" || typeof data.u !== "string") return null;
-    if (!["search", "alert", "directory"].includes(data.s)) return null;
+    if (!SOURCES.includes(data.s)) return null;
     if (data.t !== null && typeof data.t !== "string") return null;
     if (data.n !== undefined && typeof data.n !== "string") return null;
     return {

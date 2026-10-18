@@ -10,3 +10,4 @@ export * from "./outbox";
 export * from "./push";
 export * from "./clubs";
 export * from "./admin";
+export * from "./shares";

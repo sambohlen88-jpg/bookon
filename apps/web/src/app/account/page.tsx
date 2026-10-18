@@ -185,7 +185,11 @@ export default async function AccountPage({
                           ? `${formatPerthDay(perthDate(v.startTime))} ${formatPerthTime(v.startTime)}`
                           : "Course page"}{" "}
                         · looked {formatAgo(v.clickedAt, now)}
-                        {v.source === "alert" ? " · from an alert" : ""}
+                        {v.source === "alert"
+                          ? " · from an alert"
+                          : v.source === "share"
+                            ? " · from shared times"
+                            : ""}
                       </span>
                     </span>
                     <Link

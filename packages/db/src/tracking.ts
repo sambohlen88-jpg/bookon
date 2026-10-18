@@ -1,5 +1,5 @@
 import { and, count, countDistinct, eq, gte, inArray, lt, sql, sum } from "drizzle-orm";
-import { addPerthDays, perthDate, perthToUtc } from "@bookon/core";
+import { addPerthDays, perthDate, perthToUtc, type ClickSource } from "@bookon/core";
 import type { Database } from "./client";
 import { clickEvents, courses, dailyImpressions, searches } from "./schema";
 import type { SearchParams } from "./search";
@@ -82,7 +82,7 @@ export interface ClickLog {
   sessionId: string | null;
   courseId: string;
   startTime: Date | null;
-  source: "search" | "alert" | "directory";
+  source: ClickSource;
   notificationId?: string | null;
   /** The signed-in golfer, for their previous visits. */
   userId?: string | null;
@@ -145,6 +145,8 @@ export interface CourseActivity {
   /** Distinct anonymous visitors who clicked through. */
   golfers: number;
   alertClicks: number;
+  /** Clicks from a list of times a golfer shared with mates. */
+  shareClicks: number;
 }
 
 /** Activity per course for Perth dates `from` to `to` inclusive. Feeds the club report. */
@@ -186,6 +188,7 @@ export async function courseActivity(
       n: count(),
       golfers: countDistinct(clickEvents.anonymousSessionId),
       alert: sql<number>`count(*) filter (where ${clickEvents.source} = 'alert')`.mapWith(Number),
+      share: sql<number>`count(*) filter (where ${clickEvents.source} = 'share')`.mapWith(Number),
     })
     .from(clickEvents)
     .where(inRange(clickEvents.createdAt))
@@ -202,6 +205,7 @@ export async function courseActivity(
       clicks: click?.n ?? 0,
       golfers: click?.golfers ?? 0,
       alertClicks: click?.alert ?? 0,
+      shareClicks: click?.share ?? 0,
     };
   });
 }

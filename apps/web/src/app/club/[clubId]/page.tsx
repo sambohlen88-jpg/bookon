@@ -15,7 +15,7 @@ export default async function ClubOverview({ params }: { params: Promise<{ clubI
   const from = addPerthDays(to, -29);
   const ids = new Set(courses.map((c) => c.id));
   const activity = (await courseActivity(db, from, to)).filter((r) => ids.has(r.courseId));
-  const sum = (key: "impressions" | "clicks" | "alertClicks") =>
+  const sum = (key: "impressions" | "clicks" | "alertClicks" | "shareClicks") =>
     activity.reduce((n, r) => n + r[key], 0);
   const pending = await listChangeRequests(db, { status: "pending", clubId: club.id });
 
@@ -30,11 +30,12 @@ export default async function ClubOverview({ params }: { params: Promise<{ clubI
           </Notice>
         </div>
       )}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
           [sum("impressions"), "times your course showed in search"],
           [sum("clicks"), "golfers sent to your booking page"],
           [sum("alertClicks"), "of those from alerts"],
+          [sum("shareClicks"), "from times golfers shared"],
         ].map(([n, label]) => (
           <div key={label} className={panel}>
             <span className="block text-3xl font-bold text-brand">

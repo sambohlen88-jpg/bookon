@@ -172,6 +172,7 @@ describe("courseActivity", () => {
       clicks: 2,
       golfers: 2,
       alertClicks: 1,
+      shareClicks: 0,
     });
     expect(byCourse(hamersley)).toMatchObject({
       searches: 2,

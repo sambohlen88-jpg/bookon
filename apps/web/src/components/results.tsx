@@ -4,6 +4,7 @@ import type { CheckProblem, CourseResult, DayNotice, ResultTeeTime } from "@book
 import { PROBLEM_LABEL, PROBLEM_SENTENCE } from "@/lib/check-problems";
 import { toggleFavourite } from "@/app/actions";
 import { CourseArt } from "@/components/course-art";
+import { ShareButton } from "@/components/share-button";
 
 /**
  * Keep pages light on mobile data: a two week search can match 18,000 times.
@@ -31,6 +32,7 @@ export function CourseResults({
   courseHref,
   bookHref,
   photoId = null,
+  shareQuery,
 }: {
   result: CourseResult;
   multiDay: boolean;
@@ -48,6 +50,8 @@ export function CourseResults({
   photoId?: string | null;
   /** The tracked /go link for a tee time. */
   bookHref: (teeTime: ResultTeeTime) => string;
+  /** This search, for sharing just this course's times. */
+  shareQuery?: string;
 }) {
   const limits = multiDay ? LIMITS.multiDay : oneCourse ? LIMITS.oneCourseOneDay : LIMITS.singleDay;
   const { course, teeTimes, checkedAt, notices } = result;
@@ -80,6 +84,9 @@ export function CourseResults({
             </p>
           )}
         </div>
+        {shareQuery && teeTimes.length > 0 && (
+          <ShareButton query={shareQuery} course={course.slug} courseName={course.name} />
+        )}
         <FavouriteStar courseId={course.id} name={course.name} on={favourite} back={back} />
       </div>
 
