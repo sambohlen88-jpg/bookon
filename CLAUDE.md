@@ -19,7 +19,7 @@ Read `SPEC.md` before starting work. The product is BookOn (the spec's working t
 - Shared types and the `CourseAdapter` interface live in `packages/core`. Platform-specific code stays inside its adapter in `packages/adapters`.
 - Schema changes: edit `packages/db/src/schema.ts`, then `pnpm --filter @bookon/db generate --name <what_changed>` and commit the migration.
 - In the Claude Code cloud environment, run live worker commands with `NODE_USE_ENV_PROXY=1`.
-- Local database: `pnpm db:dev` (PGlite server on port 5433). It is a single database session, so queries from different connections can interleave and fail. `createDb` uses one connection for it, but the web app and worker are still two. Keep a request's queries one after another, not `Promise.all`.
+- Local database: `pnpm db:dev` (PGlite on port 5433, served by `packages/db/src/scripts/dev-server.ts`). PGlite is a single database session, so the server runs one connection's query (or open transaction) at a time and keeps its messages together; the stock pglite-server mixed up the web app's and worker's queries ("Failed query"). `createDb` still uses one connection for it, so keep a request's queries one after another, not `Promise.all`.
 - Times: store UTC, display Perth time via helpers in `packages/core/src/time.ts`. Do not hand-roll offsets elsewhere.
 - Admin and club pages check access in every page, action and download (`requireAdmin`, `requireClub`, `clubAccess`, `isAdminRequest` in `apps/web/src/lib/access.ts`), never only in a layout. Give each form button that makes a different decision its own server action.
 - Emails go through `createMailer` in `packages/email`. Locally they land in the outbox (`/dev/outbox`); never send real email to anyone but the owner without their say-so.

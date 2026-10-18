@@ -13,7 +13,7 @@
     "generate": "drizzle-kit generate",
     "migrate": "tsx src/scripts/migrate.ts",
     "seed": "tsx src/scripts/seed.ts",
-    "dev": "node -e \"require('fs').mkdirSync('../../.data',{recursive:true})\" && pglite-server --db=../../.data/pglite --port=5433 --max-connections=10",
+    "dev": "tsx src/scripts/dev-server.ts",
     "stats": "tsx src/scripts/stats.ts"
   },
   "dependencies": {

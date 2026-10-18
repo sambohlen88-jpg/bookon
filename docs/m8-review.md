@@ -84,6 +84,10 @@ The browser run went through:
 
 **Two-button forms could record the wrong decision.** Approve and Decline shared one form and passed the choice as the button's value, which didn't reach the server. Approving a booking page change was saved as declined, and approving a photo did nothing. Each button now has its own action, so the choice can't get lost.
 
+## Fixed after you tried it
+
+**"Failed query" after approving a course and photo.** The local database server (`pnpm db:dev`) took queries from the website and the worker and could mix their pieces together, so one would fail. It only happened while the worker was checking courses at the same moment. `pnpm db:dev` now uses BookOn's own small server, which finishes one query (or transaction) before starting the next. A stress test went from 268 of 300 queries failing to 2,700 of 2,700 passing, and the admin run above passed again during a full worker check. This only affects the local database on your Mac; the hosted site will use a normal Postgres database. There's 1 new test, so 203 now.
+
 ## Decisions I made
 
 1. **Admins are listed in a setting** (`BOOKON_ADMIN_EMAILS`), not in the database. That way nobody can make themselves an admin through the site.
