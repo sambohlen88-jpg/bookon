@@ -1,6 +1,6 @@
 /**
  * The local development database: PGlite served on 127.0.0.1:5433, so the
- * website and the worker can share it (`pnpm db:dev`).
+ * website and the worker can share it (`pnpm db:dev` runs db-dev.ts).
  *
  * PGlite is a single database session. The stock pglite-server queues each
  * protocol message on its own, so two connections' messages can interleave:
@@ -12,12 +12,9 @@
  */
 import { mkdirSync } from "node:fs";
 import { createServer, type Socket } from "node:net";
-import { fileURLToPath } from "node:url";
 import { PGlite } from "@electric-sql/pglite";
 import { PGLiteSocketHandler } from "@electric-sql/pglite-socket";
 
-const PORT = Number(process.env.LOCAL_DB_PORT ?? 5433);
-const DATA_DIR = fileURLToPath(new URL("../../../../.data/pglite", import.meta.url));
 /** If a connection goes quiet mid-query for this long, let others go ahead. */
 const STALL_MS = 10_000;
 
@@ -142,16 +139,4 @@ export async function startLocalDatabase(options: { port: number; dataDir?: stri
       await db.close();
     },
   };
-}
-
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const running = await startLocalDatabase({ port: PORT, dataDir: DATA_DIR });
-  console.log(`Local database ready on postgres://postgres@127.0.0.1:${PORT}/postgres`);
-  console.log(`Data in ${DATA_DIR}. Keep this running; Ctrl+C to stop.`);
-  const stop = async () => {
-    await running.stop();
-    process.exit(0);
-  };
-  process.on("SIGINT", stop);
-  process.on("SIGTERM", stop);
 }

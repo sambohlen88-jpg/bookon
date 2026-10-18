@@ -13,7 +13,7 @@
     "generate": "drizzle-kit generate",
     "migrate": "tsx src/scripts/migrate.ts",
     "seed": "tsx src/scripts/seed.ts",
-    "dev": "tsx src/scripts/dev-server.ts",
+    "dev": "tsx src/scripts/db-dev.ts",
     "stats": "tsx src/scripts/stats.ts"
   },
   "dependencies": {

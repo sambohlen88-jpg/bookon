@@ -31,6 +31,28 @@ pnpm stats                                 # searches, impressions and clicks pe
 pnpm clubs                                 # club listings waiting for review (or use /admin)
 ```
 
+### On Windows (PowerShell)
+
+Install Node.js 22 LTS and Git once (or download them from nodejs.org and git-scm.com):
+
+```powershell
+winget install OpenJS.NodeJS.LTS
+winget install Git.Git
+```
+
+Close and reopen PowerShell, then:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned   # once: lets PowerShell run npm and pnpm
+npm install -g pnpm@10                                # once
+git clone https://github.com/sambohlen88-jpg/bookon.git
+cd bookon
+pnpm install
+Add-Content apps\web\.env.local "BOOKON_ADMIN_EMAILS=you@example.com"   # once, your email
+```
+
+Then run each of these in its own PowerShell window, from the `bookon` folder, as above: `pnpm db:dev`, then `pnpm db:seed` (once), then `pnpm dev:worker` and `pnpm dev`. Windows PowerShell 5 doesn't understand `&&`, so run commands one at a time. If Windows Firewall asks about Node.js, allow it on private networks.
+
 Search only shows times checked in the last 90 minutes, so they're never out of date. If the worker isn't running, the site says it can't show times. `pnpm --filter @bookon/worker poll` checks every club once, if you don't want to leave the worker running.
 
 **Admin area:** add your email to `apps/web/.env.local` as `BOOKON_ADMIN_EMAILS=you@example.com` (comma separate several), restart `pnpm dev`, sign in, and open http://localhost:3000/admin.
