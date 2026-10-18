@@ -293,11 +293,25 @@ export function NoMatchList({
   now: Date;
   others: boolean;
 }) {
+  const unchecked = results.filter((r) =>
+    r.notices.some((n) => n.kind === "stale" || n.kind === "not-checked"),
+  ).length;
   return (
     <details className="rounded-xl border border-border bg-background">
       <summary className="flex min-h-12 cursor-pointer items-center px-4 py-3 text-sm font-medium">
-        No matching times at {results.length} {others ? "other " : ""}
-        {results.length === 1 ? "course" : "courses"}
+        {unchecked === results.length ? (
+          `Couldn't check ${results.length} ${results.length === 1 ? "course" : "courses"}`
+        ) : (
+          <>
+            No matching times at {results.length} {others ? "other " : ""}
+            {results.length === 1 ? "course" : "courses"}
+            {unchecked > 0 && (
+              <span className="ml-1 font-normal text-warning-fg">
+                · couldn&apos;t check {unchecked}
+              </span>
+            )}
+          </>
+        )}
       </summary>
       <ul className="border-t border-border px-4">
         {results.map((r) => (

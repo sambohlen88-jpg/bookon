@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { formatPerthDay } from "@bookon/core";
+import { formatAgo, formatPerthDay } from "@bookon/core";
 import { cookies, headers } from "next/headers";
 import {
   approvedCoursePhotos,
@@ -77,6 +77,22 @@ export default async function SearchPage({
   const withTimes = result.courses.filter((c) => c.teeTimes.length > 0).length;
   // A handful of courses each get a card, so their notices show. Beyond that, courses with
   // nothing matching fold into one list.
+  // Courses we couldn't check recently. If that's every course, say so rather than "no times".
+  const unchecked = result.courses.filter(
+    (c) =>
+      c.teeTimes.length === 0 &&
+      c.notices.some((n) => n.kind === "stale" || n.kind === "not-checked"),
+  );
+  const notOpenOnly = (c: (typeof result.courses)[number]) =>
+    c.notices.length > 0 && c.notices.every((n) => n.kind === "not-open");
+  const nothingChecked =
+    result.totalTeeTimes === 0 &&
+    unchecked.length > 0 &&
+    result.courses.every((c) => unchecked.includes(c) || notOpenOnly(c));
+  const lastChecked = unchecked
+    .flatMap((c) => c.notices.map((n) => (n.kind === "stale" ? n.lastSuccessAt : null)))
+    .filter((d): d is Date => d !== null)
+    .sort((a, b) => b.getTime() - a.getTime())[0];
   const fold = result.courses.length > 3;
   const cards = fold ? result.courses.filter((c) => c.teeTimes.length > 0) : result.courses;
   const folded = fold ? result.courses.filter((c) => c.teeTimes.length === 0) : [];
@@ -120,9 +136,11 @@ export default async function SearchPage({
             className="mt-6 text-2xl font-bold tracking-tight lg:mt-0 lg:text-3xl"
             aria-live="polite"
           >
-            {result.totalTeeTimes === 0
-              ? "No tee times match"
-              : `${result.totalTeeTimes.toLocaleString("en-AU")} tee ${result.totalTeeTimes === 1 ? "time" : "times"} at ${withTimes} ${withTimes === 1 ? "course" : "courses"}`}
+            {nothingChecked
+              ? "We can't show times right now"
+              : result.totalTeeTimes === 0
+                ? "No tee times match"
+                : `${result.totalTeeTimes.toLocaleString("en-AU")} tee ${result.totalTeeTimes === 1 ? "time" : "times"} at ${withTimes} ${withTimes === 1 ? "course" : "courses"}`}
           </h1>
 
           {alertStatus === "created" && (
@@ -155,7 +173,24 @@ export default async function SearchPage({
             </div>
           )}
 
-          {result.totalTeeTimes === 0 && <EmptyState form={form} />}
+          {nothingChecked && (
+            <div className="mt-4 flex flex-col gap-3">
+              <Notice tone="warning">
+                We haven&apos;t been able to check the clubs&apos; booking pages in the last 90
+                minutes
+                {lastChecked ? ` (last checked ${formatAgo(lastChecked, now)})` : ""}, so we&apos;re
+                not showing times that may already be booked. Try again soon.
+              </Notice>
+              {process.env.NODE_ENV !== "production" && (
+                <Notice tone="info">
+                  Running BookOn on your computer? Times only show if the worker checked them in the
+                  last 90 minutes. Keep it running in another terminal with{" "}
+                  <code className="font-semibold">pnpm dev:worker</code>.
+                </Notice>
+              )}
+            </div>
+          )}
+          {result.totalTeeTimes === 0 && !nothingChecked && <EmptyState form={form} />}
           {result.totalTeeTimes === 0 && alertStatus !== "created" && (
             <AlertCard here={here} signedIn={Boolean(user)} empty />
           )}

@@ -24,12 +24,14 @@ Needs Node 22.21 or later and pnpm 10 (`corepack enable` sets up pnpm). No Postg
 pnpm install
 pnpm db:dev                                # 1st terminal: local database, keep it running
 pnpm db:seed                               # once: tables and courses
-pnpm --filter @bookon/worker poll          # fetch live tee times, then send alert emails (or `pnpm dev:worker` to keep polling)
-pnpm dev                                   # website on http://localhost:3000
+pnpm dev:worker                            # 2nd terminal: checks every club every 30 minutes, keep it running
+pnpm dev                                   # 3rd terminal: website on http://localhost:3000
 pnpm alerts                                # send alert emails from stored times, without polling
 pnpm stats                                 # searches, impressions and clicks per course
 pnpm clubs                                 # club listings waiting for review (see docs/m7-review.md)
 ```
+
+Search only shows times checked in the last 90 minutes, so they're never out of date. If the worker isn't running, the site says it can't show times. `pnpm --filter @bookon/worker poll` checks every club once, if you don't want to leave the worker running.
 
 Locally, emails (sign-in links and alerts) are not sent. Open http://localhost:3000/dev/outbox to read them.
 
