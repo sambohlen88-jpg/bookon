@@ -311,7 +311,10 @@ The owner asked for Perth's golf simulators and bookable driving ranges. Venues 
 
 - 30 Inrange bays, booked by 30, 60 or 90 minutes on hamersley.quick18.com. Quick18 blocks `Claude-User`, so the owner runs its first check.
 
-### Not reached yet
+### Checked after the owner allowed more sites (18 October 2026, later)
 
-- Always Golf (East Perth, Fremantle), Perth Golf Centre (Yokine), Golf WA's directory: their sites redirect to `www.`, which the cloud environment doesn't allow yet.
-- Sim Golf Club and Anytime Fairway (Jandakot): site not reachable or not known.
+- **Golf WA's simulator list** (golfwa.org.au/get-into-golf/golf-simulators) matches the venues above. It adds three outside Perth: Bunbury SWISH (TrackMan and an indoor range), Hole 19 Dunsborough and Karratha Indoor Golf.
+- **Always Golf** (East Perth, Fremantle): books through its own Wix site (`/book-online`). Listing only for now.
+- **Perth Golf Centre** (WA Golf Club, Yokine): simulator hire is booked through Timely (`bookings.gettimely.com`), an appointment system. Listing only.
+- **Albatross Lounge**'s own site is on Square Online and links to Your Golf Booking for bays, as above.
+- **Not reached:** Sim Golf Club (site doesn't answer) and Anytime Fairway (Jandakot). Golf WA links to Anytime Fairway through bit.ly, which the cloud environment can't open.
