@@ -12,7 +12,7 @@ import {
   startFetchRun,
 } from "./queries";
 import { availabilityChecks, fetchRuns } from "./schema";
-import { seed } from "./seed";
+import { seed, seedIfEmpty } from "./seed";
 
 let handle: DbHandle;
 
@@ -69,6 +69,17 @@ describe("seed", () => {
     expect(await findCourseBySlug(handle.db, "joondalup-resort")).toMatchObject({
       platformConfig: expect.objectContaining({ bookingResourceId: "3900000" }),
     });
+  });
+
+  it("only seeds a database with no golf courses", async () => {
+    const fresh = createDb("pglite:memory");
+    await fresh.migrate();
+    // The migrations add the sims and ranges, but not the golf courses.
+    expect(await listEnabledCourses(fresh.db)).toHaveLength(5);
+    expect(await seedIfEmpty(fresh.db)).toBe(true);
+    expect(await listEnabledCourses(fresh.db)).toHaveLength(31);
+    expect(await seedIfEmpty(fresh.db)).toBe(false);
+    await fresh.close();
   });
 
   it("can run twice without duplicating", async () => {

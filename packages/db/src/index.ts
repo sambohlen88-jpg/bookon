@@ -1,7 +1,7 @@
 export * as schema from "./schema";
 export * from "./client";
 export * from "./queries";
-export { seed, SEED_CLUBS } from "./seed";
+export { seed, seedIfEmpty, SEED_CLUBS } from "./seed";
 export * from "./search";
 export * from "./tracking";
 export * from "./accounts";

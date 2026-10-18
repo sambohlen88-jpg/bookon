@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import type { AreaId } from "@bookon/core";
 import type { Database } from "./client";
 import { COURSE_LOCATIONS } from "./course-locations";
@@ -654,4 +654,19 @@ export async function seed(db: Database): Promise<void> {
         });
     }
   }
+}
+
+/**
+ * Seed a database that has no golf courses yet, such as a new local one.
+ * Never touches a database that has them, so admin changes stay.
+ */
+export async function seedIfEmpty(db: Database): Promise<boolean> {
+  const [course] = await db
+    .select({ id: courses.id })
+    .from(courses)
+    .where(eq(courses.kind, "course"))
+    .limit(1);
+  if (course) return false;
+  await seed(db);
+  return true;
 }

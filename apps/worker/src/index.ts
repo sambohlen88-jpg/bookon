@@ -18,6 +18,7 @@ import {
   createDb,
   findCourseBySlug,
   listEnabledCourses,
+  seedIfEmpty,
   type Database,
   type PollableCourse,
 } from "@bookon/db";
@@ -51,6 +52,8 @@ try {
   );
   process.exit(1);
 }
+// A new database (say, after deleting the local one) gets the courses without `pnpm db:seed`.
+if (await seedIfEmpty(handle.db)) console.log("[worker] New database: added the courses.");
 
 /** Nothing listening at the database's address, anywhere in the error's causes. */
 function refusedConnection(error: unknown): boolean {

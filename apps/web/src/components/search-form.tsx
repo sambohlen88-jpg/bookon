@@ -59,8 +59,11 @@ export function SearchForm({
           latest={{ golf: LATEST_TIME, bays: LATEST_BAY_TIME }}
         />
       )}
-      <QuickDays inputId={id("date")} days={quickDays(now)} initial={values.date} />
-      <div className="-mt-2 grid grid-cols-2 gap-3">
+      {/* Phones only: on desktop the date picker is right there. */}
+      <div className="lg:hidden">
+        <QuickDays inputId={id("date")} days={quickDays(now)} initial={values.date} />
+      </div>
+      <div className="-mt-2 grid grid-cols-2 gap-3 lg:mt-0">
         <div>
           <label htmlFor={id("date")} className={fieldLabel}>
             Day
@@ -156,7 +159,8 @@ export function SearchForm({
         <fieldset className="min-w-0">
           <legend className={fieldLabel}>Where</legend>
           {/* relative: keeps the hidden radio buttons inside the scrolling row. */}
-          <div className="relative -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+          {/* A scrolling row on phones; on desktop the areas wrap, with no scroll bar. */}
+          <div className="relative -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 lg:flex-wrap lg:overflow-visible">
             {[{ id: "", name: "Anywhere" }, ...areas].map((a) => (
               <label key={a.id} className="relative shrink-0">
                 <input
