@@ -275,3 +275,43 @@ The owner approved weather and Near me on 18 October 2026. Neither is a booking 
 - **Terms:** light use is allowed (at most one request a second, a user agent that names us, no bulk or repeated geocoding). Data © OpenStreetMap contributors, ODbL. See https://operations.osmfoundation.org/policies/nominatim/.
 - **How we use it:** `pnpm courses:locate` (`apps/worker/src/locate.ts`) prints what it finds for a person to check, and saves only with `--save`. Results go in `packages/db/src/course-locations.ts` and the database. Admins can correct any course.
 - **Run 18 October 2026:** 21 courses found by name. 8 that the map names differently were found and checked by hand. All 29 are in `course-locations.ts`.
+
+## Golf simulators and driving ranges (Milestone 11 research, 18 October 2026)
+
+The owner asked for Perth's golf simulators and bookable driving ranges. Venues come from Golf WA's simulator list, news and the venues' own sites. Each venue's booking system was checked for robots.txt rules, terms, and whether free times can be seen without logging in. Nothing below is read by BookOn until the owner approves it.
+
+### Your Golf Booking (yourgolfbooking.com): recommended
+
+- **Venues:** OuttaBounds (North Lake: Simulators, Driving Range, Darts), Albatross Lounge (893 Canning Hwy, Mount Pleasant: Book a Bay), Elevate Golf Lounge (249 Oxford St, Leederville: TrackMan bays), Lights Out Golf (Wangara: golf sessions). Its images are hosted by TrackMan, so other TrackMan venues may join it.
+- **robots.txt:** `User-agent: * / Disallow:` (everything allowed) on yourgolfbooking.com. The API host has no robots.txt (404).
+- **Terms:** the customer terms (`/legal/terms/current`) say nothing about automated access.
+- **What's public without logging in:**
+  - Each bookable group's page (`/venues/<venue>/booking/<group>`, e.g. OuttaBounds `/booking/simulators`) carries the venue's details, bays, slot length (30 minutes), maximum players (6), how far ahead you can book (4 weeks), opening rules and prices ($15 per adult per 30 minutes at OuttaBounds).
+  - `api.yourgolfbooking.com/venue/<venue>/bookings/public?start_gte=…&start_lte=…` lists the day's bookings as bay, start and end only, with no customer details. The booking page itself uses this to show free bays.
+  - Other addresses (bay groups, ranges, bay options) need a login, and aren't used.
+- **How BookOn would read it:** each venue's group page about once a day (bays, hours, prices), and the public bookings once per check per day. Free bays for each start time come from the bookable bays, minus those booked, inside opening hours. The first live checks are compared with what the booking page shows.
+
+### Big Swing Golf (bigswinggolf.com.au): recommended
+
+- **Venues:** Booragoon (Unit 2/80 Norma Rd) and Mandurah. Both booking pages exist (`/booking/booragoon`, `/booking/mandurah`).
+- **robots.txt:** `User-agent: *` with nothing disallowed.
+- **Terms:** `/terms-and-conditions` loads its text some other way, so it couldn't be read; the privacy policy is a PDF. To check again before switching on.
+- **What's public:** the booking page includes 7 days of availability for every simulator, every 15 minutes (open, busy, and how long it stays free), plus the slot length, maximum players (4) and peak times. **One page load per venue covers the week.**
+
+### X-Golf (xgolf.com.au): listing only
+
+- **Venues (WA):** Balcatta, Joondalup, Morley, Nedlands, Rockingham, Bunbury.
+- **robots.txt disallows every venue's "book now" page** (`/locations/<venue>/<venue>-book-now/`) for all robots. BookOn won't read them. Venues are listed with their details and a link to book.
+
+### Pin High (Osborne Park): listing only for now
+
+- Books through GymMaster (`pinhigh.gymmasteronline.com`), a gym membership system that usually needs a login. Not checked further.
+
+### Hamersley Driving Range (Karrinyup): Quick18, already approved
+
+- 30 Inrange bays, booked by 30, 60 or 90 minutes on hamersley.quick18.com. Quick18 blocks `Claude-User`, so the owner runs its first check.
+
+### Not reached yet
+
+- Always Golf (East Perth, Fremantle), Perth Golf Centre (Yokine), Golf WA's directory: their sites redirect to `www.`, which the cloud environment doesn't allow yet.
+- Sim Golf Club and Anytime Fairway (Jandakot): site not reachable or not known.

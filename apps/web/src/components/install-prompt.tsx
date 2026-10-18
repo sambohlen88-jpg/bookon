@@ -46,15 +46,17 @@ function quiet(): boolean {
 
 /**
  * Suggest adding BookOn to the home screen, never on a golfer's first visit:
- * after they set an alert, or when they come back. Android and desktop
- * Chrome get an Add button; iPhone gets the two steps, as Apple has no button.
+ * after they set an alert, or when they come back. Phones and tablets only:
+ * on a computer the website is the experience. Android gets an Add button;
+ * iPhone gets the two steps, as Apple has no button.
  */
 export function InstallPrompt() {
   const [mode, setMode] = useState<"button" | "ios" | null>(null);
   const deferred = useRef<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
-    if (isStandalone() || quiet()) return;
+    // A touch screen as the main pointer means a phone or tablet, not a computer.
+    if (isStandalone() || quiet() || !matchMedia("(pointer: coarse)").matches) return;
     const visits = countVisit();
     const eligible =
       visits >= 2 || new URLSearchParams(window.location.search).get("alert") === "created";
