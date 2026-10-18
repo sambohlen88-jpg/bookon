@@ -49,7 +49,7 @@ On phones, the shortcut cards and Follow links appear under Free soon.
   - **Message on WhatsApp** opens WhatsApp with "Hi Daniel, I found you on BookOn and I'd like to book a golf lesson." already written.
   - **Email** and **Call**.
   - **Pay through BookOn · coming soon.**
-- Each WhatsApp, email, call and website tap is counted for the coach. A page that searches engines might show doesn't wait on it, and bots aren't counted.
+- Each WhatsApp, email, call and website tap is counted for the coach. Counting never slows the button down, and bots aren't counted.
 
 ### For coaches
 
