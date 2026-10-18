@@ -70,7 +70,7 @@ describe("refreshWeather", () => {
     ]);
     const options = { userAgent: "BookOnBot/test", now, fetch: met.fetch, gapMs: 0 };
     const first = await refreshWeather(handle.db, [collier, unplaced], options);
-    expect(first).toEqual({ fetched: 1, unchanged: 0, skipped: 1, failed: 0 });
+    expect(first).toEqual({ fetched: 1, unchanged: 0, fresh: 0, noLocation: 1, failed: 0 });
     expect(met.calls[0]!.url).toBe(
       "https://api.met.no/weatherapi/locationforecast/2.0/complete?lat=-32.0000&lon=115.8712",
     );
@@ -82,7 +82,7 @@ describe("refreshWeather", () => {
 
     // Before it expires, nothing is asked.
     const again = await refreshWeather(handle.db, [collier], options);
-    expect(again.skipped).toBe(1);
+    expect(again.fresh).toBe(1);
     expect(met.calls).toHaveLength(1);
   });
 

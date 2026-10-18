@@ -107,6 +107,10 @@ Below the search, in this order. [Screenshot](./m10/m10-home-phone.png).
 - **MET Norway doesn't give a chance of rain for Australia**, only expected millimetres. So the site shows "dry" or "2 mm rain" rather than a percentage.
 - On a Near me search from the Perth CBD for Monday morning, Maylands (3.9 km) showed "☁️ 18° · dry · 6 km/h wind".
 
+### Fixed after you tried it
+
+**No weather on your PC.** The course locations only reached a database through `pnpm db:seed`, which an existing database doesn't need to run, so your worker had no locations and skipped the weather. A migration now fills them in when the worker starts. The worker also fetches the weather first instead of after a full tee time pass, which takes a few minutes.
+
 ## Checked
 
 | Check                      | Result                                                                                                                                                                                                                            |
@@ -156,6 +160,6 @@ pnpm dev:worker                # window 2, keep running
 pnpm dev                       # window 3
 ```
 
-Locations come with the update, and the worker fetches the weather when it starts (or run `pnpm weather`).
+Locations come with the update: the worker fills them in when it starts (migration 0008, which only sets courses with no location). It then fetches the weather straight away, before checking tee times. Look for `[weather] 26 updated` in its window, or run `pnpm weather`.
 
 Then open http://localhost:3000 on a narrow window or your phone (`http://<your PC's name>:3000`, same wifi). Try the menu bar, quick days, the Where row and Near me, the Courses tab, a course page and My account. On a phone, Near me needs the site on https (or localhost) to ask for your location, so it fully works once hosted.

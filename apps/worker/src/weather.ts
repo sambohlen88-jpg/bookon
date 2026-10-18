@@ -22,7 +22,10 @@ export interface WeatherCourse {
 export interface WeatherResult {
   fetched: number;
   unchanged: number;
-  skipped: number;
+  /** Fetched recently: MET Norway's forecast hasn't expired yet. */
+  fresh: number;
+  /** No latitude and longitude yet, so no forecast (set them in admin). */
+  noLocation: number;
   failed: number;
 }
 
@@ -38,16 +41,16 @@ export async function refreshWeather(
 ): Promise<WeatherResult> {
   const now = options.now ?? (() => new Date());
   const get = options.fetch ?? fetch;
-  const result: WeatherResult = { fetched: 0, unchanged: 0, skipped: 0, failed: 0 };
+  const result: WeatherResult = { fetched: 0, unchanged: 0, fresh: 0, noLocation: 0, failed: 0 };
   let asked = false;
   for (const course of courses) {
     if (course.latitude === null || course.longitude === null) {
-      result.skipped++;
+      result.noLocation++;
       continue;
     }
     const stored = await forecastFor(db, course.id);
     if (stored && stored.expiresAt > now()) {
-      result.skipped++;
+      result.fresh++;
       continue;
     }
     if (asked) await new Promise((r) => setTimeout(r, options.gapMs ?? GAP_MS));

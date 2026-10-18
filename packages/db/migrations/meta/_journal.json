@@ -57,6 +57,13 @@
       "when": 1792299217525,
       "tag": "0007_areas_and_weather",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792307564965,
+      "tag": "0008_course_locations",
+      "breakpoints": true
     }
   ]
 }

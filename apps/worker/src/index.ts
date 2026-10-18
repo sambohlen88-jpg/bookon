@@ -96,7 +96,7 @@ async function weatherOnce() {
       userAgent: config.userAgent,
     });
     console.log(
-      `[weather] ${result.fetched} updated, ${result.unchanged} unchanged, ${result.skipped} not due or no location, ${result.failed} failed`,
+      `[weather] ${result.fetched} updated, ${result.unchanged} unchanged, ${result.fresh} still fresh, ${result.noLocation} with no location, ${result.failed} failed`,
     );
   } catch (error) {
     console.error("[weather] could not refresh forecasts", error);
@@ -122,9 +122,10 @@ try {
     const intervalMs = config.pollIntervalMinutes * 60_000;
     console.log(`[worker] polling every ${config.pollIntervalMinutes} minutes`);
     for (;;) {
+      // Weather first: it's quick, so forecasts show without waiting for a full pass.
+      await weatherOnce();
       await pollOnce(http);
       await alertsOnce();
-      await weatherOnce();
       await new Promise((resolve) => setTimeout(resolve, intervalMs));
     }
   } else {
