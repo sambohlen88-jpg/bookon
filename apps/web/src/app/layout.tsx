@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { siteUrl } from "@bookon/email";
+import { Suspense } from "react";
+import { PhoneTabs } from "@/components/phone-tabs";
 import { ServiceWorker } from "@/components/service-worker";
 import { SiteFooter } from "@/components/site-footer";
 import "./globals.css";
@@ -16,6 +18,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  // Lets the menu bar sit above the iPhone home bar (env(safe-area-inset-bottom)).
+  viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#1f6f43" },
     { media: "(prefers-color-scheme: dark)", color: "#0e1511" },
@@ -29,9 +33,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en-AU">
-      <body className="font-sans antialiased">
+      {/* Phones: room at the bottom for the menu bar and the iPhone home bar. */}
+      <body className="phone-tabs-space font-sans antialiased">
         {children}
         <SiteFooter />
+        <Suspense>
+          <PhoneTabs />
+        </Suspense>
         <ServiceWorker />
       </body>
     </html>

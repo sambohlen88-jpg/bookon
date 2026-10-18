@@ -11,3 +11,5 @@ export * from "./push";
 export * from "./clubs";
 export * from "./admin";
 export * from "./shares";
+export * from "./weather";
+export * from "./course-locations";

@@ -6,9 +6,11 @@
  *   run                                       poll every POLL_INTERVAL_MINUTES
  *   record --course <slug> [--days <n>]       one pass, saving raw pages to recordings/
  *   alerts                                    email alert matches from data already stored
+ *   weather                                   refresh course forecasts from MET Norway
  *
- * poll and run email alert matches after each pass.
+ * poll and run email alert matches after each pass. run also keeps the weather fresh.
  */
+import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { PoliteHttpClient } from "@bookon/adapters";
 import {
@@ -24,6 +26,7 @@ import { loadConfig } from "./config";
 import type { HttpClient } from "@bookon/core";
 import { pollAll, type PollResult } from "./poll";
 import { RecordingHttpClient } from "./record";
+import { refreshWeather } from "./weather";
 
 const { positionals, values } = parseArgs({
   // `pnpm poll -- --course x` passes the "--" through; drop it so the flags are read.
@@ -86,16 +89,33 @@ async function alertsOnce() {
   }
 }
 
+/** Never stops the worker either. Forecasts only need courses that have a location. */
+async function weatherOnce() {
+  try {
+    const result = await refreshWeather(handle.db, await listEnabledCourses(handle.db), {
+      userAgent: config.userAgent,
+    });
+    console.log(
+      `[weather] ${result.fetched} updated, ${result.unchanged} unchanged, ${result.skipped} not due or no location, ${result.failed} failed`,
+    );
+  } catch (error) {
+    console.error("[weather] could not refresh forecasts", error);
+  }
+}
+
 try {
   if (command === "poll") {
     await pollOnce(http);
     await alertsOnce();
   } else if (command === "alerts") {
     await alertsOnce();
+  } else if (command === "weather") {
+    await weatherOnce();
   } else if (command === "record") {
     if (!values.course) throw new Error("record needs --course <slug>");
-    const directory = new URL(`../recordings/${values.course}-${Date.now()}`, import.meta.url)
-      .pathname;
+    const directory = fileURLToPath(
+      new URL(`../recordings/${values.course}-${Date.now()}`, import.meta.url),
+    );
     await pollOnce(new RecordingHttpClient(http, directory));
     console.log(`[worker] pages saved to ${directory}`);
   } else if (command === "run") {
@@ -104,10 +124,11 @@ try {
     for (;;) {
       await pollOnce(http);
       await alertsOnce();
+      await weatherOnce();
       await new Promise((resolve) => setTimeout(resolve, intervalMs));
     }
   } else {
-    throw new Error(`Unknown command "${command}". Use poll, run, record or alerts.`);
+    throw new Error(`Unknown command "${command}". Use poll, run, record, alerts or weather.`);
   }
 } finally {
   await handle.close();

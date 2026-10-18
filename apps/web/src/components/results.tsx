@@ -1,5 +1,15 @@
 import Link from "next/link";
-import { formatAgo, formatPerthDay, formatPerthTime, formatPrice } from "@bookon/core";
+import {
+  formatAgo,
+  formatDistance,
+  formatPerthDay,
+  formatPerthTime,
+  formatPrice,
+  weatherEmoji,
+  weatherLine,
+  weatherWords,
+  type WeatherSummary,
+} from "@bookon/core";
 import type { CheckProblem, CourseResult, DayNotice, ResultTeeTime } from "@bookon/db";
 import { PROBLEM_LABEL, PROBLEM_SENTENCE } from "@/lib/check-problems";
 import { toggleFavourite } from "@/app/actions";
@@ -33,6 +43,8 @@ export function CourseResults({
   bookHref,
   photoId = null,
   shareQuery,
+  distanceKm = null,
+  weather = new Map(),
 }: {
   result: CourseResult;
   multiDay: boolean;
@@ -52,6 +64,10 @@ export function CourseResults({
   bookHref: (teeTime: ResultTeeTime) => string;
   /** This search, for sharing just this course's times. */
   shareQuery?: string;
+  /** How far the golfer is from the course, on a Near me search. */
+  distanceKm?: number | null;
+  /** The forecast for the search's time window, by Perth date. */
+  weather?: Map<string, WeatherSummary>;
 }) {
   const limits = multiDay ? LIMITS.multiDay : oneCourse ? LIMITS.oneCourseOneDay : LIMITS.singleDay;
   const { course, teeTimes, checkedAt, notices } = result;
@@ -77,7 +93,11 @@ export function CourseResults({
               {course.name}
             </Link>
           </h2>
-          <p className="text-sm text-muted">{course.suburb}</p>
+          <p className="text-sm text-muted">
+            {course.suburb}
+            {distanceKm !== null && ` · ${formatDistance(distanceKm)} away`}
+          </p>
+          {!multiDay && weather.size > 0 && <WeatherNote weather={[...weather.values()][0]!} />}
           {checkedAt && (
             <p className="mt-1 text-xs text-muted">
               <time dateTime={checkedAt.toISOString()}>Checked {formatAgo(checkedAt, now)}</time>
@@ -102,7 +122,12 @@ export function CourseResults({
 
       {shownDays.map(([day, times]) => (
         <div key={day} className="mt-3">
-          {multiDay && <h3 className="text-sm font-semibold">{formatPerthDay(day)}</h3>}
+          {multiDay && (
+            <h3 className="text-sm font-semibold">
+              {formatPerthDay(day)}
+              {weather.get(day) && <WeatherNote weather={weather.get(day)!} inline />}
+            </h3>
+          )}
           <ul className="tee-list">
             {times.slice(0, limits.visible).map((t) => (
               <TeeTimeRow
@@ -147,11 +172,23 @@ export function CourseResults({
   );
 }
 
+/** "⛅ 24° · 10% rain · 15 km/h wind" for the search's time window. */
+function WeatherNote({ weather, inline = false }: { weather: WeatherSummary; inline?: boolean }) {
+  return (
+    <span className={inline ? "ml-2 font-normal text-muted" : "mt-1 block text-sm text-muted"}>
+      <span role="img" aria-label={weatherWords(weather.symbol)}>
+        {weatherEmoji(weather.symbol)}
+      </span>{" "}
+      {weatherLine(weather)}
+    </span>
+  );
+}
+
 const starClass =
   "-mr-2 -mt-2 flex size-11 shrink-0 items-center justify-center rounded-lg text-2xl leading-none";
 
 /** Star a course to find it fast. Signed out, the star leads to sign in. */
-function FavouriteStar({
+export function FavouriteStar({
   courseId,
   name,
   on,

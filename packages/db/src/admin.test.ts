@@ -313,6 +313,9 @@ describe("courses in admin", () => {
       {
         name: course!.name,
         suburb: course!.suburb,
+        area: "south",
+        latitude: -32.01,
+        longitude: 115.87,
         holes: course!.holes,
         websiteUrl: course!.websiteUrl,
         bookingUrl: course!.bookingUrl,
@@ -335,7 +338,10 @@ describe("courses in admin", () => {
     expect(await setCourseEnabled(handle.db, updated, true, admin, now)).toEqual({ ok: true });
     const log = await listChangeLog(handle.db, { clubId: result.clubId, limit: 2 });
     expect(log[0]!.action).toBe("Switched course on");
-    expect(log[1]!.details).toMatchObject({ typicalGreenFeeCents: { from: null, to: 4500 } });
+    expect(log[1]!.details).toMatchObject({
+      typicalGreenFeeCents: { from: null, to: 4500 },
+      area: { from: null, to: "south" },
+    });
     expect(cannotSwitchOn({ ...updated, platform: "chronogolf" })).toMatch(/Chronogolf/);
   });
 

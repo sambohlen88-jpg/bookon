@@ -147,6 +147,8 @@ Each milestone ends with a short written summary, a list of open issues, and a d
 
 **Owner's change, 18 October 2026:** Milestone 9 is now sharing tee times with mates: a picture of the times for a group chat, a link that shows what was shared (with times booked since crossed out), and the times as plain text. Hardening and launch move to Milestone 10.
 
+**Owner's change, 18 October 2026 (later):** Milestone 10 is now the rest of the site on phones: an app-style menu bar, more on the home page (recent searches, My courses, Free soon), a courses page with areas, search and Near me, richer course pages (next times, club details and prices, weather, courses nearby), My account in tabs, quick day buttons and areas on the search, Near me on the search, and weather from MET Norway. Hardening and launch move to Milestone 11.
+
 ## 12. Phase 2 preview (do not build yet)
 
 Stripe Connect style payments and commission, official partner API adapters that can book and cancel, support for a booking history and refunds, more cities, and native apps. Keep the adapter interface flexible enough that a `book()` and `cancel()` method can be added later.

@@ -39,7 +39,7 @@ export function RefreshBar({ renderedAt }: { renderedAt: string }) {
   return (
     <div
       role="status"
-      className="fixed inset-x-0 bottom-0 z-10 border-t border-warning-border bg-warning-bg px-4 py-3 text-warning-fg"
+      className="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-10 md:bottom-0 border-t border-warning-border bg-warning-bg px-4 py-3 text-warning-fg"
     >
       <div className="mx-auto flex max-w-md items-center justify-between gap-3">
         <p className="text-sm">

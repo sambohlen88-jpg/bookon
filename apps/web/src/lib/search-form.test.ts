@@ -3,7 +3,10 @@ import {
   TIME_OPTIONS,
   defaultForm,
   formatFormTime,
+  nearQuery,
+  parseNear,
   parseSearchForm,
+  quickDays,
   searchHref,
   toSearchParams,
 } from "./search-form";
@@ -52,6 +55,7 @@ describe("parseSearchForm", () => {
       players: 4,
       holes: "18",
       courses: ["hamersley"],
+      area: null,
     });
   });
 
@@ -77,6 +81,7 @@ describe("parseSearchForm", () => {
       players: 2,
       holes: "any",
       courses: [],
+      area: null,
     });
   });
 
@@ -129,5 +134,62 @@ describe("formatFormTime", () => {
   it("shows form times the way golfers read them", () => {
     expect(formatFormTime("06:30")).toMatch(/^6:30\s?am$/i);
     expect(formatFormTime("13:00")).toMatch(/^1:00\s?pm$/i);
+  });
+});
+
+describe("areas", () => {
+  const areas = { "collier-park": "south", hamersley: "north" };
+
+  it("picks an area's courses, unless courses are ticked", () => {
+    const south = parseSearchForm({ area: "south" }, morning, slugs, areas);
+    expect(south).toMatchObject({ area: "south", courses: ["collier-park"] });
+    expect(searchHref(south)).toContain("area=south");
+    expect(searchHref(south)).not.toContain("course=");
+    expect(toSearchParams(south, morning).courseSlugs).toEqual(["collier-park"]);
+
+    const ticked = parseSearchForm({ area: "south", course: ["hamersley"] }, morning, slugs, areas);
+    expect(ticked).toMatchObject({ area: null, courses: ["hamersley"] });
+  });
+
+  it("searches everywhere for an unknown or empty area", () => {
+    expect(parseSearchForm({ area: "mars" }, morning, slugs, areas)).toMatchObject({
+      area: null,
+      courses: [],
+    });
+    expect(parseSearchForm({ area: "peel" }, morning, slugs, areas).courses).toEqual([]);
+  });
+});
+
+describe("parseNear", () => {
+  it("rounds the location to about a kilometre and reads the distance", () => {
+    const near = parseNear({ lat: "-31.95678", lon: "115.86123", within: "20" });
+    expect(near).toEqual({ latitude: -31.96, longitude: 115.86, within: 20 });
+    expect(nearQuery(near!)).toBe("lat=-31.96&lon=115.86&within=20");
+    expect(parseNear({ lat: "-31.95", lon: "115.86", within: "7" })?.within).toBeNull();
+  });
+
+  it("ignores locations outside WA or missing", () => {
+    expect(parseNear({ lat: "51.5", lon: "-0.12" })).toBeNull();
+    expect(parseNear({})).toBeNull();
+  });
+});
+
+describe("quickDays", () => {
+  it("offers today, tomorrow and the weekend", () => {
+    // Saturday 17 October: today, tomorrow (Sunday), then next Saturday and Sunday.
+    expect(quickDays(morning).map((d) => d.label)).toEqual([
+      "Today",
+      "Tomorrow",
+      "Sat 24 Oct",
+      "Sun 25 Oct",
+    ]);
+    // Wednesday 21 October: today, tomorrow, Sat 24 and Sun 25.
+    const wednesday = new Date("2026-10-20T23:00:00Z");
+    expect(quickDays(wednesday).map((d) => d.date)).toEqual([
+      "2026-10-21",
+      "2026-10-22",
+      "2026-10-24",
+      "2026-10-25",
+    ]);
   });
 });

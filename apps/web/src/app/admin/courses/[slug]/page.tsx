@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { formatAgo } from "@bookon/core";
+import { AREAS, formatAgo } from "@bookon/core";
 import { cannotSwitchOn, listChangeLog, listCoursesForAdmin, listFetchRuns } from "@bookon/db";
 import { saveCourse, toggleCourse } from "@/app/admin/actions";
 import { PageTitle, Pill, panel, tableClass, tdClass, thClass } from "@/components/admin/ui";
@@ -126,6 +126,27 @@ export default async function CourseAdminPage({
             required
             options={{ "9": "9", "18": "18", "27": "27", "36": "36" }}
             defaultValue={String(course.holes)}
+          />
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          <Select
+            label="Area"
+            name="area"
+            options={Object.fromEntries([["", "Not set"], ...AREAS.map((a) => [a.id, a.name])])}
+            defaultValue={course.area ?? ""}
+          />
+          <Field
+            label="Latitude"
+            name="latitude"
+            inputMode="decimal"
+            hint="From OpenStreetMap or Google Maps, like -32.0123. For Near me and the weather."
+            defaultValue={course.latitude}
+          />
+          <Field
+            label="Longitude"
+            name="longitude"
+            inputMode="decimal"
+            defaultValue={course.longitude}
           />
         </div>
         <div className="grid gap-4 md:grid-cols-2">

@@ -1,12 +1,15 @@
-import { addPerthDays, perthDate } from "@bookon/core";
+import { AREAS, addPerthDays, perthDate } from "@bookon/core";
 import type { SearchableCourse } from "@bookon/db";
 import {
   DAY_OPTIONS,
   MAX_DAYS_AHEAD,
   TIME_OPTIONS,
   formatFormTime,
+  quickDays,
+  type Near,
   type SearchForm as SearchFormValues,
 } from "@/lib/search-form";
+import { NearMe, QuickDays } from "@/components/search-extras";
 
 const fieldLabel = "block text-sm font-medium mb-1.5";
 const control =
@@ -23,6 +26,7 @@ export function SearchForm({
   favourites = 0,
   mine = false,
   idPrefix = "",
+  near = null,
 }: {
   values: SearchFormValues;
   courses: SearchableCourse[];
@@ -33,12 +37,17 @@ export function SearchForm({
   mine?: boolean;
   /** Keeps ids unique when a page has two forms (one for phones, one for desktop). */
   idPrefix?: string;
+  /** This search's Near me location, to keep it switched on. */
+  near?: Near | null;
 }) {
   const id = (name: string) => `${idPrefix}${name}`;
   const today = perthDate(now);
+  const areas = AREAS.filter((a) => courses.some((c) => c.area === a.id));
+  const located = courses.some((c) => c.latitude !== null);
   return (
     <form action="/search" method="get" className="flex flex-col gap-5">
-      <div className="grid grid-cols-2 gap-3">
+      <QuickDays inputId={id("date")} days={quickDays(now)} initial={values.date} />
+      <div className="-mt-2 grid grid-cols-2 gap-3">
         <div>
           <label htmlFor={id("date")} className={fieldLabel}>
             Day
@@ -113,6 +122,32 @@ export function SearchForm({
         ]}
       />
 
+      {areas.length > 1 && (
+        // min-w-0: fieldsets don't shrink by default, which would let the row widen the page.
+        <fieldset className="min-w-0">
+          <legend className={fieldLabel}>Where</legend>
+          {/* relative: keeps the hidden radio buttons inside the scrolling row. */}
+          <div className="relative -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+            {[{ id: "", name: "Anywhere" }, ...areas].map((a) => (
+              <label key={a.id} className="relative shrink-0">
+                <input
+                  type="radio"
+                  name="area"
+                  value={a.id}
+                  defaultChecked={(values.area ?? "") === a.id}
+                  className="peer sr-only"
+                />
+                <span className="flex min-h-11 cursor-pointer items-center rounded-full border border-border px-4 text-sm font-medium whitespace-nowrap peer-checked:border-brand peer-checked:bg-brand peer-checked:text-brand-foreground peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-brand">
+                  {a.name}
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
+
+      {located && <NearMe initial={near} />}
+
       {favourites > 0 && (
         <label className="flex min-h-11 items-center gap-3 text-base">
           <input
@@ -131,7 +166,12 @@ export function SearchForm({
       {courses.length > 1 && (
         <details className="rounded-lg border border-border">
           <summary className="min-h-12 cursor-pointer px-3 py-3 text-sm font-medium">
-            Courses: {values.courses.length === 0 ? "all" : `${values.courses.length} chosen`}
+            Courses:{" "}
+            {values.area
+              ? `all in ${AREAS.find((a) => a.id === values.area)?.name}`
+              : values.courses.length === 0
+                ? "all"
+                : `${values.courses.length} chosen`}
           </summary>
           <fieldset className="flex flex-col border-t border-border px-3 py-2 lg:max-h-80 lg:overflow-y-auto">
             <legend className="sr-only">Courses to search</legend>
@@ -141,7 +181,7 @@ export function SearchForm({
                   type="checkbox"
                   name="course"
                   value={course.slug}
-                  defaultChecked={values.courses.includes(course.slug)}
+                  defaultChecked={!values.area && values.courses.includes(course.slug)}
                   className="size-5 accent-brand"
                 />
                 <span>
@@ -149,7 +189,10 @@ export function SearchForm({
                 </span>
               </label>
             ))}
-            <p className="py-2 text-sm text-muted">Leave all unticked to search every course.</p>
+            <p className="py-2 text-sm text-muted">
+              Ticked courses are searched instead of an area. Leave all unticked to search{" "}
+              {areas.length > 1 ? "the area you picked" : "every course"}.
+            </p>
           </fieldset>
         </details>
       )}

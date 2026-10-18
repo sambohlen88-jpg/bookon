@@ -1,12 +1,23 @@
 import Link from "next/link";
-import { approvedCoursePhotos, listCourseDetails, type CourseDetails } from "@bookon/db";
+import { formatPerthTime, perthDate } from "@bookon/core";
+import {
+  approvedCoursePhotos,
+  listCourseDetails,
+  listFavourites,
+  nextTeeTimes,
+  type CourseDetails,
+  type CourseResult,
+} from "@bookon/db";
 import { CourseArt } from "@/components/course-art";
 import { CourseCard } from "@/components/course-card";
+import { FreeSoon } from "@/components/free-soon";
+import { RecentSearches } from "@/components/recent-searches";
 import { SearchForm } from "@/components/search-form";
 import { SiteHeader } from "@/components/site-header";
+import { currentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { shortCourseName } from "@/lib/course-info";
-import { defaultForm } from "@/lib/search-form";
+import { defaultForm, searchHref } from "@/lib/search-form";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +42,12 @@ export default async function Home() {
     (c): c is CourseDetails => Boolean(c),
   );
   const longestWindow = Math.max(7, ...courses.map((c) => c.bookingWindowDays));
+  const user = await currentUser();
+  const favourites = user ? await listFavourites(getDb(), user.id) : [];
+  // One query for Free soon and My courses. Kept one after another for the local database.
+  const upcoming: CourseResult[] = await nextTeeTimes(getDb(), now, { players: 2 }).catch(() => []);
+  const today = perthDate(now);
+  const seeAll = searchHref({ ...defaultForm(now), date: today });
 
   return (
     <>
@@ -43,6 +60,36 @@ export default async function Home() {
         <div className="mt-6">
           <SearchForm values={defaultForm(now)} courses={courses} now={now} />
         </div>
+        <RecentSearches today={today} />
+        {favourites.length > 0 && (
+          <MyCourses
+            courses={favourites.map((f) => ({
+              ...f,
+              result: upcoming.find((u) => u.course.id === f.id),
+            }))}
+            today={today}
+            now={now}
+          />
+        )}
+        <div className="mt-10">
+          <FreeSoon results={upcoming} now={now} players={2} seeAll={seeAll} />
+        </div>
+        <section aria-labelledby="how" className="mt-10">
+          <h2 id="how" className="text-lg font-semibold">
+            How BookOn works
+          </h2>
+          <ol className="mt-3 flex flex-col gap-4">
+            <Step n={1} title="Search every course at once">
+              Pick a day, a time and how many are playing.
+            </Step>
+            <Step n={2} title="Pick your time">
+              Times, holes, spots and prices side by side.
+            </Step>
+            <Step n={3} title="Book with the club">
+              Tap Book and finish on the club&apos;s own page. You pay the club, never us.
+            </Step>
+          </ol>
+        </section>
         {courses.length > 0 && (
           <details className="mt-8 text-sm text-muted">
             <summary className="min-h-11 cursor-pointer py-3">
@@ -95,6 +142,12 @@ export default async function Home() {
             className="absolute inset-x-0 bottom-0 h-56 w-full"
           />
         </section>
+
+        {upcoming.some((u) => u.teeTimes.length > 0) && (
+          <section className="mx-auto max-w-6xl px-6 pt-20">
+            <FreeSoon results={upcoming} now={now} players={2} seeAll={seeAll} limit={8} />
+          </section>
+        )}
 
         <section className="mx-auto max-w-6xl px-6 py-20">
           <h2 className="text-3xl font-bold tracking-tight">How it works</h2>
@@ -187,11 +240,11 @@ function Stat({ value, label }: { value: string; label: string }) {
 
 function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
   return (
-    <li className="rounded-xl border border-border p-6">
+    <li className="rounded-xl border border-border p-4 lg:p-6">
       <span className="flex size-10 items-center justify-center rounded-full bg-brand font-bold text-brand-foreground">
         {n}
       </span>
-      <h3 className="mt-4 text-lg font-semibold">{title}</h3>
+      <h3 className="mt-3 text-lg font-semibold lg:mt-4">{title}</h3>
       <p className="mt-2 text-muted">{children}</p>
     </li>
   );
@@ -223,5 +276,53 @@ function SampleNotification({ title, body, when }: { title: string; body: string
         <p className="text-sm text-muted">{body}</p>
       </div>
     </div>
+  );
+}
+
+/** The golfer's starred courses, each with its next free time. */
+function MyCourses({
+  courses,
+  today,
+  now,
+}: {
+  courses: { id: string; slug: string; name: string; result?: CourseResult }[];
+  today: string;
+  now: Date;
+}) {
+  return (
+    <section aria-labelledby="my-courses" className="mt-10">
+      <h2 id="my-courses" className="text-lg font-semibold">
+        My courses
+      </h2>
+      <ul className="mt-2 overflow-hidden rounded-xl border border-border">
+        {courses.map((c) => {
+          const next = c.result?.teeTimes[0];
+          return (
+            <li key={c.id} className="border-t border-border first:border-t-0">
+              <Link
+                href={searchHref({
+                  ...defaultForm(now),
+                  date: next?.playDate ?? today,
+                  courses: [c.slug],
+                })}
+                className="flex min-h-14 items-center justify-between gap-3 px-4 py-3"
+              >
+                <span className="font-medium">
+                  <span aria-hidden className="mr-1 text-star">
+                    ★
+                  </span>
+                  {shortCourseName(c.name)}
+                </span>
+                <span className="text-right text-sm text-muted">
+                  {next
+                    ? `Next ${formatPerthTime(next.startTime)}${next.playDate === today ? "" : " tomorrow"}`
+                    : "Nothing free today or tomorrow"}
+                </span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }

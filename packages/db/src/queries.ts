@@ -178,3 +178,30 @@ export async function snapshotsFor(db: Database, courseIds: string[], playDate: 
     )
     .orderBy(availabilitySnapshots.startTime);
 }
+
+/** Record where a course is (from `pnpm courses:locate` or an admin). */
+export async function setCourseLocation(
+  db: Database,
+  courseId: string,
+  location: { latitude: number; longitude: number },
+): Promise<void> {
+  await db
+    .update(courses)
+    .set({ latitude: location.latitude, longitude: location.longitude, updatedAt: new Date() })
+    .where(eq(courses.id, courseId));
+}
+
+/** Every course, on or off, with where it is. */
+export async function listCourseLocations(db: Database) {
+  return db
+    .select({
+      id: courses.id,
+      slug: courses.slug,
+      name: courses.name,
+      suburb: courses.suburb,
+      latitude: courses.latitude,
+      longitude: courses.longitude,
+    })
+    .from(courses)
+    .orderBy(courses.name);
+}

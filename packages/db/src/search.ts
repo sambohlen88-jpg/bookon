@@ -63,7 +63,16 @@ export type DayNotice =
   | { date: string; kind: "not-open"; opensOn: string };
 
 export interface CourseResult {
-  course: { id: string; slug: string; name: string; suburb: string; bookingUrl: string };
+  course: {
+    id: string;
+    slug: string;
+    name: string;
+    suburb: string;
+    bookingUrl: string;
+    area: string | null;
+    latitude: number | null;
+    longitude: number | null;
+  };
   teeTimes: ResultTeeTime[];
   /** Oldest successful check among the fresh days searched, for the "last checked" label. */
   checkedAt: Date | null;
@@ -82,12 +91,24 @@ export interface SearchableCourse {
   slug: string;
   name: string;
   suburb: string;
+  /** An AreaId, or null if not given one yet. */
+  area: string | null;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 /** Courses that can appear in search, for the course filter. */
 export async function listSearchableCourses(db: Database): Promise<SearchableCourse[]> {
   return db
-    .select({ id: courses.id, slug: courses.slug, name: courses.name, suburb: courses.suburb })
+    .select({
+      id: courses.id,
+      slug: courses.slug,
+      name: courses.name,
+      suburb: courses.suburb,
+      area: courses.area,
+      latitude: courses.latitude,
+      longitude: courses.longitude,
+    })
     .from(courses)
     .where(eq(courses.enabled, true))
     .orderBy(courses.name);
@@ -105,6 +126,9 @@ const detailColumns = {
   slug: courses.slug,
   name: courses.name,
   suburb: courses.suburb,
+  area: courses.area,
+  latitude: courses.latitude,
+  longitude: courses.longitude,
   holes: courses.holes,
   bookingWindowDays: courses.bookingWindowDays,
   websiteUrl: courses.websiteUrl,
@@ -251,6 +275,9 @@ export async function searchTeeTimes(
         name: course.name,
         suburb: course.suburb,
         bookingUrl: course.bookingUrl,
+        area: course.area,
+        latitude: course.latitude,
+        longitude: course.longitude,
       },
       teeTimes,
       checkedAt,
@@ -267,4 +294,35 @@ export async function searchTeeTimes(
   });
 
   return { courses: results, totalTeeTimes: results.reduce((n, r) => n + r.teeTimes.length, 0) };
+}
+
+/**
+ * Free times from now on, today and tomorrow (or `days` days), for "Free
+ * soon", My courses and course pages. Times starting in the next 15 minutes
+ * are left out: there's no time to get there.
+ */
+export async function nextTeeTimes(
+  db: Database,
+  now: Date,
+  options: { players?: number; courseSlugs?: string[] | null; days?: number } = {},
+): Promise<CourseResult[]> {
+  const today = perthDate(now);
+  const result = await searchTeeTimes(
+    db,
+    {
+      dateFrom: today,
+      dateTo: addPerthDays(today, (options.days ?? 2) - 1),
+      timeFrom: "00:00",
+      timeTo: "23:59",
+      players: options.players ?? 1,
+      holes: null,
+      courseSlugs: options.courseSlugs ?? null,
+    },
+    now,
+  );
+  const soonest = now.getTime() + 15 * 60 * 1000;
+  return result.courses.map((c) => ({
+    ...c,
+    teeTimes: c.teeTimes.filter((t) => t.startTime.getTime() >= soonest),
+  }));
 }

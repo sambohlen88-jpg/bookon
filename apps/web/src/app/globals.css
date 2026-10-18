@@ -72,6 +72,13 @@ body {
   color: var(--foreground);
 }
 
+/* Phones: room for the bottom menu bar (3.5rem) and the iPhone home bar. */
+@media (max-width: 47.99rem) {
+  body.phone-tabs-space {
+    padding-bottom: calc(3.5rem + env(safe-area-inset-bottom));
+  }
+}
+
 /* Visible keyboard focus everywhere. */
 :focus-visible {
   outline: 3px solid var(--brand);

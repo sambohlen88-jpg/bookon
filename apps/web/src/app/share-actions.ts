@@ -29,10 +29,12 @@ export async function createShareLink(
     },
     now,
     slugs,
+    Object.fromEntries(courses.map((c) => [c.slug, c.area])),
   );
   if (course) {
     if (!slugs.includes(course)) return { error: "That course isn't on BookOn any more." };
     form.courses = [course];
+    form.area = null;
   }
   const params = toSearchParams(form, now);
   const content = shareContentFrom(

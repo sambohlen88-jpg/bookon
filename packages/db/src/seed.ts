@@ -1,5 +1,7 @@
 import { sql } from "drizzle-orm";
+import type { AreaId } from "@bookon/core";
 import type { Database } from "./client";
+import { COURSE_LOCATIONS } from "./course-locations";
 import { clubs, courses } from "./schema";
 
 type CourseSeed = Omit<typeof courses.$inferInsert, "id" | "clubId" | "createdAt" | "updatedAt">;
@@ -466,6 +468,39 @@ export const SEED_CLUBS: ClubSeed[] = [
   },
 ];
 
+/** The owner's areas (18 October 2026). Admins can change a course's area afterwards. */
+export const SEED_AREAS: Record<string, AreaId> = {
+  marangaroo: "north",
+  "joondalup-resort": "north",
+  "sun-city": "north",
+  hamersley: "north",
+  wembley: "north",
+  "lake-claremont": "west",
+  "point-walter": "west",
+  "fremantle-public": "west",
+  maylands: "east",
+  hartfield: "east",
+  "the-springs": "east",
+  "collier-park": "south",
+  whaleback: "south",
+  kwinana: "south",
+  rockingham: "rockingham",
+  "secret-harbour": "rockingham",
+  "kennedy-bay": "rockingham",
+  "meadow-springs": "peel",
+  "the-cut": "peel",
+  pinjarra: "peel",
+  bunbury: "south-west",
+  capel: "south-west",
+  busselton: "south-west",
+  "dunsborough-lakes": "south-west",
+  "margaret-river": "south-west",
+  albany: "regional",
+  geraldton: "regional",
+  karratha: "regional",
+  broome: "regional",
+};
+
 /** Insert or update the launch clubs and courses. Safe to run repeatedly. */
 export async function seed(db: Database): Promise<void> {
   for (const club of SEED_CLUBS) {
@@ -477,12 +512,26 @@ export async function seed(db: Database): Promise<void> {
 
     for (const course of club.courses) {
       // Until the admin dashboard (Milestone 6) exists, this file decides which courses are on.
+      const place = COURSE_LOCATIONS[course.slug];
+      const where = {
+        area: SEED_AREAS[course.slug] ?? null,
+        latitude: place?.latitude ?? null,
+        longitude: place?.longitude ?? null,
+      };
       await db
         .insert(courses)
-        .values({ ...course, clubId: row!.id })
+        .values({ ...course, ...where, clubId: row!.id })
         .onConflictDoUpdate({
           target: courses.slug,
-          set: { ...course, clubId: row!.id, updatedAt: sql`now()` },
+          set: {
+            ...course,
+            clubId: row!.id,
+            updatedAt: sql`now()`,
+            // Only fill these in: an admin may have changed them.
+            area: sql`coalesce(${courses.area}, excluded.area)`,
+            latitude: sql`coalesce(${courses.latitude}, excluded.latitude)`,
+            longitude: sql`coalesce(${courses.longitude}, excluded.longitude)`,
+          },
         });
     }
   }

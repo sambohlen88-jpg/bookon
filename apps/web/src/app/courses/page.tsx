@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { approvedCoursePhotos, listCourseDetails } from "@bookon/db";
-import { CourseCard } from "@/components/course-card";
+import { AREAS, areaName, formatPerthTime, perthDate } from "@bookon/core";
+import { approvedCoursePhotos, listCourseDetails, nextTeeTimes } from "@bookon/db";
+import { CourseDirectory } from "@/components/course-directory";
 import { SiteHeader } from "@/components/site-header";
 import { getDb } from "@/lib/db";
-import { AREAS, courseArea } from "@/lib/course-info";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -12,12 +12,16 @@ export const metadata: Metadata = {
 };
 
 export default async function CoursesPage() {
-  const courses = await listCourseDetails(getDb());
-  const photos = await approvedCoursePhotos(getDb());
-  const byArea = AREAS.map((area) => ({
-    area,
-    courses: courses.filter((c) => courseArea(c.slug) === area),
-  })).filter((g) => g.courses.length > 0);
+  const now = new Date();
+  const db = getDb();
+  const courses = await listCourseDetails(db);
+  const photos = await approvedCoursePhotos(db);
+  const upcoming = await nextTeeTimes(db, now, { players: 1 });
+  const today = perthDate(now);
+  const areas = AREAS.filter((a) => courses.some((c) => c.area === a.id)).map((a) => ({
+    id: a.id,
+    name: a.name,
+  }));
 
   return (
     <>
@@ -28,18 +32,26 @@ export default async function CoursesPage() {
           The {courses.length} public courses BookOn checks for tee times. Pick one to see
           what&apos;s free over the next week.
         </p>
-        {byArea.map((group) => (
-          <section key={group.area} aria-labelledby={`area-${group.area}`} className="mt-10">
-            <h2 id={`area-${group.area}`} className="text-xl font-semibold">
-              {group.area}
-            </h2>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-4">
-              {group.courses.map((c) => (
-                <CourseCard key={c.slug} course={c} photoId={photos.get(c.id)} />
-              ))}
-            </div>
-          </section>
-        ))}
+        <CourseDirectory
+          areas={areas}
+          courses={courses.map((c) => {
+            const next = upcoming.find((u) => u.course.id === c.id)?.teeTimes[0];
+            return {
+              slug: c.slug,
+              name: c.name,
+              suburb: c.suburb,
+              holes: c.holes,
+              area: c.area,
+              areaName: areaName(c.area),
+              latitude: c.latitude,
+              longitude: c.longitude,
+              photoId: photos.get(c.id) ?? null,
+              next: next
+                ? `Next free ${next.playDate === today ? "" : "tomorrow "}${formatPerthTime(next.startTime)}`
+                : null,
+            };
+          })}
+        />
         <p className="mt-10 text-sm text-muted">
           Pictures are drawings unless the club has given us a photo.
         </p>

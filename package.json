@@ -19,7 +19,9 @@
     "stats": "pnpm --filter @bookon/db stats",
     "alerts": "pnpm --filter @bookon/worker alerts",
     "clubs": "pnpm --filter @bookon/worker clubs",
-    "push:keys": "pnpm --filter @bookon/email exec web-push generate-vapid-keys"
+    "push:keys": "pnpm --filter @bookon/email exec web-push generate-vapid-keys",
+    "courses:locate": "pnpm --filter @bookon/worker locate",
+    "weather": "pnpm --filter @bookon/worker weather"
   },
   "devDependencies": {
     "prettier": "^3.3.3"

@@ -256,3 +256,22 @@ Not yet checked: Altone Park, Fremantle Public, Kwinana, Araluen, Hillview, The 
 - [x] Confirm Wembley's `bookingResourceId` (3000000) and Hamersley's booking window (at least 16 days).
 - [ ] Ask Wembley (Town of Cambridge) for permission or a feed, given the CAPTCHA.
 - [ ] Add coordinates for the five launch courses (left empty in the seed data).
+
+## Other outside services (Milestone 10, 18 October 2026)
+
+The owner approved weather and Near me on 18 October 2026. Neither is a booking platform; they're read by the worker or a one-off script, never by golfers' searches.
+
+### MET Norway weather (api.met.no)
+
+- **What:** Locationforecast 2.0 (`/weatherapi/locationforecast/2.0/complete`), about 9 days ahead, hourly for the first few days, then 6-hourly.
+- **Terms:** free, including commercial use, under CC BY 4.0. Credit them where the weather shows ("Weather from MET Norway", linked). Identify ourselves in the user agent with a contact, don't ask again before the `Expires` time, send `If-Modified-Since`, use at most 4 decimals for locations, keep traffic gentle. See https://api.met.no/doc/TermsOfService.
+- **How we use it:** `apps/worker/src/weather.ts`, once per course per forecast update (about hourly), one request a second. Stored in `weather_forecasts`.
+- **Why not others:** Open-Meteo's free service is for non-commercial use only. The Bureau of Meteorology has no public feed for businesses without a paid agreement.
+- **Not checked live yet:** the cloud environment couldn't reach api.met.no, so the code was tested against MET Norway's documented response format. Check the first live run (`pnpm weather`).
+
+### OpenStreetMap course locations (nominatim.openstreetmap.org)
+
+- **What:** Nominatim search, to find each course's latitude and longitude once.
+- **Terms:** light use is allowed (at most one request a second, a user agent that names us, no bulk or repeated geocoding). Data © OpenStreetMap contributors, ODbL. See https://operations.osmfoundation.org/policies/nominatim/.
+- **How we use it:** `pnpm courses:locate` (`apps/worker/src/locate.ts`) prints what it finds for a person to check, and saves only with `--save`. Results go in `packages/db/src/course-locations.ts` and the database. Admins can correct any course.
+- **Not run yet:** the cloud environment couldn't reach nominatim.openstreetmap.org.

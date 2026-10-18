@@ -12,7 +12,9 @@
     "clubs": "tsx src/clubs-cli.ts",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "weather": "tsx src/index.ts weather",
+    "locate": "tsx src/locate.ts"
   },
   "dependencies": {
     "@bookon/core": "workspace:*",

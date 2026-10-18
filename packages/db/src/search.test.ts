@@ -3,7 +3,13 @@ import type { TeeTime } from "@bookon/core";
 import { createDb, type DbHandle } from "./client";
 import { findCourseBySlug, recordDayFailures, saveDayAvailability } from "./queries";
 import { availabilityChecks, availabilitySnapshots } from "./schema";
-import { checkProblem, listSearchableCourses, searchTeeTimes, type SearchParams } from "./search";
+import {
+  checkProblem,
+  listSearchableCourses,
+  nextTeeTimes,
+  searchTeeTimes,
+  type SearchParams,
+} from "./search";
 import { seed } from "./seed";
 
 // 7:00 am Perth, Saturday 17 October 2026.
@@ -251,5 +257,41 @@ describe("checkProblem", () => {
     expect(checkProblem("HttpError: HTTP 404 for https://x")).toBe("unreadable");
     expect(checkProblem("PageFormatError: no timesheet table")).toBe("unreadable");
     expect(checkProblem(null)).toBe("old");
+  });
+});
+
+describe("nextTeeTimes", () => {
+  it("lists times from 15 minutes from now, today and tomorrow", async () => {
+    // now is 7:00 am Perth on Saturday 17 October.
+    await saveDayAvailability(
+      handle.db,
+      collier,
+      "2026-10-17",
+      [
+        slot(collier, "2026-10-17T06:30:00"), // already gone
+        slot(collier, "2026-10-17T07:10:00"), // too soon to get there
+        slot(collier, "2026-10-17T07:20:00"),
+      ],
+      checkedAt,
+    );
+    await saveDayAvailability(
+      handle.db,
+      collier,
+      "2026-10-18",
+      [slot(collier, "2026-10-18T06:00:00")],
+      checkedAt,
+    );
+    await saveDayAvailability(
+      handle.db,
+      collier,
+      "2026-10-19",
+      [slot(collier, "2026-10-19T06:00:00")],
+      checkedAt,
+    );
+    const result = await nextTeeTimes(handle.db, now, { courseSlugs: ["collier-park"] });
+    expect(times({ courses: result, totalTeeTimes: 0 }, "collier-park")).toEqual([
+      new Date("2026-10-17T07:20:00+08:00").toISOString(),
+      new Date("2026-10-18T06:00:00+08:00").toISOString(),
+    ]);
   });
 });

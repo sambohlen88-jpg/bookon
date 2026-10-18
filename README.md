@@ -29,6 +29,8 @@ pnpm dev                                   # 3rd terminal: website on http://loc
 pnpm alerts                                # send alert emails from stored times, without polling
 pnpm stats                                 # searches, impressions and clicks per course
 pnpm clubs                                 # club listings waiting for review (or use /admin)
+pnpm courses:locate                        # find course locations on OpenStreetMap (then -- --save)
+pnpm weather                               # refresh course forecasts now (the worker also does this)
 ```
 
 ### On Windows (PowerShell)

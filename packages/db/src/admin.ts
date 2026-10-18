@@ -506,6 +506,9 @@ export async function courseBySlugForAdmin(db: Database, slug: string): Promise<
 export interface CourseEdit {
   name: string;
   suburb: string;
+  area: string | null;
+  latitude: number | null;
+  longitude: number | null;
   holes: number;
   websiteUrl: string;
   bookingUrl: string;
@@ -789,4 +792,25 @@ export async function adminCounts(db: Database) {
     photos: photos?.n ?? 0,
     changeRequests: requests?.n ?? 0,
   };
+}
+
+/** What golfers see about a course's club: its details and current prices, from the club's login. */
+export async function coursePublicInfo(
+  db: Database,
+  courseId: string,
+  today: string,
+): Promise<{ profile: ClubApplicationDetails; rates: ClubRate[] }> {
+  const [row] = await db
+    .select({ club: clubs, courseName: courses.name })
+    .from(courses)
+    .innerJoin(clubs, eq(clubs.id, courses.clubId))
+    .where(eq(courses.id, courseId));
+  if (!row) return { profile: {}, rates: [] };
+  const rates = (await listClubRates(db, row.club.id)).filter(
+    (r) =>
+      r.category !== "membership" &&
+      (!r.courseName || r.courseName === row.courseName) &&
+      (!r.validTo || r.validTo >= today),
+  );
+  return { profile: clubProfile(row.club), rates };
 }

@@ -1,0 +1,47 @@
+/**
+ * The areas courses are grouped into, for the courses page and the search.
+ * Each course's area is stored on the course and admins can change it.
+ */
+export const AREAS = [
+  { id: "north", name: "North" },
+  { id: "west", name: "West & Fremantle" },
+  { id: "east", name: "East & Hills" },
+  { id: "south", name: "South" },
+  { id: "rockingham", name: "Rockingham" },
+  { id: "peel", name: "Mandurah & Peel" },
+  { id: "south-west", name: "South West" },
+  { id: "regional", name: "Regional WA" },
+] as const;
+
+export type AreaId = (typeof AREAS)[number]["id"];
+
+export function isAreaId(value: unknown): value is AreaId {
+  return AREAS.some((a) => a.id === value);
+}
+
+/** The area's name, or "Other" for a course not given one yet. */
+export function areaName(id: string | null | undefined): string {
+  return AREAS.find((a) => a.id === id)?.name ?? "Other";
+}
+
+export interface LatLon {
+  latitude: number;
+  longitude: number;
+}
+
+/** Straight-line distance in kilometres. */
+export function distanceKm(a: LatLon, b: LatLon): number {
+  const rad = (d: number) => (d * Math.PI) / 180;
+  const dLat = rad(b.latitude - a.latitude);
+  const dLon = rad(b.longitude - a.longitude);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(rad(a.latitude)) * Math.cos(rad(b.latitude)) * Math.sin(dLon / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.sqrt(h));
+}
+
+/** "800 m", "6 km", "120 km". */
+export function formatDistance(km: number): string {
+  if (km < 1) return `${Math.max(100, Math.round((km * 1000) / 100) * 100)} m`;
+  return `${km < 10 ? Math.round(km * 10) / 10 : Math.round(km)} km`;
+}

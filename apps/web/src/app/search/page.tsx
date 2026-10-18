@@ -1,10 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { formatAgo, formatPerthDay } from "@bookon/core";
+import {
+  addPerthDays,
+  areaName,
+  distanceKm,
+  formatAgo,
+  formatPerthDay,
+  perthToUtc,
+  summariseWeather,
+  type WeatherSummary,
+} from "@bookon/core";
 import { cookies, headers } from "next/headers";
 import {
   approvedCoursePhotos,
   courseIdsForSlugs,
+  forecastsFor,
   listFavourites,
   listPushSubscriptions,
   listSearchableCourses,
@@ -15,6 +25,7 @@ import {
   type SearchResult,
 } from "@bookon/db";
 import { createAlertFromSearch } from "@/app/actions";
+import { RememberSearch } from "@/components/recent-searches";
 import { RefreshBar } from "@/components/refresh-bar";
 import { CourseResults, NoMatchList } from "@/components/results";
 import { SearchForm } from "@/components/search-form";
@@ -32,6 +43,7 @@ import {
   EARLIEST_TIME,
   LATEST_TIME,
   formatFormTime,
+  parseNear,
   parseSearchForm,
   searchHref,
   toSearchParams,
@@ -58,11 +70,28 @@ export default async function SearchPage({
     query,
     now,
     courses.map((c) => c.slug),
+    Object.fromEntries(courses.map((c) => [c.slug, c.area])),
   );
   // "My courses only" swaps in the golfer's favourites.
   const mine = query.mine === "1" && favourites.length > 0;
-  const form = mine ? { ...parsed, courses: favourites.map((c) => c.slug) } : parsed;
+  const form = mine ? { ...parsed, courses: favourites.map((c) => c.slug), area: null } : parsed;
   const params = toSearchParams(form, now);
+  // Near me: only once courses have locations. Not part of `here`, so alerts and shares never keep it.
+  const near = courses.some((c) => c.latitude !== null) ? parseNear(query) : null;
+  const distances = new Map(
+    near
+      ? courses
+          .filter((c) => c.latitude !== null && c.longitude !== null)
+          .map((c) => [c.id, distanceKm(near, { latitude: c.latitude!, longitude: c.longitude! })])
+      : [],
+  );
+  if (near?.within) {
+    const close = courses.filter((c) => (distances.get(c.id) ?? Infinity) <= near.within!);
+    const chosen = params.courseSlugs;
+    params.courseSlugs = close
+      .map((c) => c.slug)
+      .filter((slug) => !chosen || chosen.includes(slug));
+  }
   const here = searchHref(form);
   const alertStatus = typeof query.alert === "string" ? query.alert : undefined;
   // Just set an alert, with no device getting notifications yet: offer them.
@@ -71,8 +100,38 @@ export default async function SearchPage({
       ? (await listPushSubscriptions(db, user.id)).length > 0
       : false;
   const offerPush = alertStatus === "created" && user && !hasDevices ? await pushPublicKey() : null;
-  const result = await searchTeeTimes(db, params, now);
+  const result =
+    params.courseSlugs?.length === 0
+      ? { courses: [], totalTeeTimes: 0 }
+      : await searchTeeTimes(db, params, now);
+  if (near) {
+    // Closest first, keeping courses with times ahead of those without.
+    const far = (id: string) => distances.get(id) ?? Infinity;
+    result.courses.sort(
+      (a, b) =>
+        Number(b.teeTimes.length > 0) - Number(a.teeTimes.length > 0) ||
+        far(a.course.id) - far(b.course.id),
+    );
+  }
   const photos = await approvedCoursePhotos(db);
+  const forecasts = await forecastsFor(
+    db,
+    result.courses.map((c) => c.course.id),
+  );
+  const weatherFor = (courseId: string): Map<string, WeatherSummary> => {
+    const hours = forecasts.get(courseId);
+    const days = new Map<string, WeatherSummary>();
+    if (!hours) return days;
+    for (let d = params.dateFrom; d <= params.dateTo; d = addPerthDays(d, 1)) {
+      const w = summariseWeather(
+        hours,
+        perthToUtc(d, params.timeFrom),
+        perthToUtc(d, params.timeTo),
+      );
+      if (w) days.set(d, w);
+    }
+    return days;
+  };
   await recordSearch(db, params, result, now);
   const multiDay = params.dateFrom !== params.dateTo;
   const withTimes = result.courses.filter((c) => c.teeTimes.length > 0).length;
@@ -113,13 +172,17 @@ export default async function SearchPage({
               favourites={favourites.length}
               mine={mine}
               idPrefix="d-"
+              near={near}
             />
           </div>
         </aside>
         <div>
           <details className="rounded-xl bg-surface lg:hidden">
             <summary className="flex min-h-12 cursor-pointer items-center justify-between gap-3 px-4 py-3">
-              <span className="text-sm">{summarise(form, params.dateTo)}</span>
+              <span className="text-sm">
+                {summarise(form, params.dateTo)}
+                {near ? (near.within ? ` · within ${near.within} km` : " · near you") : ""}
+              </span>
               <span className="shrink-0 text-sm font-semibold text-brand">Change</span>
             </summary>
             <div className="px-4 pb-4">
@@ -129,6 +192,7 @@ export default async function SearchPage({
                 now={now}
                 favourites={favourites.length}
                 mine={mine}
+                near={near}
               />
             </div>
           </details>
@@ -206,10 +270,14 @@ export default async function SearchPage({
                 now={now}
                 favourite={user ? favouriteIds.has(r.course.id) : null}
                 back={here}
-                dayHref={(date) => searchHref({ ...form, date, days: 1, courses: [r.course.slug] })}
-                courseHref={searchHref({ ...form, courses: [r.course.slug] })}
+                dayHref={(date) =>
+                  searchHref({ ...form, date, days: 1, courses: [r.course.slug], area: null })
+                }
+                courseHref={searchHref({ ...form, courses: [r.course.slug], area: null })}
                 photoId={photos.get(r.course.id)}
                 shareQuery={here}
+                distanceKm={distances.get(r.course.id) ?? null}
+                weather={weatherFor(r.course.id)}
                 bookHref={(t) =>
                   bookLink({
                     courseId: r.course.id,
@@ -246,9 +314,24 @@ export default async function SearchPage({
           <p className="mt-8 pb-16 text-xs text-muted">
             Times and prices come from each club&apos;s booking page and can change. You book and
             pay with the club.
+            {forecasts.size > 0 && (
+              <>
+                {" "}
+                Weather from{" "}
+                <a href="https://www.met.no/en" className="underline">
+                  MET Norway
+                </a>
+                .
+              </>
+            )}
           </p>
         </div>
         <RefreshBar renderedAt={now.toISOString()} />
+        <RememberSearch
+          href={here}
+          label={`${summarise(form, params.dateTo)}${mine ? " · my courses" : ""}`}
+          date={form.date}
+        />
       </main>
     </>
   );
@@ -265,7 +348,8 @@ function summarise(form: SearchFormValues, dateTo: string): string {
       : `${formatFormTime(form.from)} to ${formatFormTime(form.to)}`;
   const players = `${form.players} ${form.players === 1 ? "player" : "players"}`;
   const holes = form.holes === "any" ? "9 or 18 holes" : `${form.holes} holes`;
-  return `${days} · ${time} · ${players} · ${holes}`;
+  const where = form.area ? ` · ${areaName(form.area)}` : "";
+  return `${days} · ${time} · ${players} · ${holes}${where}`;
 }
 
 function EmptyState({ form }: { form: SearchFormValues }) {
@@ -281,7 +365,10 @@ function EmptyState({ form }: { form: SearchFormValues }) {
       ? { label: "9 or 18 holes", href: searchHref({ ...form, holes: "any" }) }
       : null,
     form.courses.length > 0
-      ? { label: "All courses", href: searchHref({ ...form, courses: [] }) }
+      ? {
+          label: form.area ? `Anywhere, not just ${areaName(form.area)}` : "All courses",
+          href: searchHref({ ...form, courses: [], area: null }),
+        }
       : null,
   ].filter((x): x is { label: string; href: string } => x !== null);
 

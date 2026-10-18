@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState, useRef, useState } from "react";
 import type { RatesState } from "@/app/clubs/actions";
+import { RATE_CATEGORIES } from "@/lib/rate-labels";
 import { fieldLabel } from "@/components/form";
 import { primaryButton, secondaryButton, textInput } from "@/components/ui";
 
@@ -25,16 +26,7 @@ export interface RateRow {
   notes: string;
 }
 
-const CATEGORIES = {
-  green_fee: "Green fee",
-  cart: "Cart hire",
-  club_hire: "Club hire",
-  trolley: "Buggy or trolley",
-  range: "Driving range",
-  deal: "Deal or package",
-  membership: "Membership",
-  other: "Something else",
-};
+const CATEGORIES = RATE_CATEGORIES;
 const UNITS = {
   per_player: "per player",
   per_cart: "per cart",

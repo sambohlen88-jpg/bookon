@@ -3,3 +3,5 @@ export * from "./adapter";
 export * from "./time";
 export * from "./money";
 export * from "./click-token";
+export * from "./areas";
+export * from "./weather";

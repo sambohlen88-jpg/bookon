@@ -86,10 +86,16 @@ export async function createAlertFromSearch(formData: FormData) {
   const user = await requireUser(back);
   const db = getDb();
   const now = new Date();
-  const slugs = (await listSearchableCourses(db)).map((c) => c.slug);
-  const form = parseSearchForm(Object.fromEntries(new URLSearchParams(query)), now, slugs);
-  const courses = new URLSearchParams(query).getAll("course").filter((s) => slugs.includes(s));
-  const filters = toSearchParams({ ...form, courses }, now);
+  const known = await listSearchableCourses(db);
+  const slugs = known.map((c) => c.slug);
+  const search = new URLSearchParams(query);
+  const form = parseSearchForm(
+    { ...Object.fromEntries(search), course: search.getAll("course") },
+    now,
+    slugs,
+    Object.fromEntries(known.map((c) => [c.slug, c.area])),
+  );
+  const filters = toSearchParams(form, now);
   // Golfers who allowed notifications on a device get them for new alerts too.
   const push = (await listPushSubscriptions(db, user.id)).length > 0;
   const result = await createAlert(db, {
@@ -150,7 +156,7 @@ export async function clearMyVisits() {
 
 export async function deleteMyAccount(formData: FormData) {
   const user = await requireUser("/account");
-  if (formData.get("confirm") !== "yes") redirect("/account?error=confirm");
+  if (formData.get("confirm") !== "yes") redirect("/account?tab=settings&error=confirm");
   await deleteUser(getDb(), user.id);
   await clearAuthCookie();
   redirect("/?deleted=1");

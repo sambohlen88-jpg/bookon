@@ -18,6 +18,7 @@ import {
   updateCourse,
   type Course,
 } from "@bookon/db";
+import { isAreaId } from "@bookon/core";
 import { clubApprovedEmail, clubDeclinedEmail, clubInviteEmail, createMailer } from "@bookon/email";
 import { requireAdmin } from "@/lib/access";
 import { webAddress } from "@/lib/club-form";
@@ -138,6 +139,19 @@ export async function saveCourse(formData: FormData) {
   const fee = text(formData, "typicalGreenFee", 10);
   const platform = String(formData.get("platform")) as Course["platform"];
   if (!PLATFORMS.includes(platform)) back("Choose a booking system.");
+  const area = String(formData.get("area") ?? "");
+  const latitude = text(formData, "latitude", 20);
+  const longitude = text(formData, "longitude", 20);
+  const lat = latitude === null ? null : Number(latitude);
+  const lon = longitude === null ? null : Number(longitude);
+  // Western Australia sits between about 13 and 36 south, 112 and 130 east.
+  const inWA = (v: number | null, min: number, max: number) =>
+    v !== null && Number.isFinite(v) && v >= min && v <= max;
+  if (
+    (lat === null) !== (lon === null) ||
+    (lat !== null && (!inWA(lat, -36, -13) || !inWA(lon, 112, 130)))
+  )
+    back("The location should be a latitude like -32.01 and a longitude like 115.87, both in WA.");
 
   await updateCourse(
     db,
@@ -145,6 +159,9 @@ export async function saveCourse(formData: FormData) {
     {
       name: name!,
       suburb: suburb!,
+      area: isAreaId(area) ? area : null,
+      latitude: lat,
+      longitude: lon,
       holes: [9, 18, 27, 36].includes(holes) ? holes : course!.holes,
       websiteUrl: websiteUrl!,
       bookingUrl: bookingUrl!,

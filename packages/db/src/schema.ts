@@ -18,6 +18,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import type { WeatherHour } from "@bookon/core";
 import type { SearchParams } from "./search";
 import type { SharedCourse } from "./shares";
 
@@ -67,6 +68,8 @@ export const courses = pgTable("courses", {
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
   suburb: text("suburb").notNull(),
+  /** An AreaId from packages/core/src/areas.ts, for grouping. Admins can change it. */
+  area: text("area"),
   latitude: doublePrecision("latitude"),
   longitude: doublePrecision("longitude"),
   holes: smallint("holes").notNull(),
@@ -589,3 +592,17 @@ export const sharedSearches = pgTable(
     index("shared_searches_session_idx").on(t.anonymousSessionId, t.createdAt),
   ],
 );
+
+/* Weather (Milestone 10). The latest MET Norway forecast for each course, fetched by the worker. */
+
+export const weatherForecasts = pgTable("weather_forecasts", {
+  courseId: uuid("course_id")
+    .primaryKey()
+    .references(() => courses.id, { onDelete: "cascade" }),
+  fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull(),
+  /** MET Norway's Expires header: don't ask again before this. */
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  /** MET Norway's Last-Modified header, sent back as If-Modified-Since. */
+  lastModified: text("last_modified"),
+  hours: jsonb("hours").$type<WeatherHour[]>().notNull(),
+});
