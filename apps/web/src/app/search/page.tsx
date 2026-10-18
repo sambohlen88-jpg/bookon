@@ -219,7 +219,19 @@ export default async function SearchPage({
               />
             ))}
             {folded.length > 0 && (
-              <NoMatchList results={folded} now={now} others={cards.length > 0} />
+              <NoMatchList
+                results={folded}
+                now={now}
+                others={cards.length > 0}
+                clubHref={(r) =>
+                  bookLink({
+                    courseId: r.course.id,
+                    startTime: null,
+                    url: r.course.bookingUrl,
+                    source: "search",
+                  })
+                }
+              />
             )}
           </div>
 

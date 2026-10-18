@@ -18,7 +18,7 @@ export default function ClubsPage() {
       <SiteHeader />
       <main className="pb-12">
         <section className="relative overflow-hidden bg-hero-bg text-hero-fg">
-          <div className="relative z-10 mx-auto max-w-md px-4 pb-28 pt-10 md:max-w-6xl md:px-6 md:pb-44 md:pt-16">
+          <div className="relative z-10 mx-auto max-w-md px-4 pb-40 pt-12 md:max-w-6xl md:px-6 md:pb-60 md:pt-20">
             <p className="text-sm font-semibold uppercase tracking-wide text-hero-muted">
               For golf clubs
             </p>

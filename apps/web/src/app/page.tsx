@@ -62,8 +62,9 @@ export default async function Home() {
       {/* Desktop: a full website. */}
       <main className="hidden lg:block">
         <section className="relative overflow-hidden bg-hero-bg text-hero-fg">
-          <div className="relative z-10 mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_420px] items-center gap-12 px-6 pb-40 pt-16">
-            <div>
+          <div className="relative z-10 mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_420px] items-start gap-12 px-6 pb-40 pt-16">
+            {/* Pinned to the top, so opening the course list doesn't move it. */}
+            <div className="pt-10">
               <p className="flex items-center gap-4 text-5xl font-bold tracking-tight">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/icons/icon.svg" alt="" width={72} height={72} className="size-18" />

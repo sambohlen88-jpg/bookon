@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { formatAgo, formatPerthDay, formatPerthTime, formatPrice } from "@bookon/core";
-import type { CourseResult, DayNotice, ResultTeeTime } from "@bookon/db";
+import type { CheckProblem, CourseResult, DayNotice, ResultTeeTime } from "@bookon/db";
+import { PROBLEM_LABEL, PROBLEM_SENTENCE } from "@/lib/check-problems";
 import { toggleFavourite } from "@/app/actions";
 import { CourseArt } from "@/components/course-art";
 
@@ -85,7 +86,11 @@ export function CourseResults({
       <Notices notices={notices} now={now} />
 
       {teeTimes.length === 0 && notices.length === 0 && (
-        <p className="mt-3 text-sm text-muted">No times here match your search.</p>
+        <p className="mt-3 text-sm text-muted">
+          {result.fullyBooked
+            ? "Fully booked: the club has no public times free."
+            : "No times here match your search."}
+        </p>
       )}
 
       {shownDays.map(([day, times]) => (
@@ -255,15 +260,24 @@ function daysBetween(from: string, to: string): number {
   return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
 }
 
+/** The most common problem among a course's unchecked days. */
+function mainProblem(notices: DayNotice[]): CheckProblem | null {
+  const counts = new Map<CheckProblem, number>();
+  for (const n of notices)
+    if (n.kind === "stale") counts.set(n.problem, (counts.get(n.problem) ?? 0) + 1);
+  return [...counts].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+}
+
 function staleMessage(notices: DayNotice[], now: Date): string {
   const days = dayList(notices.map((n) => n.date));
+  const problem = mainProblem(notices);
   const lastSuccess = notices
     .map((n) => (n.kind === "stale" ? n.lastSuccessAt : null))
     .filter((d): d is Date => d !== null)
     .sort((a, b) => b.getTime() - a.getTime())[0];
-  return lastSuccess
-    ? `We couldn't check ${days} just now, so we're not showing old times. Last checked ${formatAgo(lastSuccess, now)}.`
-    : `We haven't been able to check ${days} yet.`;
+  if (!problem) return `We haven't been able to check ${days} yet.`;
+  const last = lastSuccess ? ` Last checked ${formatAgo(lastSuccess, now)}.` : "";
+  return `We couldn't check ${days}: ${PROBLEM_SENTENCE[problem]}. You can still book on the club's site.${last}`;
 }
 
 /** "Sun 18 Oct", "Sun 18 Oct and Mon 19 Oct", or "Sun 18 Oct to Sat 24 Oct". */
@@ -288,29 +302,37 @@ export function NoMatchList({
   results,
   now,
   others,
+  clubHref,
 }: {
   results: CourseResult[];
   now: Date;
   others: boolean;
+  /** The club's own booking page (tracked), for courses we couldn't check. */
+  clubHref: (result: CourseResult) => string;
 }) {
-  const unchecked = results.filter((r) =>
-    r.notices.some((n) => n.kind === "stale" || n.kind === "not-checked"),
-  ).length;
+  const statuses = new Map(results.map((r) => [r.course.id, courseStatus(r, now)]));
+  const count = (group: Status["group"]) =>
+    [...statuses.values()].filter((s) => s.group === group).length;
+  const unchecked = count("unchecked");
+  const breakdown = [
+    count("booked") > 0 ? `${count("booked")} fully booked` : null,
+    count("none") > 0 ? `${count("none")} nothing matching` : null,
+    count("not-out") > 0 ? `${count("not-out")} not out yet` : null,
+    unchecked > 0 ? `${unchecked} couldn't check` : null,
+  ].filter(Boolean);
   return (
     <details className="rounded-xl border border-border bg-background">
       <summary className="flex min-h-12 cursor-pointer items-center px-4 py-3 text-sm font-medium">
         {unchecked === results.length ? (
           `Couldn't check ${results.length} ${results.length === 1 ? "course" : "courses"}`
         ) : (
-          <>
-            No matching times at {results.length} {others ? "other " : ""}
+          <span>
+            No times at {results.length} {others ? "other " : ""}
             {results.length === 1 ? "course" : "courses"}
-            {unchecked > 0 && (
-              <span className="ml-1 font-normal text-warning-fg">
-                · couldn&apos;t check {unchecked}
-              </span>
+            {breakdown.length > 1 && (
+              <span className="block font-normal text-muted">{breakdown.join(" · ")}</span>
             )}
-          </>
+          </span>
         )}
       </summary>
       <ul className="border-t border-border px-4">
@@ -322,7 +344,23 @@ export function NoMatchList({
             <span>
               {r.course.name} <span className="text-muted">· {r.course.suburb}</span>
             </span>
-            <span className="shrink-0 text-xs text-muted">{courseStatus(r, now)}</span>
+            <span className="shrink-0 text-right text-xs">
+              <span
+                className={statuses.get(r.course.id)!.problem ? "text-warning-fg" : "text-muted"}
+              >
+                {statuses.get(r.course.id)!.label}
+              </span>
+              {statuses.get(r.course.id)!.group === "unchecked" && (
+                <a
+                  href={clubHref(r)}
+                  target="_blank"
+                  rel="noopener"
+                  className="block font-medium text-brand underline"
+                >
+                  Try the club&apos;s site
+                </a>
+              )}
+            </span>
           </li>
         ))}
       </ul>
@@ -330,10 +368,26 @@ export function NoMatchList({
   );
 }
 
-function courseStatus(result: CourseResult, now: Date): string {
-  if (result.notices.some((n) => n.kind === "stale")) return "Couldn't check";
-  if (result.notices.some((n) => n.kind === "not-checked")) return "Not checked yet";
-  if (result.checkedAt) return `Checked ${formatAgo(result.checkedAt, now)}`;
-  if (result.notices.every((n) => n.kind === "not-open")) return "Times not out yet";
-  return "";
+type Status = {
+  label: string;
+  problem: boolean;
+  group: "booked" | "none" | "unchecked" | "not-out";
+};
+
+/** Why a course has nothing to show: booked out, nothing matching, not out yet, or not checked. */
+function courseStatus(result: CourseResult, now: Date): Status {
+  const problem = mainProblem(result.notices);
+  if (problem) return { label: PROBLEM_LABEL[problem], problem: true, group: "unchecked" };
+  if (result.notices.some((n) => n.kind === "not-checked"))
+    return { label: "Not checked yet", problem: true, group: "unchecked" };
+  if (result.fullyBooked) return { label: "Fully booked", problem: false, group: "booked" };
+  if (result.checkedAt)
+    return {
+      label: `Nothing matching · checked ${formatAgo(result.checkedAt, now)}`,
+      problem: false,
+      group: "none",
+    };
+  if (result.notices.every((n) => n.kind === "not-open"))
+    return { label: "Times not out yet", problem: false, group: "not-out" };
+  return { label: "", problem: false, group: "none" };
 }

@@ -13,6 +13,7 @@ import { SiteHeader } from "@/components/site-header";
 import { primaryButton, secondaryButton } from "@/components/ui";
 import { bookLink } from "@/lib/click-token";
 import { getDb } from "@/lib/db";
+import { PROBLEM_LABEL } from "@/lib/check-problems";
 import { courseArea } from "@/lib/course-info";
 import { EARLIEST_TIME, LATEST_TIME, searchHref } from "@/lib/search-form";
 
@@ -122,7 +123,9 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
                         {d.count} {d.count === 1 ? "time" : "times"}
                       </Link>
                     ) : (
-                      <span className="text-sm text-muted">{DAY_STATUS[d.status]}</span>
+                      <span className="text-sm text-muted">
+                        {d.problem ?? DAY_STATUS[d.status]}
+                      </span>
                     )}
                   </li>
                 ))}
@@ -161,13 +164,15 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
 const DAY_STATUS = {
   none: "Nothing free",
   "not-open": "Not out yet",
-  unknown: "Couldn't check",
+  unknown: "Not checked yet",
 } as const;
 
 interface DaySummary {
   date: string;
   status: "times" | keyof typeof DAY_STATUS;
   count: number;
+  /** Why it couldn't be checked, in words. */
+  problem?: string;
 }
 
 /** How many times are free each day this week, from the latest check. */
@@ -196,6 +201,8 @@ async function upcomingDays(
     const notice = found?.notices.find((n) => n.date === date);
     const count = found?.teeTimes.filter((t) => t.playDate === date).length ?? 0;
     if (notice?.kind === "not-open") return { date, status: "not-open", count };
+    if (notice?.kind === "stale")
+      return { date, status: "unknown", count, problem: PROBLEM_LABEL[notice.problem] };
     if (notice) return { date, status: "unknown", count };
     return { date, status: count > 0 ? "times" : "none", count };
   });

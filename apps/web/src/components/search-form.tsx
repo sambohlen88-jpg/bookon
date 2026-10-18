@@ -133,7 +133,7 @@ export function SearchForm({
           <summary className="min-h-12 cursor-pointer px-3 py-3 text-sm font-medium">
             Courses: {values.courses.length === 0 ? "all" : `${values.courses.length} chosen`}
           </summary>
-          <fieldset className="flex flex-col border-t border-border px-3 py-2">
+          <fieldset className="flex flex-col border-t border-border px-3 py-2 lg:max-h-80 lg:overflow-y-auto">
             <legend className="sr-only">Courses to search</legend>
             {courses.map((course) => (
               <label key={course.slug} className="flex min-h-11 items-center gap-3 text-base">

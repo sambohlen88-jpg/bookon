@@ -3,7 +3,7 @@ import type { TeeTime } from "@bookon/core";
 import { createDb, type DbHandle } from "./client";
 import { findCourseBySlug, recordDayFailures, saveDayAvailability } from "./queries";
 import { availabilityChecks, availabilitySnapshots } from "./schema";
-import { listSearchableCourses, searchTeeTimes, type SearchParams } from "./search";
+import { checkProblem, listSearchableCourses, searchTeeTimes, type SearchParams } from "./search";
 import { seed } from "./seed";
 
 // 7:00 am Perth, Saturday 17 October 2026.
@@ -138,13 +138,48 @@ describe("searchTeeTimes", () => {
       [slot(collier, "2026-10-18T08:00:00")],
       old,
     );
-    await recordDayFailures(handle.db, collier, ["2026-10-18"], "HTTP 503", checkedAt);
+    await recordDayFailures(
+      handle.db,
+      collier,
+      ["2026-10-18"],
+      "HttpError: HTTP 503 for https://example.com",
+      checkedAt,
+    );
 
     const result = await searchTeeTimes(handle.db, { ...base, courseSlugs: ["collier-park"] }, now);
     const [course] = result.courses;
     expect(course!.teeTimes).toEqual([]);
     expect(course!.checkedAt).toBeNull();
-    expect(course!.notices).toEqual([{ date: "2026-10-18", kind: "stale", lastSuccessAt: old }]);
+    expect(course!.notices).toEqual([
+      { date: "2026-10-18", kind: "stale", lastSuccessAt: old, problem: "site-down" },
+    ]);
+  });
+
+  it("knows a course that's fully booked from one with nothing matching", async () => {
+    await saveDayAvailability(handle.db, collier, "2026-10-18", [], checkedAt);
+    await saveDayAvailability(
+      handle.db,
+      hamersley,
+      "2026-10-18",
+      [slot(hamersley, "2026-10-18T15:00:00")],
+      checkedAt,
+    );
+    const result = await searchTeeTimes(
+      handle.db,
+      { ...base, courseSlugs: ["collier-park", "hamersley"] },
+      now,
+    );
+    const status = Object.fromEntries(
+      result.courses.map((c) => [
+        c.course.slug,
+        { times: c.teeTimes.length, booked: c.fullyBooked },
+      ]),
+    );
+    expect(status).toEqual({
+      "collier-park": { times: 0, booked: true },
+      // A 3 pm time doesn't match a morning search, but the course isn't booked out.
+      hamersley: { times: 0, booked: false },
+    });
   });
 
   it("still shows a fresh day after a later failed attempt", async () => {
@@ -192,5 +227,29 @@ describe("listSearchableCourses", () => {
     const slugs = (await listSearchableCourses(handle.db)).map((c) => c.slug);
     expect(slugs).toHaveLength(26);
     expect(slugs).not.toContain("wembley");
+  });
+});
+
+describe("checkProblem", () => {
+  it("sorts saved check errors into reasons a golfer understands", () => {
+    expect(checkProblem("CaptchaRequiredError: Wembley asks for a CAPTCHA")).toBe("blocked");
+    expect(
+      checkProblem("RobotsDisallowedError: robots.txt disallows BookOnBot, so not fetching x"),
+    ).toBe("blocked");
+    expect(checkProblem("HttpError: HTTP 403 for https://x")).toBe("blocked");
+    expect(checkProblem("HttpError: HTTP 503 for https://x")).toBe("site-down");
+    expect(checkProblem("HttpError: HTTP 429 for https://x")).toBe("site-down");
+    expect(checkProblem("TypeError: fetch failed")).toBe("site-down");
+    expect(checkProblem("TimeoutError: The operation was aborted due to timeout")).toBe(
+      "site-down",
+    );
+    expect(
+      checkProblem(
+        "RobotsDisallowedError: robots.txt could not be read (HTTP 500), so not fetching x",
+      ),
+    ).toBe("site-down");
+    expect(checkProblem("HttpError: HTTP 404 for https://x")).toBe("unreadable");
+    expect(checkProblem("PageFormatError: no timesheet table")).toBe("unreadable");
+    expect(checkProblem(null)).toBe("old");
   });
 });

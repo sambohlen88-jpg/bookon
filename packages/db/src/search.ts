@@ -29,9 +29,36 @@ export interface ResultTeeTime {
   bookingUrl: string;
 }
 
+/**
+ * Why a day couldn't be checked, in terms a golfer can act on:
+ * - blocked: the club's site has a security check or asks bots to stay away
+ * - site-down: the club's site didn't answer, or answered with an error
+ * - unreadable: the page wasn't what we expect (it may have changed)
+ * - old: no problem reported, but the last check is too old to trust
+ */
+export type CheckProblem = "blocked" | "site-down" | "unreadable" | "old";
+
+/** Sort a saved check error ("Name: message") into a CheckProblem. */
+export function checkProblem(error: string | null): CheckProblem {
+  if (!error) return "old";
+  if (/robots\.txt could not be read/.test(error)) return "site-down";
+  if (/^(CaptchaRequiredError|RobotsDisallowedError)\b/.test(error)) return "blocked";
+  const status = /^HttpError: HTTP (\d{3})/.exec(error)?.[1];
+  if (status) {
+    if (status === "401" || status === "403") return "blocked";
+    if (status === "404" || status === "410") return "unreadable";
+    return "site-down";
+  }
+  if (
+    /fetch failed|AbortError|TimeoutError|ECONN|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|socket/i.test(error)
+  )
+    return "site-down";
+  return "unreadable";
+}
+
 /** Why a course has no results for a date, when it is not simply "nothing matched". */
 export type DayNotice =
-  | { date: string; kind: "stale"; lastSuccessAt: Date | null }
+  | { date: string; kind: "stale"; lastSuccessAt: Date | null; problem: CheckProblem }
   | { date: string; kind: "not-checked" }
   | { date: string; kind: "not-open"; opensOn: string };
 
@@ -40,6 +67,8 @@ export interface CourseResult {
   teeTimes: ResultTeeTime[];
   /** Oldest successful check among the fresh days searched, for the "last checked" label. */
   checkedAt: Date | null;
+  /** Checked recently, and the club had no free public times at all on those days. */
+  fullyBooked: boolean;
   notices: DayNotice[];
 }
 
@@ -171,6 +200,7 @@ export async function searchTeeTimes(
     const notices: DayNotice[] = [];
     const freshDates = new Set<string>();
     let checkedAt: Date | null = null;
+    let freeThatDay = 0;
 
     for (const date of dates) {
       if (date > lastOpenDate) {
@@ -189,9 +219,16 @@ export async function searchTeeTimes(
         now.getTime() - check.lastSuccessAt.getTime() <= staleAfterMs
       ) {
         freshDates.add(date);
+        freeThatDay += check.teeTimeCount;
         if (!checkedAt || check.lastSuccessAt < checkedAt) checkedAt = check.lastSuccessAt;
       } else {
-        notices.push({ date, kind: "stale", lastSuccessAt: check.lastSuccessAt });
+        notices.push({
+          date,
+          kind: "stale",
+          lastSuccessAt: check.lastSuccessAt,
+          // An error from an earlier attempt doesn't explain a check that later succeeded.
+          problem: check.status === "error" ? checkProblem(check.error) : "old",
+        });
       }
     }
 
@@ -217,6 +254,7 @@ export async function searchTeeTimes(
       },
       teeTimes,
       checkedAt,
+      fullyBooked: freshDates.size > 0 && freeThatDay === 0,
       notices,
     };
   });
