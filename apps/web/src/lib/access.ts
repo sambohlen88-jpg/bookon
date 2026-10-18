@@ -5,6 +5,7 @@ import {
   clubById,
   clubRole,
   clubsForEmail,
+  coachForEmail,
   sessionForToken,
   type Actor,
   type Club,
@@ -102,9 +103,17 @@ export async function currentAccess(): Promise<{
   user: User | null;
   admin: boolean;
   clubs: number;
+  /** Has a coach listing. */
+  coach: boolean;
 }> {
   const current = await session().catch(() => null);
-  if (!current) return { user: null, admin: false, clubs: 0 };
+  if (!current) return { user: null, admin: false, clubs: 0, coach: false };
   const clubs = await clubsForEmail(getDb(), current.user.email).catch(() => []);
-  return { user: current.user, admin: isAdminEmail(current.user.email), clubs: clubs.length };
+  const coach = await coachForEmail(getDb(), current.user.email).catch(() => null);
+  return {
+    user: current.user,
+    admin: isAdminEmail(current.user.email),
+    clubs: clubs.length,
+    coach: Boolean(coach),
+  };
 }

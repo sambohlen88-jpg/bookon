@@ -18,7 +18,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
-import type { WeatherHour } from "@bookon/core";
+import type { CoachProfile, WeatherHour } from "@bookon/core";
 import type { SearchParams } from "./search";
 import type { SharedCourse } from "./shares";
 
@@ -620,3 +620,82 @@ export const weatherForecasts = pgTable("weather_forecasts", {
   lastModified: text("last_modified"),
   hours: jsonb("hours").$type<WeatherHour[]>().notNull(),
 });
+
+/* Coaches (Milestone 12). PGA pros who list their lessons; BookOn approves every listing and change. */
+
+export const coachStatusEnum = pgEnum("coach_status", [
+  /** Not approved yet: being filled in, or sent for review. */
+  "new",
+  "live",
+  /** A new listing BookOn said no to. The coach can fix it and send it again. */
+  "declined",
+  /** Taken off the site by an admin. */
+  "hidden",
+]);
+
+export const coaches = pgTable(
+  "coaches",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    slug: text("slug").notNull().unique(),
+    /** The email the coach signs in with, lower case. One listing per email. */
+    email: text("email").notNull().unique(),
+    status: coachStatusEnum("status").notNull().default("new"),
+    /** What golfers see. Null until first approved. */
+    profile: jsonb("profile").$type<CoachProfile>(),
+    /** The coach's working copy; null when it matches what's live. */
+    draft: jsonb("draft").$type<CoachProfile>(),
+    /** When the draft was sent for review; null while it's still being worked on. */
+    submittedAt: timestamp("submitted_at", { withTimezone: true }),
+    /** BookOn checked the PGA membership. */
+    pgaVerified: boolean("pga_verified").notNull().default(false),
+    /** Made up, to show how the pages look. Only ever added to local databases. */
+    sample: boolean("sample").notNull().default(false),
+    /** For Near me. From the coach's course, or set by an admin. */
+    latitude: doublePrecision("latitude"),
+    longitude: doublePrecision("longitude"),
+    /** The coach agreed to show their contact details publicly. */
+    consents: jsonb("consents").$type<Record<string, unknown>>().notNull().default({}),
+    /** BookOn's note to the coach on the last decision. */
+    reviewNote: text("review_note"),
+    approvedAt: timestamp("approved_at", { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("coaches_status_idx").on(t.status)],
+);
+
+/** A coach's photo. Shown only once BookOn approves it; the newest approved one is used. */
+export const coachPhotos = pgTable(
+  "coach_photos",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    coachId: uuid("coach_id")
+      .notNull()
+      .references(() => coaches.id, { onDelete: "cascade" }),
+    createdAt: createdAt(),
+    status: photoStatusEnum("status").notNull().default("pending"),
+    contentType: text("content_type").notNull(),
+    width: integer("width").notNull(),
+    height: integer("height").notNull(),
+    data: bytea("data").notNull(),
+    /** The coach confirmed it's their photo to share. */
+    rightsConfirmedBy: text("rights_confirmed_by").notNull(),
+  },
+  (t) => [index("coach_photos_coach_idx").on(t.coachId, t.status)],
+);
+
+/** Each tap on a coach's WhatsApp, email, call or website button, so coaches can see what BookOn sends them. */
+export const coachContacts = pgTable(
+  "coach_contacts",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    coachId: uuid("coach_id")
+      .notNull()
+      .references(() => coaches.id, { onDelete: "cascade" }),
+    at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+    method: text("method").notNull(),
+    anonymousSessionId: text("anonymous_session_id"),
+  },
+  (t) => [index("coach_contacts_coach_idx").on(t.coachId, t.at)],
+);

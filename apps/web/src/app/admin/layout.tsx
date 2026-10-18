@@ -28,8 +28,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               { href: "/admin/photos", label: "Photos", badge: counts.photos },
               { href: "/admin/courses", label: "Courses" },
               { href: "/admin/clubs", label: "Clubs", badge: counts.changeRequests },
+              { href: "/admin/coaches", label: "Coaches", badge: counts.coaches },
               { href: "/admin/reports", label: "Reports" },
               { href: "/admin/log", label: "Change log" },
+              { href: "/admin/settings", label: "Settings" },
             ]}
           />
         </div>

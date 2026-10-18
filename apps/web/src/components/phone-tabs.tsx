@@ -12,6 +12,12 @@ const TABS = [
     match: (p: string) => p.startsWith("/courses"),
   },
   {
+    href: "/coaches",
+    label: "Coaches",
+    icon: "coach",
+    match: (p: string) => p.startsWith("/coaches"),
+  },
+  {
     href: "/account?tab=alerts",
     label: "Alerts",
     icon: "bell",
@@ -33,13 +39,19 @@ const TABS = [
 export function PhoneTabs() {
   const path = usePathname();
   const tab = useSearchParams().get("tab");
-  if (path.startsWith("/admin") || path.startsWith("/club/") || path === "/club") return null;
+  if (
+    path.startsWith("/admin") ||
+    path.startsWith("/club/") ||
+    path === "/club" ||
+    path === "/coach"
+  )
+    return null;
   return (
     <nav
       aria-label="Menu"
       className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
     >
-      <ul className="mx-auto grid max-w-md grid-cols-4">
+      <ul className="mx-auto grid max-w-md grid-cols-5">
         {TABS.map((t) => {
           const active = t.match(path, tab);
           return (
@@ -73,6 +85,14 @@ function Icon({ name }: { name: (typeof TABS)[number]["icon"] }) {
         <path d="M6 21V4" />
         <path d="M6 4l11 4-11 4" />
         <path d="M3 21h9" />
+      </>
+    ),
+    // A golf club and ball.
+    coach: (
+      <>
+        <path d="M15 3l-6 15" />
+        <path d="M9 18h-4" />
+        <circle cx="17" cy="19" r="2" />
       </>
     ),
     bell: (

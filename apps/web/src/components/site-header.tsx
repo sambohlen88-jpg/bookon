@@ -9,7 +9,7 @@ const navLink = "text-sm font-medium text-foreground hover:text-brand";
  * header with the logo and main pages.
  */
 export async function SiteHeader() {
-  const { user, admin, clubs } = await currentAccess();
+  const { user, admin, clubs, coach } = await currentAccess();
   return (
     <>
       <header className="md:border-b md:border-border">
@@ -35,6 +35,9 @@ export async function SiteHeader() {
             <Link href="/courses" className={navLink}>
               Courses
             </Link>
+            <Link href="/coaches" className={navLink}>
+              Find a coach
+            </Link>
             <Link href="/clubs" className={navLink}>
               For golf clubs
             </Link>
@@ -43,6 +46,11 @@ export async function SiteHeader() {
             {admin && (
               <Link href="/admin" className="text-sm font-medium text-brand">
                 Admin
+              </Link>
+            )}
+            {coach && (
+              <Link href="/coach" className="text-sm font-medium text-brand">
+                My coaching
               </Link>
             )}
             {clubs > 0 && (

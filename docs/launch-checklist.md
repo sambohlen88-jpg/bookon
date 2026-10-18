@@ -1,6 +1,6 @@
 # Launch checklist
 
-Things that must be done before BookOn launches publicly (SPEC section 11, Milestone 12). Claude Code is asked, in `CLAUDE.md`, to raise these with the owner before any launch work.
+Things that must be done before BookOn launches publicly (SPEC section 11, Milestone 13). Claude Code is asked, in `CLAUDE.md`, to raise these with the owner before any launch work.
 
 ## Platform access (owner asked to be reminded)
 
@@ -18,6 +18,15 @@ Data is read from public booking pages with the owner's approval, ahead of forma
 - [x] **Course locations.** All 29 found and checked on 18 October 2026. For a new course, run `pnpm courses:locate` (then `-- --save`), or set it in admin (Courses → the course → Latitude and Longitude).
 - [ ] **Weather.** Check the worker logs `[weather] N updated` on the host. MET Norway asks that our user agent names us and gives a contact (it does: `BOOKON_CONTACT_EMAIL`), and that the credit "Weather from MET Norway" stays wherever forecasts show.
 - [ ] The privacy policy mentions Near me: the phone's location is rounded to about a kilometre, used for that search only and never saved.
+
+## Coaches (Milestone 12)
+
+- [ ] **The sample coaches never reach a hosted database.** They're only added when the database is local (`isLocalDatabaseUrl`). If a hosted database ever shows "Sample profile", delete those coaches in admin.
+- [ ] Decide how PGA membership is checked (PGA of Australia's "Find a PGA Professional", or asking PGA for a way to confirm members), and who does it.
+- [ ] Coach listing terms: what coaches agree to when they list, and that BookOn isn't party to lessons. The consent wording is `COACH_CONSENT` in `packages/db/src/coaches.ts`.
+- [ ] The privacy policy covers coach contact details shown publicly and the counting of WhatsApp, email and call taps.
+- [ ] Paying for lessons through BookOn is shown as "coming soon". Before building it: payments provider, coach payouts, refunds and GST.
+- [ ] BookOn's Instagram, Facebook and TikTok addresses entered in Admin, Settings.
 
 ## Business and legal
 

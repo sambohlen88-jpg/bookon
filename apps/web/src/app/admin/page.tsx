@@ -24,6 +24,7 @@ export default async function AdminHome() {
     { href: "/admin/listings", n: counts.listings, label: "join requests waiting" },
     { href: "/admin/photos", n: counts.photos, label: "photos to check" },
     { href: "/admin/clubs", n: counts.changeRequests, label: "booking page changes to check" },
+    { href: "/admin/coaches", n: counts.coaches, label: "coach listings and photos to check" },
     { href: "/admin/courses", n: troubled.length, label: "live courses with check problems" },
   ];
   return (
@@ -32,7 +33,7 @@ export default async function AdminHome() {
         title="Admin"
         intro={`${live.length} courses live, ${courses.length - live.length} switched off.`}
       />
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {cards.map((c) => (
           <Link key={c.href} href={c.href} className={`${panel} block hover:border-brand`}>
             <span className={`block text-3xl font-bold ${c.n > 0 ? "text-brand" : "text-muted"}`}>

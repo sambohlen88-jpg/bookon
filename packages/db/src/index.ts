@@ -13,3 +13,4 @@ export * from "./admin";
 export * from "./shares";
 export * from "./weather";
 export * from "./course-locations";
+export * from "./coaches";

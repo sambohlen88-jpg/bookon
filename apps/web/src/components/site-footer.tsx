@@ -33,6 +33,11 @@ export function SiteFooter() {
               </Link>
             </li>
             <li>
+              <Link href="/coaches" className={link}>
+                Find a coach
+              </Link>
+            </li>
+            <li>
               <Link href="/account" className={link}>
                 My account and alerts
               </Link>
@@ -50,6 +55,14 @@ export function SiteFooter() {
             <li>
               <Link href="/clubs/join" className={link}>
                 List your club
+              </Link>
+            </li>
+          </ul>
+          <p className={`${heading} mt-6`}>Coaches</p>
+          <ul className="mt-3 flex flex-col gap-2">
+            <li>
+              <Link href="/coaching" className={link}>
+                List your coaching
               </Link>
             </li>
           </ul>

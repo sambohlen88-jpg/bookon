@@ -1,20 +1,22 @@
 import Link from "next/link";
-import { formatPerthTime, perthDate, type VenueKind } from "@bookon/core";
+import { formatPerthTime, formatPrice, perthDate, type VenueKind } from "@bookon/core";
 import {
   approvedCoursePhotos,
   listCourseDetails,
   listFavourites,
   nextTeeTimes,
+  socialLinks,
   type CourseDetails,
   type CourseResult,
 } from "@bookon/db";
 import { CourseArt } from "@/components/course-art";
 import { CourseCard } from "@/components/course-card";
-import { FreeSoon } from "@/components/free-soon";
+import { FreeSoon, firstTimes } from "@/components/free-soon";
 import { RecentSearches } from "@/components/recent-searches";
 import { SearchForm } from "@/components/search-form";
 import { SiteHeader } from "@/components/site-header";
 import { currentUser } from "@/lib/auth";
+import { bookLink } from "@/lib/click-token";
 import { getDb } from "@/lib/db";
 import { shortCourseName } from "@/lib/course-info";
 import { LATEST_BAY_TIME, defaultForm, searchHref } from "@/lib/search-form";
@@ -55,6 +57,8 @@ export default async function Home() {
   const upcomingGolf = upcoming.filter((u) => u.course.kind === "course");
   const today = perthDate(now);
   const seeAll = searchHref({ ...defaultForm(now), date: today });
+  const baysSearch = searchHref({ ...defaultForm(now), play: "bays", to: LATEST_BAY_TIME });
+  const social = await socialLinks(getDb()).catch(() => ({}));
 
   return (
     <>
@@ -81,6 +85,8 @@ export default async function Home() {
         <div className="mt-10">
           <FreeSoon results={upcomingGolf} now={now} players={2} seeAll={seeAll} />
         </div>
+        <Shortcuts baysSearch={baysSearch} venues={venues} tone="page" />
+        <Follow links={social} tone="page" />
         <section aria-labelledby="how" className="mt-10">
           <h2 id="how" className="text-lg font-semibold">
             How BookOn works
@@ -116,7 +122,7 @@ export default async function Home() {
       {/* Desktop: a full website. */}
       <main className="hidden lg:block">
         <section className="relative overflow-hidden bg-hero-bg text-hero-fg">
-          <div className="relative z-10 mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_520px] items-start gap-12 px-6 pb-40 pt-16">
+          <div className="relative z-10 mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_520px] items-start gap-12 px-6 pb-60 pt-16">
             {/* Pinned to the top, so opening the course list doesn't move it. */}
             <div className="pt-10">
               <p className="flex items-center gap-4 text-5xl font-bold tracking-tight">
@@ -137,6 +143,9 @@ export default async function Home() {
                 <Stat value={`${longestWindow} days`} label="ahead" />
                 <Stat value="$0" label="booking fees" />
               </dl>
+              <HeroFreeSoon results={upcomingGolf} today={today} seeAll={seeAll} />
+              <Shortcuts baysSearch={baysSearch} venues={venues} tone="hero" />
+              <Follow links={social} tone="hero" />
             </div>
             <div className="rounded-2xl bg-background p-6 text-foreground shadow-2xl">
               <h2 className="mb-5 text-2xl font-bold tracking-tight">Find a tee time</h2>
@@ -150,12 +159,6 @@ export default async function Home() {
             className="absolute inset-x-0 bottom-0 h-56 w-full"
           />
         </section>
-
-        {upcoming.some((u) => u.teeTimes.length > 0) && (
-          <section className="mx-auto max-w-6xl px-6 pt-20">
-            <FreeSoon results={upcoming} now={now} players={2} seeAll={seeAll} limit={8} />
-          </section>
-        )}
 
         <section className="mx-auto max-w-6xl px-6 py-20">
           <h2 className="text-3xl font-bold tracking-tight">How it works</h2>
@@ -333,5 +336,155 @@ function MyCourses({
         })}
       </ul>
     </section>
+  );
+}
+
+/** The next few tee times, inside the desktop banner. */
+function HeroFreeSoon({
+  results,
+  today,
+  seeAll,
+}: {
+  results: CourseResult[];
+  today: string;
+  seeAll: string;
+}) {
+  const rows = firstTimes(results, 3);
+  if (rows.length === 0) return null;
+  return (
+    <section aria-labelledby="hero-free-soon" className="mt-12 max-w-xl">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 id="hero-free-soon" className="text-lg font-semibold">
+          Free soon
+        </h2>
+        <Link
+          href={seeAll}
+          className="text-sm font-semibold text-hero-fg underline-offset-4 hover:underline"
+        >
+          See all times
+        </Link>
+      </div>
+      <ul className="mt-3 overflow-hidden rounded-xl border border-hero-fg/15 bg-hero-fg/5">
+        {rows.map(({ result, time }) => (
+          <li
+            key={result.course.id}
+            className="flex items-center gap-4 border-t border-hero-fg/15 px-4 py-2.5 first:border-t-0"
+          >
+            <span className="w-20 shrink-0 font-semibold tabular-nums">
+              {formatPerthTime(time.startTime)}
+              <span className="block text-xs font-normal text-hero-muted">
+                {time.playDate === today ? "Today" : "Tomorrow"}
+              </span>
+            </span>
+            <span className="min-w-0 flex-1 text-sm">
+              <Link href={`/courses/${result.course.slug}`} className="block truncate font-medium">
+                {shortCourseName(result.course.name)}
+              </Link>
+              <span className="block text-hero-muted">
+                {time.holes} holes ·{" "}
+                {time.priceCents === null ? "Price at club" : formatPrice(time.priceCents)}
+              </span>
+            </span>
+            <a
+              href={bookLink({
+                courseId: result.course.id,
+                startTime: time.startTime.toISOString(),
+                url: time.bookingUrl,
+                source: "search",
+              })}
+              target="_blank"
+              rel="noopener"
+              aria-label={`Book ${formatPerthTime(time.startTime)} at ${result.course.name} (opens the club's site)`}
+              className="flex min-h-10 shrink-0 items-center rounded-lg bg-hero-fg px-4 text-sm font-semibold text-hero-bg"
+            >
+              Book
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/** Ways into the rest of BookOn: sims and ranges, and coaches. */
+function Shortcuts({
+  baysSearch,
+  venues,
+  tone,
+}: {
+  baysSearch: string;
+  venues: number;
+  tone: "hero" | "page";
+}) {
+  const card =
+    tone === "hero"
+      ? "group flex flex-col rounded-xl border border-hero-fg/15 bg-hero-fg/5 p-4 hover:border-hero-fg/40"
+      : "group flex flex-col rounded-xl border border-border p-4 hover:border-brand";
+  const muted = tone === "hero" ? "text-hero-muted" : "text-muted";
+  const links = [
+    ...(venues > 0
+      ? [
+          {
+            href: baysSearch,
+            title: "Golf sims & ranges",
+            body: "Book a simulator or range bay by the hour.",
+          },
+        ]
+      : []),
+    { href: "/coaches", title: "Find a coach", body: "Golf pros near you, and when they teach." },
+  ];
+  return (
+    <nav aria-label="More on BookOn" className={tone === "hero" ? "mt-6 max-w-xl" : "mt-10"}>
+      <ul className="grid grid-cols-2 gap-3">
+        {links.map((l) => (
+          <li key={l.href}>
+            <Link href={l.href} className={card}>
+              <span className="font-semibold">
+                {l.title} <span aria-hidden>→</span>
+              </span>
+              <span className={`mt-1 text-sm ${muted}`}>{l.body}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
+const NETWORK_NAMES = { instagram: "Instagram", facebook: "Facebook", tiktok: "TikTok" } as const;
+
+/** BookOn's social accounts, once an admin has added them (Admin, Settings). */
+function Follow({
+  links,
+  tone,
+}: {
+  links: Partial<Record<keyof typeof NETWORK_NAMES, string>>;
+  tone: "hero" | "page";
+}) {
+  const entries = (Object.keys(NETWORK_NAMES) as (keyof typeof NETWORK_NAMES)[]).filter(
+    (n) => links[n],
+  );
+  if (entries.length === 0) return null;
+  const pill =
+    tone === "hero"
+      ? "flex min-h-10 items-center rounded-full border border-hero-fg/30 px-4 text-sm font-medium hover:border-hero-fg"
+      : "flex min-h-11 items-center rounded-full border border-border px-4 text-sm font-medium hover:border-brand";
+  return (
+    <div
+      className={
+        tone === "hero"
+          ? "mt-6 flex flex-wrap items-center gap-2"
+          : "mt-6 flex flex-wrap items-center gap-2"
+      }
+    >
+      <span className={`mr-1 text-sm ${tone === "hero" ? "text-hero-muted" : "text-muted"}`}>
+        Follow BookOn
+      </span>
+      {entries.map((n) => (
+        <a key={n} href={links[n]} target="_blank" rel="noopener" className={pill}>
+          {NETWORK_NAMES[n]}
+        </a>
+      ))}
+    </div>
   );
 }

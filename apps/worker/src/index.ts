@@ -18,7 +18,9 @@ import {
   createDb,
   findCourseBySlug,
   listEnabledCourses,
+  isLocalDatabaseUrl,
   seedIfEmpty,
+  seedSampleCoaches,
   type Database,
   type PollableCourse,
 } from "@bookon/db";
@@ -54,6 +56,9 @@ try {
 }
 // A new database (say, after deleting the local one) gets the courses without `pnpm db:seed`.
 if (await seedIfEmpty(handle.db)) console.log("[worker] New database: added the courses.");
+// Made-up coaches to show the Coaches pages, on local databases only (never a hosted one).
+if (isLocalDatabaseUrl(config.databaseUrl) && (await seedSampleCoaches(handle.db)) > 0)
+  console.log("[worker] Added 3 sample coaches (local database only).");
 
 /** Nothing listening at the database's address, anywhere in the error's causes. */
 function refusedConnection(error: unknown): boolean {

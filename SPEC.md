@@ -151,6 +151,8 @@ Each milestone ends with a short written summary, a list of open issues, and a d
 
 **Owner's change, 18 October 2026 (later still):** Milestone 11 is now golf simulators and driving ranges: Perth venues whose free bays can be read live, searched by session length rather than holes, and the install prompt for phones only (not desktop). The owner approved Your Golf Booking venues only (OuttaBounds, Albatross Lounge, Elevate Golf Lounge, Lights Out Golf), with venues without live times left out and Big Swing left for later. Hardening and launch move to Milestone 12.
 
+**Owner's change, 18 October 2026 (night):** Milestone 12 is now Find a Coach and more on the home page. Golfers see PGA coaches around Perth (who teaches this week and next, areas, Near me, specialities, rates, where they teach) and contact them by WhatsApp, email or phone, with paying through BookOn shown as coming soon. Coaches list themselves through their own login, and BookOn approves every listing and change, checking PGA membership. The desktop home banner gains Free soon, shortcuts to sims and coaches, and BookOn's social links (set in admin). Three made-up sample coaches fill local databases only. Hardening and launch move to Milestone 13.
+
 ## 12. Phase 2 preview (do not build yet)
 
 Stripe Connect style payments and commission, official partner API adapters that can book and cancel, support for a booking history and refunds, more cities, and native apps. Keep the adapter interface flexible enough that a `book()` and `cancel()` method can be added later.

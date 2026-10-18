@@ -23,6 +23,7 @@ import {
   fetchRuns,
 } from "./schema";
 import { checkProblem, type CheckProblem } from "./search";
+import { coachCounts } from "./coaches";
 
 /* Admin area and club logins (Milestone 8). */
 
@@ -45,7 +46,7 @@ export const READABLE_PLATFORMS = ["miclub", "quick18"] as const;
 
 export interface Actor {
   email: string;
-  role: "admin" | "club";
+  role: "admin" | "club" | "coach";
 }
 
 /** Record who changed what. Never throws: a failed log line mustn't undo the change. */
@@ -787,10 +788,12 @@ export async function adminCounts(db: Database) {
     .select({ n: count() })
     .from(changeRequests)
     .where(eq(changeRequests.status, "pending"));
+  const coachesWaiting = await coachCounts(db);
   return {
     listings: listings?.n ?? 0,
     photos: photos?.n ?? 0,
     changeRequests: requests?.n ?? 0,
+    coaches: coachesWaiting.waiting + coachesWaiting.photos,
   };
 }
 
