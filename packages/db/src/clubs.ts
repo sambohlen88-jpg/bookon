@@ -507,9 +507,10 @@ export async function setClubApplicationStatus(
 
 export type ClubPhotoInfo = Omit<typeof clubPhotos.$inferSelect, "data">;
 
-const photoInfo = {
+export const photoInfo = {
   id: clubPhotos.id,
   applicationId: clubPhotos.applicationId,
+  clubId: clubPhotos.clubId,
   courseId: clubPhotos.courseId,
   createdAt: clubPhotos.createdAt,
   status: clubPhotos.status,

@@ -1,0 +1,110 @@
+import "server-only";
+import { cookies } from "next/headers";
+import { notFound, redirect } from "next/navigation";
+import {
+  clubById,
+  clubRole,
+  clubsForEmail,
+  sessionForToken,
+  type Actor,
+  type Club,
+  type ClubRole,
+  type User,
+} from "@bookon/db";
+import { AUTH_COOKIE } from "./auth";
+import { getDb } from "./db";
+
+/** Admins sign in again after this long, as the admin area changes live data. */
+export const ADMIN_SESSION_MS = 12 * 60 * 60 * 1000;
+
+/** Admins are the emails in BOOKON_ADMIN_EMAILS (comma separated). */
+export function adminEmails(env: NodeJS.ProcessEnv = process.env): string[] {
+  return (env.BOOKON_ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+export function isAdminEmail(email: string, env: NodeJS.ProcessEnv = process.env): boolean {
+  return adminEmails(env).includes(email.toLowerCase());
+}
+
+async function session(): Promise<{ user: User; startedAt: Date } | null> {
+  const token = (await cookies()).get(AUTH_COOKIE)?.value;
+  return token ? sessionForToken(getDb(), token, new Date()) : null;
+}
+
+function signIn(next: string, reason?: string): never {
+  redirect(`/signin?next=${encodeURIComponent(next)}${reason ? `&reason=${reason}` : ""}`);
+}
+
+/**
+ * The signed-in admin, or off to sign in. Someone signed in who isn't an
+ * admin gets "not found", so the area doesn't advertise itself.
+ */
+export async function requireAdmin(next = "/admin"): Promise<{ user: User; actor: Actor }> {
+  const current = await session();
+  if (!current) signIn(next);
+  if (!isAdminEmail(current!.user.email)) notFound();
+  if (Date.now() - current!.startedAt.getTime() > ADMIN_SESSION_MS) signIn(next, "admin");
+  return { user: current!.user, actor: { email: current!.user.email, role: "admin" } };
+}
+
+/** For API routes and downloads: whether this request is from a signed-in admin (no redirects). */
+export async function isAdminRequest(): Promise<boolean> {
+  const current = await session().catch(() => null);
+  return Boolean(
+    current &&
+    isAdminEmail(current.user.email) &&
+    Date.now() - current.startedAt.getTime() <= ADMIN_SESSION_MS,
+  );
+}
+
+/**
+ * The signed-in member of this club (or an admin, who can act as owner),
+ * or off to sign in.
+ */
+export async function requireClub(
+  clubId: string,
+  next: string,
+): Promise<{ user: User; club: Club; role: ClubRole; actor: Actor; admin: boolean }> {
+  const current = await session();
+  if (!current) signIn(next);
+  const db = getDb();
+  const club = await clubById(db, clubId);
+  if (!club) notFound();
+  const admin = isAdminEmail(current!.user.email);
+  const role = admin ? "owner" : await clubRole(db, club!.id, current!.user.email);
+  if (!role) notFound();
+  return {
+    user: current!.user,
+    club: club!,
+    role,
+    admin,
+    actor: { email: current!.user.email, role: admin ? "admin" : "club" },
+  };
+}
+
+/** For API routes: the signed-in person's access to a club, or null (no redirects). */
+export async function clubAccess(clubId: string): Promise<{ actor: Actor; club: Club } | null> {
+  const current = await session();
+  if (!current) return null;
+  const db = getDb();
+  const club = await clubById(db, clubId);
+  if (!club) return null;
+  const admin = isAdminEmail(current.user.email);
+  if (!admin && !(await clubRole(db, club.id, current.user.email))) return null;
+  return { club, actor: { email: current.user.email, role: admin ? "admin" : "club" } };
+}
+
+/** For the header: what extra areas this person can open. */
+export async function currentAccess(): Promise<{
+  user: User | null;
+  admin: boolean;
+  clubs: number;
+}> {
+  const current = await session().catch(() => null);
+  if (!current) return { user: null, admin: false, clubs: 0 };
+  const clubs = await clubsForEmail(getDb(), current.user.email).catch(() => []);
+  return { user: current.user, admin: isAdminEmail(current.user.email), clubs: clubs.length };
+}

@@ -24,6 +24,7 @@ Data is read from public booking pages with the owner's approval, ahead of forma
 - [ ] Hosting: Vercel (website), a hosted Postgres such as Supabase or Neon, and Railway or Fly for the worker.
 - [ ] The worker running on a schedule, so results stay fresh.
 - [ ] `BOOKON_SITE_URL` set on the website host and the worker. Without it, signing in and starting a club listing fail on purpose, as emailed links must never use an address taken from the request.
+- [ ] `BOOKON_ADMIN_EMAILS` set on the website host to the people who run BookOn. Nobody can open the admin area without it.
 - [ ] `BOOKON_OWNER_EMAIL` set to whoever reviews new club listings (otherwise they go to info@bookon.com.au).
 - [ ] `CLICK_SIGNING_SECRET` set on the website host **and** the worker, the same value on both (`openssl rand -base64 32`). Without it, Book clicks still work but aren't tracked.
 - [ ] **Email sending (Postmark).** Until then, sign-in links and alerts go to the local outbox only, so nobody can sign in on a hosted site.

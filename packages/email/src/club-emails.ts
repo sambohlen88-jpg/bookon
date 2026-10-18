@@ -229,3 +229,89 @@ export function clubApplicationNotice(input: {
     ),
   };
 }
+
+/** To the club: their listing is approved, and how to sign in to manage it. */
+export function clubApprovedEmail(input: {
+  to: string;
+  name: string;
+  clubName: string;
+  signInLink: string;
+  note?: string | null;
+}): EmailMessage {
+  const body = `Good news: ${input.clubName} is approved on BookOn. We're setting up your tee times now and will let you know when they're live. In the meantime you can sign in with this email address to update your details, prices and photos, and add your team.`;
+  return {
+    to: input.to,
+    subject: `${input.clubName} is approved on BookOn`,
+    text: [
+      `Hi ${input.name},`,
+      "",
+      body,
+      ...(input.note ? ["", input.note] : []),
+      "",
+      input.signInLink,
+      "",
+      SENDER,
+    ].join("\n"),
+    html: layout(
+      `<p style="margin:0 0 16px">Hi ${escape(input.name)},</p>
+<p style="margin:0 0 16px">${escape(body)}</p>
+${input.note ? `<p style="margin:0 0 16px">${escape(input.note)}</p>` : ""}
+<p style="margin:0">${button(input.signInLink, "Sign in to your club")}</p>`,
+      escape(SENDER),
+    ),
+  };
+}
+
+/** To the club: we can't list them, and why. */
+export function clubDeclinedEmail(input: {
+  to: string;
+  name: string;
+  clubName: string;
+  note?: string | null;
+}): EmailMessage {
+  const body = `Thanks for your interest in listing ${input.clubName} on BookOn. We can't list it right now.`;
+  const after =
+    "If you have questions, or things change, reply to this email or write to info@bookon.com.au.";
+  return {
+    to: input.to,
+    subject: `Your BookOn listing for ${input.clubName}`,
+    text: [
+      `Hi ${input.name},`,
+      "",
+      body,
+      ...(input.note ? ["", input.note] : []),
+      "",
+      after,
+      "",
+      SENDER,
+    ].join("\n"),
+    html: layout(
+      `<p style="margin:0 0 16px">Hi ${escape(input.name)},</p>
+<p style="margin:0 0 16px">${escape(body)}</p>
+${input.note ? `<p style="margin:0 0 16px">${escape(input.note)}</p>` : ""}
+<p style="margin:0">${escape(after)}</p>`,
+      escape(SENDER),
+    ),
+  };
+}
+
+/** Someone was added to a club's login. */
+export function clubInviteEmail(input: {
+  to: string;
+  clubName: string;
+  invitedBy: string;
+  role: "owner" | "staff";
+  signInLink: string;
+}): EmailMessage {
+  const body = `${input.invitedBy} has added you to ${input.clubName} on BookOn${input.role === "owner" ? " as an owner" : ""}. Sign in with this email address to update the club's details, prices and photos, and see how many golfers BookOn sends you.`;
+  return {
+    to: input.to,
+    subject: `You've been added to ${input.clubName} on BookOn`,
+    text: [body, "", input.signInLink, "", SENDER].join("\n"),
+    html: layout(
+      `<p style="margin:0 0 16px">${escape(body)}</p>
+<p style="margin:0">${button(input.signInLink, "Sign in to BookOn")}</p>`,
+      escape(SENDER),
+    ),
+  };
+}

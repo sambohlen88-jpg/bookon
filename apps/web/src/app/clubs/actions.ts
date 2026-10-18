@@ -3,13 +3,9 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import {
-  BOOKING_SYSTEMS,
-  CLUB_KINDS,
   CONSENTS,
-  FACILITIES,
   applicationByToken,
   applicationDetails,
-  checkRate,
   listApplicationRates,
   listClubPhotos,
   normaliseEmail,
@@ -18,15 +14,9 @@ import {
   saveConsents,
   startClubApplication,
   submitClubApplication,
-  type BookingSystem,
   type ClubApplication,
   type ClubApplicationDetails,
-  type ClubKind,
   type ConsentKey,
-  type CourseInfo,
-  type Facility,
-  type Person,
-  type RateInput,
 } from "@bookon/db";
 import {
   clubApplicationNotice,
@@ -34,46 +24,23 @@ import {
   clubSubmittedEmail,
   createMailer,
 } from "@bookon/email";
+import {
+  parseClub,
+  parseContacts,
+  parseCourses,
+  parseExtras,
+  parseRates,
+  parseTeeTimes,
+  str as readStr,
+  type Parsed,
+} from "@/lib/club-form";
 import { clubStepHref, isClubStep, nextClubStep, type ClubStep } from "@/lib/club-steps";
 import { getDb } from "@/lib/db";
 import { ownerEmail, siteOrigin } from "@/lib/site";
 
-const str = (form: FormData, name: string, max = 200): string | undefined => {
-  const value = String(form.get(name) ?? "").trim();
-  return value ? value.slice(0, max) : undefined;
-};
-const num = (form: FormData, name: string, min: number, max: number): number | undefined => {
-  const value = Number(form.get(name));
-  return form.get(name) && Number.isInteger(value) && value >= min && value <= max
-    ? value
-    : undefined;
-};
-const time = (form: FormData, name: string): string | undefined => {
-  const value = str(form, name, 5);
-  return value && /^([01]\d|2[0-3]):[0-5]\d$/.test(value) ? value : undefined;
-};
+const str = (form: FormData, name: string, max = 200) => readStr(form, name, max);
 const yesNo = (form: FormData, name: string): boolean | undefined =>
   form.get(name) === "yes" ? true : form.get(name) === "no" ? false : undefined;
-
-function webAddress(value: string | undefined): string | undefined {
-  if (!value) return undefined;
-  const withScheme = /^https?:\/\//i.test(value) ? value : `https://${value}`;
-  try {
-    const url = new URL(withScheme);
-    return url.protocol === "https:" || url.protocol === "http:" ? url.toString() : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-function person(form: FormData, prefix: string): Person | undefined {
-  const name = str(form, `${prefix}Name`, 120);
-  const email = normaliseEmail(String(form.get(`${prefix}Email`) ?? "")) ?? undefined;
-  const phone = str(form, `${prefix}Phone`, 40);
-  const role = str(form, `${prefix}Role`, 80);
-  if (!name && !email && !phone) return undefined;
-  return { name: name ?? "", email: email ?? "", phone, role };
-}
 
 async function load(token: string): Promise<ClubApplication> {
   const application = await applicationByToken(getDb(), token);
@@ -126,110 +93,13 @@ export async function saveClubStep(formData: FormData) {
   const details = applicationDetails(application);
   let patch: ClubApplicationDetails = {};
 
-  if (step === "club") {
-    const name = str(formData, "name", 120);
-    const suburb = str(formData, "suburb", 80);
-    if (!name || !suburb) back(token, step, "Add your club's name and suburb.");
-    const abn = str(formData, "abn", 20)?.replace(/\s/g, "");
-    if (abn && !/^\d{11}$/.test(abn)) back(token, step, "An ABN has 11 digits.");
-    const postcode = str(formData, "postcode", 4);
-    if (postcode && !/^\d{4}$/.test(postcode)) back(token, step, "A postcode has 4 digits.");
-    const kind = str(formData, "kind") as ClubKind | undefined;
-    patch = {
-      club: {
-        name: name!,
-        legalName: str(formData, "legalName", 160),
-        abn,
-        kind: kind && kind in CLUB_KINDS ? kind : undefined,
-        website: webAddress(str(formData, "website")),
-        phone: str(formData, "phone", 40),
-        publicEmail: normaliseEmail(String(formData.get("publicEmail") ?? "")) ?? undefined,
-        street: str(formData, "street", 160),
-        suburb: suburb!,
-        postcode,
-        state: str(formData, "state", 3) ?? "WA",
-      },
-    };
-  }
-
-  if (step === "contacts") {
-    const main = person(formData, "main");
-    if (!main?.name || !main.email) back(token, step, "Add a main contact's name and email.");
-    patch = {
-      contacts: {
-        main: main!,
-        bookings: person(formData, "bookings"),
-        accounts: person(formData, "accounts"),
-        reportsEmail: normaliseEmail(String(formData.get("reportsEmail") ?? "")) ?? undefined,
-      },
-    };
-  }
-
-  if (step === "courses") {
-    let rows: unknown;
-    try {
-      rows = JSON.parse(String(formData.get("courses") ?? "[]"));
-    } catch {
-      rows = [];
-    }
-    const courses: CourseInfo[] = (Array.isArray(rows) ? rows : [])
-      .slice(0, 10)
-      .map((r: Record<string, unknown>) => ({
-        name: String(r.name ?? "")
-          .trim()
-          .slice(0, 120),
-        holes: [9, 18, 27, 36].includes(Number(r.holes)) ? Number(r.holes) : 0,
-        par: Number(r.par) >= 27 && Number(r.par) <= 80 ? Number(r.par) : undefined,
-        layouts:
-          String(r.layouts ?? "")
-            .trim()
-            .slice(0, 200) || undefined,
-      }))
-      .filter((c) => c.name);
-    if (courses.length === 0) back(token, step, "Add at least one course.");
-    if (courses.some((c) => !c.holes)) back(token, step, "Choose how many holes each course has.");
-    patch = { courses };
-  }
-
-  if (step === "tee-times") {
-    const bookingSystem = str(formData, "bookingSystem") as BookingSystem | undefined;
-    if (!bookingSystem || !(bookingSystem in BOOKING_SYSTEMS))
-      back(token, step, "Choose how golfers book.");
-    const bookingUrl = webAddress(str(formData, "bookingUrl", 400));
-    if (str(formData, "bookingUrl") && !bookingUrl)
-      back(token, step, "That booking page address doesn't look right.");
-    patch = {
-      teeTimes: {
-        bookingSystem: bookingSystem!,
-        bookingSystemOther: str(formData, "bookingSystemOther", 120),
-        bookingUrl,
-        intervalMinutes: num(formData, "intervalMinutes", 4, 30),
-        weekdayFirst: time(formData, "weekdayFirst"),
-        weekdayLast: time(formData, "weekdayLast"),
-        weekendFirst: time(formData, "weekendFirst"),
-        weekendLast: time(formData, "weekendLast"),
-        windowDays: num(formData, "windowDays", 1, 365),
-        twoTeeStarts: yesNo(formData, "twoTeeStarts"),
-        maxPlayers: num(formData, "maxPlayers", 1, 6),
-        singlesWelcome: yesNo(formData, "singlesWelcome"),
-        memberTimes: str(formData, "memberTimes", 1000),
-        cancellationPolicy: str(formData, "cancellationPolicy", 1000),
-        dressCode: str(formData, "dressCode", 500),
-      },
-    };
-  }
-
-  if (step === "extras") {
-    patch = {
-      extras: {
-        description: str(formData, "description", 800),
-        facilities: formData
-          .getAll("facilities")
-          .map(String)
-          .filter((f): f is Facility => f in FACILITIES),
-      },
-    };
-  }
+  const read = <T>(parsed: Parsed<T>): T =>
+    "error" in parsed ? back(token, step, parsed.error) : parsed.value;
+  if (step === "club") patch = { club: read(parseClub(formData)) };
+  if (step === "contacts") patch = { contacts: read(parseContacts(formData)) };
+  if (step === "courses") patch = { courses: read(parseCourses(formData)) };
+  if (step === "tee-times") patch = { teeTimes: read(parseTeeTimes(formData)) };
+  if (step === "extras") patch = { extras: parseExtras(formData) };
 
   if (step === "approvals") {
     const by = str(formData, "by", 120);
@@ -273,28 +143,16 @@ export async function saveClubStep(formData: FormData) {
   redirect(clubStepHref(token, nextClubStep(step)));
 }
 
-export type RatesState = { problems: string[] } | null;
+export type RatesState = { problems: string[] } | { saved: true } | null;
 
 /** Save the price list. Returns problems to show beside the form, keeping the club's edits. */
 export async function saveClubRates(_prev: RatesState, formData: FormData): Promise<RatesState> {
   const token = String(formData.get("token") ?? "");
   const application = await load(token);
   if (application.status !== "draft") redirect(clubStepHref(token, "review"));
-  let rows: unknown;
-  try {
-    rows = JSON.parse(String(formData.get("rates") ?? "[]"));
-  } catch {
-    return { problems: ["Something went wrong reading the prices. Try again."] };
-  }
-  const checked = (Array.isArray(rows) ? rows : []).map((r) =>
-    checkRate(r as Record<string, unknown>),
-  );
-  const problems = checked.flatMap((c) => ("problem" in c ? [c.problem] : []));
-  if (problems.length > 0) return { problems };
-  const rates = checked as RateInput[];
-  if (!rates.some((r) => r.category === "green_fee")) {
-    return { problems: ["Add at least one green fee, so golfers know what a round costs."] };
-  }
+  const parsed = parseRates(formData);
+  if ("problems" in parsed) return parsed;
+  const { rates } = parsed;
   await replaceApplicationRates(getDb(), application, rates, new Date());
   redirect(clubStepHref(token, "extras"));
 }

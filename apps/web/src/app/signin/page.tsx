@@ -19,7 +19,7 @@ export default async function SignInPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
-  const { sent, error, next } = await searchParams;
+  const { sent, error, next, reason } = await searchParams;
   const nextPath = safeNextPath(next) ?? "";
 
   return (
@@ -55,6 +55,13 @@ export default async function SignInPage({
               An account lets you save favourite courses, get alerts when tee times open up, and see
               times you&apos;ve looked at.
             </p>
+            {reason === "admin" && (
+              <div className="mt-4">
+                <Notice tone="info">
+                  For safety, the admin area asks you to sign in again every 12 hours.
+                </Notice>
+              </div>
+            )}
             {error && ERRORS[error] && (
               <div className="mt-4">
                 <Notice tone="warning">{ERRORS[error]}</Notice>

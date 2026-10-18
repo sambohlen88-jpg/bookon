@@ -1,10 +1,10 @@
 /**
- * Review club listings from the terminal, until the admin dashboard (Milestone 8).
+ * Review club listings from the terminal. The admin area (/admin) does the same with buttons.
  *
  *   pnpm clubs                                  listings waiting for review
  *   pnpm clubs -- all                           every listing
  *   pnpm clubs -- show <id>                     everything a club sent, and its photos
- *   pnpm clubs -- approve <id> [note]           mark approved (the course still needs setting up)
+ *   pnpm clubs -- approve <id> [note]           create the club, its courses (switched off) and an owner login
  *   pnpm clubs -- decline <id> [note]
  *   pnpm clubs -- reopen <id>                   let the club edit it again with its link
  *   pnpm clubs -- photo <photo id> approve <course slug>
@@ -13,6 +13,7 @@
  * Ids can be shortened to their first 8 characters.
  */
 import {
+  approveClubApplication,
   clubApplicationById,
   createDb,
   findCourseBySlug,
@@ -68,17 +69,28 @@ try {
       );
     }
     if (a.reviewNotes) console.log(`\nNotes: ${a.reviewNotes}`);
-  } else if (command === "approve" || command === "decline" || command === "reopen") {
+  } else if (command === "approve") {
     const a = await find(db, rest[0]);
-    const status =
-      command === "approve" ? "approved" : command === "decline" ? "declined" : "draft";
+    const result = await approveClubApplication(
+      db,
+      a,
+      { email: "pnpm clubs", role: "admin" },
+      rest.slice(1).join(" ") || null,
+      now,
+    );
+    if ("error" in result) throw new Error("Only listings the club has sent can be approved.");
+    console.log(`${a.clubName}: approved, with ${result.courseIds.length} course(s) switched off.`);
+    console.log(
+      "Next: in /admin, set up each course's booking system, test it, then switch it on.",
+    );
+    console.log(
+      "The club wasn't emailed; approve in /admin to email them, or let them know yourself.",
+    );
+  } else if (command === "decline" || command === "reopen") {
+    const a = await find(db, rest[0]);
+    const status = command === "decline" ? "declined" : "draft";
     await setClubApplicationStatus(db, a.id, status, rest.slice(1).join(" ") || a.reviewNotes, now);
     console.log(`${a.clubName}: ${status}`);
-    if (status === "approved") {
-      console.log(
-        "Next: add the course to the seed data with its booking page, then switch it on.",
-      );
-    }
   } else if (command === "photo") {
     const [photoId, decision, slug] = rest;
     const listings = await listClubApplications(db);

@@ -47,6 +47,13 @@ export const clubs = pgTable("clubs", {
   contactEmail: text("contact_email"),
   notes: text("notes"),
   createdAt: createdAt(),
+  /**
+   * What the club tells golfers and BookOn: contacts, tee time rules,
+   * description, facilities. The same shape as an application's details
+   * (ClubApplicationDetails); the club edits it from its login.
+   */
+  profile: jsonb("profile").$type<Record<string, unknown>>().notNull().default({}),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 /** One booking source: a platform calendar we read and link golfers to. */
@@ -462,9 +469,12 @@ export const clubPhotos = pgTable(
   "club_photos",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    applicationId: uuid("application_id")
-      .notNull()
-      .references(() => clubApplications.id, { onDelete: "cascade" }),
+    /** Uploaded while signing up. */
+    applicationId: uuid("application_id").references(() => clubApplications.id, {
+      onDelete: "cascade",
+    }),
+    /** The club it belongs to, once the club is live (or uploaded from the club's login). */
+    clubId: uuid("club_id").references(() => clubs.id, { onDelete: "cascade" }),
     /** The course it shows, once approved. */
     courseId: uuid("course_id").references(() => courses.id, { onDelete: "set null" }),
     createdAt: createdAt(),
@@ -483,4 +493,72 @@ export const clubPhotos = pgTable(
     index("club_photos_application_idx").on(t.applicationId),
     index("club_photos_course_idx").on(t.courseId, t.status),
   ],
+);
+
+/* Admin and club logins (Milestone 8). */
+
+export const clubRoleEnum = pgEnum("club_role", ["owner", "staff"]);
+
+/**
+ * Who can sign in to a club's login. Keyed by email, so a person can be
+ * added before they've ever signed in: signing in with that email is enough.
+ */
+export const clubMembers = pgTable(
+  "club_members",
+  {
+    clubId: uuid("club_id")
+      .notNull()
+      .references(() => clubs.id, { onDelete: "cascade" }),
+    /** Stored lower case. */
+    email: text("email").notNull(),
+    role: clubRoleEnum("role").notNull().default("staff"),
+    addedBy: text("added_by"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.clubId, t.email] }),
+    index("club_members_email_idx").on(t.email),
+  ],
+);
+
+export const changeRequestStatusEnum = pgEnum("change_request_status", [
+  "pending",
+  "approved",
+  "declined",
+]);
+
+/** Changes a club asked for that BookOn checks first, such as a new booking page. */
+export const changeRequests = pgTable(
+  "change_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    clubId: uuid("club_id")
+      .notNull()
+      .references(() => clubs.id, { onDelete: "cascade" }),
+    courseId: uuid("course_id").references(() => courses.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(),
+    value: text("value").notNull(),
+    requestedBy: text("requested_by").notNull(),
+    createdAt: createdAt(),
+    status: changeRequestStatusEnum("status").notNull().default("pending"),
+    decidedBy: text("decided_by"),
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+  },
+  (t) => [index("change_requests_status_idx").on(t.status, t.createdAt)],
+);
+
+/** Who changed what and when, by admins and clubs. */
+export const changeLog = pgTable(
+  "change_log",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+    actor: text("actor").notNull(),
+    actorRole: text("actor_role").notNull(),
+    clubId: uuid("club_id").references(() => clubs.id, { onDelete: "set null" }),
+    courseId: uuid("course_id").references(() => courses.id, { onDelete: "set null" }),
+    action: text("action").notNull(),
+    details: jsonb("details").$type<Record<string, unknown>>().notNull().default({}),
+  },
+  (t) => [index("change_log_at_idx").on(t.at), index("change_log_club_idx").on(t.clubId, t.at)],
 );

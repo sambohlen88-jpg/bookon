@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { InstallPrompt } from "@/components/install-prompt";
-import { currentUser } from "@/lib/auth";
+import { currentAccess } from "@/lib/access";
 
 const navLink = "text-sm font-medium text-foreground hover:text-brand";
 
@@ -9,7 +9,7 @@ const navLink = "text-sm font-medium text-foreground hover:text-brand";
  * header with the logo and main pages.
  */
 export async function SiteHeader() {
-  const user = await currentUser().catch(() => null);
+  const { user, admin, clubs } = await currentAccess();
   return (
     <>
       <header className="md:border-b md:border-border">
@@ -39,12 +39,24 @@ export async function SiteHeader() {
               For golf clubs
             </Link>
           </nav>
-          <Link
-            href={user ? "/account" : "/signin"}
-            className="flex min-h-11 items-center text-sm font-medium text-brand md:rounded-lg md:border md:border-border md:px-4"
-          >
-            {user ? "My account" : "Sign in"}
-          </Link>
+          <div className="flex items-center gap-4">
+            {admin && (
+              <Link href="/admin" className="text-sm font-medium text-brand">
+                Admin
+              </Link>
+            )}
+            {clubs > 0 && (
+              <Link href="/club" className="text-sm font-medium text-brand">
+                My club
+              </Link>
+            )}
+            <Link
+              href={user ? "/account" : "/signin"}
+              className="flex min-h-11 items-center text-sm font-medium text-brand md:rounded-lg md:border md:border-border md:px-4"
+            >
+              {user ? "My account" : "Sign in"}
+            </Link>
+          </div>
         </div>
       </header>
       <InstallPrompt />

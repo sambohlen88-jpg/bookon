@@ -132,6 +132,22 @@ export async function userForSession(
   return row?.user ?? null;
 }
 
+/** The signed-in golfer and when this device signed in, or null. */
+export async function sessionForToken(
+  db: Database,
+  sessionToken: string,
+  now: Date,
+): Promise<{ user: User; startedAt: Date } | null> {
+  const [row] = await db
+    .select({ user: users, startedAt: userSessions.createdAt })
+    .from(userSessions)
+    .innerJoin(users, eq(users.id, userSessions.userId))
+    .where(
+      and(eq(userSessions.tokenHash, hashToken(sessionToken)), gt(userSessions.expiresAt, now)),
+    );
+  return row ?? null;
+}
+
 export async function endSession(db: Database, sessionToken: string): Promise<void> {
   await db.delete(userSessions).where(eq(userSessions.tokenHash, hashToken(sessionToken)));
 }

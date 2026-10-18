@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState, useRef, useState } from "react";
-import { saveClubRates, type RatesState } from "@/app/clubs/actions";
+import type { RatesState } from "@/app/clubs/actions";
 import { fieldLabel } from "@/components/form";
 import { primaryButton, secondaryButton, textInput } from "@/components/ui";
 
@@ -209,15 +209,21 @@ function Choice({
  * left blank if they don't apply.
  */
 export function RatesEditor({
-  token,
+  action: save,
+  hidden,
   saved,
   courseNames,
   backHref,
+  submitLabel = "Save and continue",
 }: {
-  token: string;
+  /** Saves the list. Returns problems to show, or redirects when done. */
+  action: (prev: RatesState, form: FormData) => Promise<RatesState>;
+  /** Extra form fields the action needs, such as the listing's token. */
+  hidden: Record<string, string>;
   saved: SavedRate[];
   courseNames: string[];
-  backHref: string;
+  backHref?: string;
+  submitLabel?: string;
 }) {
   // Keys number from 1 in order, so the server's page and the browser agree on field ids.
   const [rows, setRows] = useState<RateRow[]>(() =>
@@ -228,7 +234,7 @@ export function RatesEditor({
   );
   const lastKey = useRef(rows.length);
   const add = (r: NewRow) => setRows((rs) => [...rs, { ...r, key: ++lastKey.current }]);
-  const [state, action, pending] = useActionState<RatesState, FormData>(saveClubRates, null);
+  const [state, action, pending] = useActionState<RatesState, FormData>(save, null);
   const update = (key: number, change: Partial<RateRow>) =>
     setRows((rs) => rs.map((r) => (r.key === key ? { ...r, ...change } : r)));
   const priced = rows.filter((r) => r.price.trim() !== "");
@@ -236,7 +242,9 @@ export function RatesEditor({
 
   return (
     <form action={action} className="flex flex-col gap-4">
-      <input type="hidden" name="token" value={token} />
+      {Object.entries(hidden).map(([name, value]) => (
+        <input key={name} type="hidden" name={name} value={value} />
+      ))}
       <input
         type="hidden"
         name="rates"
@@ -489,7 +497,12 @@ export function RatesEditor({
           saved.
         </p>
       )}
-      {state?.problems && (
+      {state && "saved" in state && (
+        <p role="status" className="text-sm font-medium text-brand">
+          Saved.
+        </p>
+      )}
+      {state && "problems" in state && (
         <div
           role="alert"
           className="rounded-lg border border-warning-border bg-warning-bg px-4 py-3 text-sm text-warning-fg"
@@ -504,11 +517,13 @@ export function RatesEditor({
       )}
       <div className="flex flex-wrap items-center gap-3">
         <button type="submit" disabled={pending} className={`${primaryButton} disabled:opacity-60`}>
-          {pending ? "Saving…" : "Save and continue"}
+          {pending ? "Saving…" : submitLabel}
         </button>
-        <Link href={backHref} className={secondaryButton}>
-          Back
-        </Link>
+        {backHref && (
+          <Link href={backHref} className={secondaryButton}>
+            Back
+          </Link>
+        )}
       </div>
     </form>
   );

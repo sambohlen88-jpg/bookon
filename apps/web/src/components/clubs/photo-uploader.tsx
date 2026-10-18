@@ -15,14 +15,19 @@ export interface ListingPhoto {
  * Add photos to a listing. Each upload needs the club to confirm it owns the
  * photo or may share it, and who confirmed it.
  */
+/** Whose photos these are: a listing still being filled in, or a live club. */
+export type PhotoOwner = { kind: "listing"; token: string } | { kind: "club"; clubId: string };
+
+const STATUS = { pending: "Waiting for approval", approved: "On the site", declined: "Not used" };
+
 export function PhotoUploader({
-  token,
+  owner,
   photos,
   max,
   defaultName,
   locked,
 }: {
-  token: string;
+  owner: PhotoOwner;
   photos: ListingPhoto[];
   max: number;
   defaultName: string;
@@ -31,6 +36,11 @@ export function PhotoUploader({
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const ownerField = owner.kind === "listing" ? { token: owner.token } : { clubId: owner.clubId };
+  const src = (id: string) =>
+    owner.kind === "listing"
+      ? `/clubs/join/${owner.token}/photo/${id}`
+      : `/club/${owner.clubId}/photo/${id}`;
 
   async function upload(form: HTMLFormElement) {
     setBusy(true);
@@ -62,7 +72,7 @@ export function PhotoUploader({
     await fetch("/api/clubs/photos", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, photoId }),
+      body: JSON.stringify({ ...ownerField, photoId }),
     });
     setBusy(false);
     router.refresh();
@@ -76,12 +86,14 @@ export function PhotoUploader({
             <li key={p.id} className="overflow-hidden rounded-lg border border-border">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={`/clubs/join/${token}/photo/${p.id}`}
+                src={src(p.id)}
                 alt={p.caption ?? "Course photo"}
                 className="aspect-video w-full object-cover"
               />
               <div className="flex items-center justify-between gap-2 p-2 text-xs">
-                <span className="truncate text-muted">{p.caption ?? "No caption"}</span>
+                <span className="min-w-0 truncate text-muted">
+                  {owner.kind === "club" ? STATUS[p.status] : (p.caption ?? "No caption")}
+                </span>
                 {!locked && (
                   <button
                     type="button"
@@ -105,7 +117,9 @@ export function PhotoUploader({
           }}
           className="flex flex-col gap-4 rounded-xl bg-surface p-4"
         >
-          <input type="hidden" name="token" value={token} />
+          {Object.entries(ownerField).map(([name, value]) => (
+            <input key={name} type="hidden" name={name} value={value} />
+          ))}
           <div>
             <label htmlFor="photo-file" className={fieldLabel}>
               Photo

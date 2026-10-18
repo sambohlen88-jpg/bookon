@@ -36,6 +36,13 @@
       "when": 1792257346180,
       "tag": "0004_club_onboarding",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792289268415,
+      "tag": "0005_admin_and_club_logins",
+      "breakpoints": true
     }
   ]
 }

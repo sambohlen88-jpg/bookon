@@ -1,4 +1,11 @@
-import { addClubPhoto, applicationByToken, deleteClubPhoto } from "@bookon/db";
+import {
+  addClubPhoto,
+  addPhotoForClub,
+  applicationByToken,
+  deleteClubPhoto,
+  removePhotoForClub,
+} from "@bookon/db";
+import { clubAccess } from "@/lib/access";
 import { getDb } from "@/lib/db";
 import { MAX_UPLOAD_BYTES, preparePhoto } from "@/lib/photos";
 
@@ -26,8 +33,13 @@ export async function POST(request: Request) {
     return reply(400, "That didn't upload. Try again.");
   }
   const db = getDb();
-  const application = await applicationByToken(db, String(form.get("token") ?? ""));
-  if (!application) return reply(404, "This listing link doesn't work.");
+  // A live club's own login, or a listing's private link.
+  const clubId = form.get("clubId");
+  const club = typeof clubId === "string" && clubId ? await clubAccess(clubId) : null;
+  if (typeof clubId === "string" && clubId && !club)
+    return reply(403, "Sign in to your club first.");
+  const application = club ? null : await applicationByToken(db, String(form.get("token") ?? ""));
+  if (!club && !application) return reply(404, "This listing link doesn't work.");
   const rightsBy = String(form.get("rightsBy") ?? "").trim();
   if (!rightsBy || form.get("rights") !== "yes") {
     return reply(400, "Confirm the club owns the photo or may share it, and add your name.");
@@ -39,17 +51,15 @@ export async function POST(request: Request) {
 
   const photo = await preparePhoto(Buffer.from(await file.arrayBuffer()));
   if (!photo) return reply(400, "That file isn't a photo we can use. Try a JPEG or PNG.");
-  const result = await addClubPhoto(
-    db,
-    application,
-    {
-      ...photo,
-      caption: String(form.get("caption") ?? "").trim() || null,
-      credit: String(form.get("credit") ?? "").trim() || null,
-      rightsConfirmedBy: rightsBy,
-    },
-    new Date(),
-  );
+  const details = {
+    ...photo,
+    caption: String(form.get("caption") ?? "").trim() || null,
+    credit: String(form.get("credit") ?? "").trim() || null,
+    rightsConfirmedBy: rightsBy,
+  };
+  const result = club
+    ? await addPhotoForClub(db, club.club.id, details, club.actor, new Date())
+    : await addClubPhoto(db, application!, details, new Date());
   if ("error" in result) {
     return reply(
       409,
@@ -64,13 +74,19 @@ export async function POST(request: Request) {
 /** Remove a photo from a listing that hasn't been sent yet. */
 export async function DELETE(request: Request) {
   if (!sameOrigin(request)) return reply(403, "Not allowed.");
-  let body: { token?: unknown; photoId?: unknown };
+  let body: { token?: unknown; clubId?: unknown; photoId?: unknown };
   try {
     body = await request.json();
   } catch {
     return reply(400, "Bad request.");
   }
   const db = getDb();
+  if (typeof body.clubId === "string" && body.clubId) {
+    const club = await clubAccess(body.clubId);
+    if (!club) return reply(403, "Sign in to your club first.");
+    await removePhotoForClub(db, club.club.id, String(body.photoId ?? ""), club.actor, new Date());
+    return new Response(null, { status: 204 });
+  }
   const application = await applicationByToken(db, String(body.token ?? ""));
   if (!application) return reply(404, "This listing link doesn't work.");
   await deleteClubPhoto(db, application, String(body.photoId ?? ""));
