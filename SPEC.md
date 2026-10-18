@@ -149,6 +149,8 @@ Each milestone ends with a short written summary, a list of open issues, and a d
 
 **Owner's change, 18 October 2026 (later):** Milestone 10 is now the rest of the site on phones: an app-style menu bar, more on the home page (recent searches, My courses, Free soon), a courses page with areas, search and Near me, richer course pages (next times, club details and prices, weather, courses nearby), My account in tabs, quick day buttons and areas on the search, Near me on the search, and weather from MET Norway. Hardening and launch move to Milestone 11.
 
+**Owner's change, 18 October 2026 (later still):** Milestone 11 is now golf simulators and driving ranges: Perth venues whose free bays can be read live, searched by session length rather than holes, and the install prompt for phones only (not desktop). The owner approved Your Golf Booking venues only (OuttaBounds, Albatross Lounge, Elevate Golf Lounge, Lights Out Golf), with venues without live times left out and Big Swing left for later. Hardening and launch move to Milestone 12.
+
 ## 12. Phase 2 preview (do not build yet)
 
 Stripe Connect style payments and commission, official partner API adapters that can book and cancel, support for a booking history and refunds, more cities, and native apps. Keep the adapter interface flexible enough that a `book()` and `cancel()` method can be added later.

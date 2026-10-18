@@ -123,3 +123,12 @@ body {
     @apply flex min-h-11 items-center text-sm font-medium text-brand underline-offset-4 hover:underline;
   }
 }
+
+/*
+ * The search's Golf courses / Sims & ranges switch. Each form shows only the
+ * fields for the one picked, without JavaScript.
+ */
+.search-form:has(input[name="play"][value="bays"]:checked) .play-golf,
+.search-form:not(:has(input[name="play"][value="bays"]:checked)) .play-bays {
+  display: none;
+}

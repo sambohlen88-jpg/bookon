@@ -2,7 +2,10 @@
  * Booking platforms. `chronogolf` courses are listed but not searchable until
  * partner API access is arranged. `manual` = phone or walk-up only.
  */
-export type Platform = "miclub" | "quick18" | "chronogolf" | "manual";
+export type Platform = "miclub" | "quick18" | "chronogolf" | "manual" | "ygb";
+
+/** What a venue is: a golf course with tee times, or bays booked by the half hour. */
+export type VenueKind = "course" | "simulator" | "range";
 
 export interface Course {
   id: string;
@@ -13,6 +16,8 @@ export interface Course {
   latitude: number | null;
   longitude: number | null;
   holes: number;
+  /** Missing means a golf course. */
+  kind?: VenueKind;
   platform: Platform;
   /** Platform-specific settings, e.g. a MiClub booking resource id. Shape is owned by each adapter. */
   platformConfig: Record<string, unknown>;
@@ -27,8 +32,8 @@ export interface TeeTime {
   courseId: string;
   /** UTC instant. Convert with the helpers in `time.ts` for display. */
   startTime: Date;
-  /** 9 or 18. Many Perth courses sell both from the same tee sheet. */
-  holes: 9 | 18;
+  /** 9 or 18 for a course. 0 for a simulator or range bay, which is booked by time. */
+  holes: number;
   /** Which nines or which course, as the club names it, e.g. "Old Course" or "Back 9 Morning". */
   layout: string | null;
   spotsAvailable: number;
@@ -40,6 +45,10 @@ export interface TeeTime {
   sourceUrl: string;
   /** The most specific link to book this slot, when the platform has one. */
   bookingUrl: string | null;
+  /** Simulators and ranges: which bay, as the venue labels it. */
+  bay?: string | null;
+  /** Simulators and ranges: the session lengths, in minutes, that can start then. */
+  durations?: number[] | null;
 }
 
 /** Inclusive range of Perth calendar dates, formatted YYYY-MM-DD. */

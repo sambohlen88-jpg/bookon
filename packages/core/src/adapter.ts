@@ -7,6 +7,8 @@ export interface HttpClient {
 
 export interface FetchContext {
   http: HttpClient;
+  /** The time now, for rules about how far ahead a slot can be booked. Defaults to the real time. */
+  now?: Date;
 }
 
 /** Availability for one Perth date. A date is only reported once every page for it was read. */

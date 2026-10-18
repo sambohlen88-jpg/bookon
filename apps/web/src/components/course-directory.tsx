@@ -10,7 +10,10 @@ export interface DirectoryCourse {
   slug: string;
   name: string;
   suburb: string;
-  holes: number;
+  /** "18 holes", "Golf sim" or "Driving range". */
+  detail: string;
+  /** A golf sim or driving range, listed in its own group. */
+  venue: boolean;
   area: string | null;
   areaName: string;
   latitude: number | null;
@@ -69,13 +72,18 @@ export function CourseDirectory({
     );
   }
 
-  // Grouped by area unless searching or sorting by distance.
+  // Grouped by area unless searching or sorting by distance. Sims and ranges come last.
   const grouped = !here && !query.trim();
   const groups = grouped
-    ? [...areas, { id: null, name: "Other" }]
-        .map((a) => ({ ...a, courses: shown.filter((c) => c.area === a.id) }))
-        .filter((g) => g.courses.length > 0)
+    ? [
+        ...[...areas, { id: null, name: "Other" }].map((a) => ({
+          ...a,
+          courses: shown.filter((c) => !c.venue && c.area === a.id),
+        })),
+        { id: "venues", name: "Golf sims & driving ranges", courses: shown.filter((c) => c.venue) },
+      ].filter((g) => g.courses.length > 0)
     : [{ id: "all", name: "", courses: shown }];
+  const noun = courses.some((c) => c.venue) ? "places" : "courses";
 
   return (
     <div>
@@ -126,13 +134,13 @@ export function CourseDirectory({
       )}
       <p className="mt-3 text-sm text-muted" aria-live="polite">
         {shown.length === courses.length
-          ? `${courses.length} courses`
-          : `${shown.length} of ${courses.length} courses`}
+          ? `${courses.length} ${noun}`
+          : `${shown.length} of ${courses.length} ${noun}`}
         {here ? ", closest first" : ""}
       </p>
 
       {shown.length === 0 && (
-        <p className="mt-6 text-muted">No courses match. Try another name or area.</p>
+        <p className="mt-6 text-muted">Nothing matches. Try another name or area.</p>
       )}
 
       {groups.map((g) => (
@@ -153,7 +161,7 @@ export function CourseDirectory({
                   <div className="min-w-0 py-2 pr-3 md:p-4">
                     <p className="font-semibold leading-tight group-hover:text-brand">{c.name}</p>
                     <p className="mt-0.5 text-sm text-muted">
-                      {c.suburb} · {c.holes} holes
+                      {c.suburb} · {c.detail}
                       {c.km !== null ? ` · ${formatDistance(c.km)}` : ""}
                     </p>
                     <p

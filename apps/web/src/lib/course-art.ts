@@ -6,11 +6,11 @@ import { courseScenery, type Scenery } from "./course-info";
  * kept here (light and dark), like the colours in any other image file.
  */
 const PALETTE = `
-:root{--sky-top:#9fd3f2;--sky-bottom:#e8f5fb;--sun:#fff1b8;--hill-far:#9cc7a4;--hill-mid:#5fa46d;--fairway:#3f8f52;--fairway-light:#57a967;--green:#7cc489;--tree:#2b6b3c;--trunk:#6b4f3a;--water:#4fa3c7;--sand:#ead9a8;--earth:#c8693f;--flag:#f2c14e;--pole:#fff}
+:root{--room:#24303a;--room-light:#33424e;--mat:#4e9a5e;--canopy:#5b6770;--board:#fff;--sky-top:#9fd3f2;--sky-bottom:#e8f5fb;--sun:#fff1b8;--hill-far:#9cc7a4;--hill-mid:#5fa46d;--fairway:#3f8f52;--fairway-light:#57a967;--green:#7cc489;--tree:#2b6b3c;--trunk:#6b4f3a;--water:#4fa3c7;--sand:#ead9a8;--earth:#c8693f;--flag:#f2c14e;--pole:#fff}
 .dawn{--sky-top:#f6b98c;--sky-bottom:#fde8cf;--sun:#fff4d6}
 .noon{--sky-top:#6fb9e8;--sky-bottom:#d9f0fa}
 .dusk{--sky-top:#7f8fc8;--sky-bottom:#f7c6a3;--sun:#ffe0a8}
-@media (prefers-color-scheme:dark){:root,.dawn,.noon,.dusk{--sky-top:#1d3b55;--sky-bottom:#3d5f6e;--sun:#f3dc9a;--hill-far:#36574a;--hill-mid:#2d5a3c;--fairway:#234b31;--fairway-light:#2c5c3c;--green:#3c7a4c;--tree:#173823;--trunk:#4a3729;--water:#2f6a86;--sand:#9c8d66;--earth:#8d4a2c}}
+@media (prefers-color-scheme:dark){:root,.dawn,.noon,.dusk{--room:#11181e;--room-light:#1c252c;--mat:#2f6b3d;--canopy:#3a434a;--board:#d8dde0;--sky-top:#1d3b55;--sky-bottom:#3d5f6e;--sun:#f3dc9a;--hill-far:#36574a;--hill-mid:#2d5a3c;--fairway:#234b31;--fairway-light:#2c5c3c;--green:#3c7a4c;--tree:#173823;--trunk:#4a3729;--water:#2f6a86;--sand:#9c8d66;--earth:#8d4a2c}}
 `.trim();
 
 /** Bump to make browsers fetch redrawn pictures. */
@@ -72,6 +72,7 @@ export function courseArtSvg(
   options: { wide?: boolean; scenery?: Scenery } = {},
 ): string {
   const scenery = options.scenery ?? courseScenery(slug);
+  if (scenery === "simulator") return simulatorSvg(slug, Boolean(options.wide));
   const W = options.wide ? 1200 : 400;
   const wide = Boolean(options.wide);
   const random = seeded(slug);
@@ -116,6 +117,44 @@ export function courseArtSvg(
     `<path d="M${n(greenX + 6)} ${n(greenY)} V${n(greenY - 52)}" stroke="var(--pole)" stroke-width="2.5" stroke-linecap="round"/>`,
     `<path d="M${n(greenX + 7)} ${n(greenY - 52)} L${n(greenX + 30)} ${n(greenY - 45)} L${n(greenX + 7)} ${n(greenY - 38)} Z" fill="var(--flag)"/>`,
   );
+  if (scenery === "range") {
+    // Distance boards out on the range, and the hitting bays' roof along the front.
+    for (const [i, x] of [0.18, 0.5, 0.82].entries()) {
+      const bx = W * x + (random() - 0.5) * 30;
+      const by = 150 + i * 4;
+      parts.push(
+        `<rect x="${n(bx - 9)}" y="${n(by - 14)}" width="18" height="11" rx="1.5" fill="var(--board)"/>`,
+        `<path d="M${n(bx)} ${n(by - 3)} V${n(by + 4)}" stroke="var(--pole)" stroke-width="2"/>`,
+      );
+    }
+    parts.push(`<rect y="${H - 26}" width="${W}" height="10" fill="var(--canopy)"/>`);
+    for (let x = 20; x < W; x += 60)
+      parts.push(`<rect x="${x}" y="${H - 16}" width="4" height="16" fill="var(--canopy)"/>`);
+  }
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice"${time ? ` class="${time}"` : ""}><style>${PALETTE}</style>${parts.join("")}</svg>`;
+}
+
+/** A golf simulator: a fairway on the big screen, a hitting mat and a ball, in a dim room. */
+function simulatorSvg(slug: string, wide: boolean): string {
+  const W = wide ? 1200 : 400;
+  // The screen shows an ordinary course drawing, from the same seed so it stays the same.
+  const scene = courseArtSvg(slug, { scenery: "parkland" })
+    .replace(/^<svg[^>]*>/, "")
+    .replace(/<\/svg>$/, "");
+  const screenW = wide ? 520 : 300;
+  const screenH = screenW * (H / 400) * (wide ? 0.62 : 0.7);
+  const x = (W - screenW) / 2;
+  const y = 18;
+  const matW = screenW * 0.42;
+  return [
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice"><style>${PALETTE}</style>`,
+    `<rect width="${W}" height="${H}" fill="var(--room)"/>`,
+    `<path d="M0 ${n(y + screenH + 14)} H${W} V${H} H0 Z" fill="var(--room-light)"/>`,
+    `<rect x="${n(x - 4)}" y="${y - 4}" width="${n(screenW + 8)}" height="${n(screenH + 8)}" rx="3" fill="var(--canopy)"/>`,
+    `<svg x="${n(x)}" y="${y}" width="${n(screenW)}" height="${n(screenH)}" viewBox="0 0 400 ${H}" preserveAspectRatio="xMidYMid slice">${scene}</svg>`,
+    `<path d="M${n(W / 2 - matW / 2)} ${H - 18} L${n(W / 2 - matW / 3)} ${n(y + screenH + 24)} H${n(W / 2 + matW / 3)} L${n(W / 2 + matW / 2)} ${H - 18} Z" fill="var(--mat)"/>`,
+    `<circle cx="${n(W / 2)}" cy="${H - 34}" r="4" fill="var(--pole)"/>`,
+    `</svg>`,
+  ].join("");
 }

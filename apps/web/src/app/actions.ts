@@ -94,7 +94,10 @@ export async function createAlertFromSearch(formData: FormData) {
     now,
     slugs,
     Object.fromEntries(known.map((c) => [c.slug, c.area])),
+    Object.fromEntries(known.map((c) => [c.slug, c.kind])),
   );
+  // Alerts are for tee times only, for now.
+  if (form.play === "bays") redirect(back);
   const filters = toSearchParams(form, now);
   // Golfers who allowed notifications on a device get them for new alerts too.
   const push = (await listPushSubscriptions(db, user.id)).length > 0;

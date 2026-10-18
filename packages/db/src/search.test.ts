@@ -19,6 +19,7 @@ const checkedAt = new Date("2026-10-16T22:45:00Z");
 let handle: DbHandle;
 let collier: string;
 let hamersley: string;
+let sims: string;
 
 beforeAll(async () => {
   handle = createDb("pglite:memory");
@@ -26,6 +27,7 @@ beforeAll(async () => {
   await seed(handle.db);
   collier = (await findCourseBySlug(handle.db, "collier-park"))!.id;
   hamersley = (await findCourseBySlug(handle.db, "hamersley"))!.id;
+  sims = (await findCourseBySlug(handle.db, "outtabounds-simulators"))!.id;
 });
 
 afterAll(async () => {
@@ -228,10 +230,77 @@ describe("searchTeeTimes", () => {
   });
 });
 
+describe("simulator and range bays", () => {
+  function bay(label: string, perthIso: string, overrides: Partial<TeeTime> = {}): TeeTime {
+    return slot(sims, perthIso, {
+      holes: 0,
+      bay: label,
+      durations: [60, 90, 120],
+      spotsAvailable: 6,
+      priceCents: 4000,
+      bookingUrl: "https://yourgolfbooking.com/venues/outta-bounds/booking/simulators",
+      ...overrides,
+    });
+  }
+
+  beforeEach(async () => {
+    await saveDayAvailability(
+      handle.db,
+      sims,
+      "2026-10-18",
+      [
+        bay("s2", "2026-10-18T09:00:00"),
+        bay("s3", "2026-10-18T09:00:00", { priceCents: 2500 }),
+        bay("s4", "2026-10-18T09:00:00", { durations: [60] }),
+        bay("s2", "2026-10-18T09:30:00", { durations: [60] }),
+      ],
+      checkedAt,
+    );
+    await saveDayAvailability(
+      handle.db,
+      collier,
+      "2026-10-18",
+      [slot(collier, "2026-10-18T09:00:00")],
+      checkedAt,
+    );
+  });
+
+  it("stay out of golf searches, so alerts never pick them up", async () => {
+    const result = await searchTeeTimes(handle.db, base, now);
+    expect(result.courses.map((c) => c.course.kind)).not.toContain("simulator");
+    expect(times(result, "collier-park")).toHaveLength(1);
+  });
+
+  it("list each start once, with its free bays and cheapest hourly price", async () => {
+    const result = await searchTeeTimes(handle.db, { ...base, play: "bays", minutes: 60 }, now);
+    expect(result.courses.every((c) => c.course.kind !== "course")).toBe(true);
+    const venue = result.courses.find((c) => c.course.slug === "outtabounds-simulators")!;
+    expect(venue.teeTimes).toMatchObject([
+      { holes: 0, bays: ["s2", "s3", "s4"], priceCents: 2500, spotsAvailable: 6 },
+      { holes: 0, bays: ["s2"] },
+    ]);
+    expect(result.totalTeeTimes).toBe(2);
+  });
+
+  it("only list bays free for the whole session", async () => {
+    const result = await searchTeeTimes(handle.db, { ...base, play: "bays", minutes: 120 }, now);
+    const venue = result.courses.find((c) => c.course.slug === "outtabounds-simulators")!;
+    expect(venue.teeTimes.map((t) => t.bays)).toEqual([["s2", "s3"]]);
+  });
+
+  it("can be listed beside golf courses", async () => {
+    const result = await nextTeeTimes(handle.db, now, {
+      courseSlugs: ["collier-park", "outtabounds-simulators"],
+      play: "all",
+    });
+    expect(result.map((c) => c.teeTimes.length).sort()).toEqual([1, 2]);
+  });
+});
+
 describe("listSearchableCourses", () => {
   it("lists only switched on courses", async () => {
     const slugs = (await listSearchableCourses(handle.db)).map((c) => c.slug);
-    expect(slugs).toHaveLength(26);
+    expect(slugs).toHaveLength(31);
     expect(slugs).not.toContain("wembley");
   });
 });

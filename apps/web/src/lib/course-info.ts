@@ -4,7 +4,18 @@
  */
 
 /** What an illustration shows. It's a feel for the place, not a picture of the course. */
-export type Scenery = "parkland" | "bush" | "coast" | "river" | "lakes" | "red-earth" | "red-coast";
+export type Scenery =
+  | "parkland"
+  | "bush"
+  | "coast"
+  | "river"
+  | "lakes"
+  | "red-earth"
+  | "red-coast"
+  /** Indoors: a golf scene on a simulator screen. */
+  | "simulator"
+  /** A driving range: hitting bays and distance flags. */
+  | "range";
 
 const SCENERY: Record<string, Scenery> = {
   hamersley: "parkland",
@@ -33,6 +44,11 @@ const SCENERY: Record<string, Scenery> = {
   geraldton: "coast",
   karratha: "red-earth",
   broome: "red-coast",
+  "outtabounds-simulators": "simulator",
+  "outtabounds-range": "range",
+  "albatross-lounge": "simulator",
+  "elevate-golf-lounge": "simulator",
+  "lights-out-golf": "simulator",
 };
 
 export function courseScenery(slug: string): Scenery {

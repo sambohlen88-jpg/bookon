@@ -301,6 +301,119 @@ function miclubClub(c: MiClubSeed): ClubSeed {
 }
 
 /**
+ * Golf simulators and driving ranges on Your Golf Booking, approved by the
+ * owner on 18 October 2026 (docs/platforms.md). Only venues whose live
+ * free bays can be read. Bays open weeks ahead; we read 14 days, the longest search.
+ */
+function ygbVenue(v: {
+  slug: string;
+  name: string;
+  suburb: string;
+  kind: "simulator" | "range";
+  venue: string;
+  group: string;
+  bays?: string[];
+  website: string;
+  notes: string;
+}): CourseSeed {
+  return {
+    name: v.name,
+    slug: v.slug,
+    suburb: v.suburb,
+    holes: 0,
+    kind: v.kind,
+    platform: "ygb",
+    platformConfig: { venue: v.venue, group: v.group, ...(v.bays ? { bays: v.bays } : {}) },
+    websiteUrl: v.website,
+    bookingUrl: `https://yourgolfbooking.com/venues/${v.venue}/booking/${v.group}`,
+    enabled: true,
+    bookingWindowDays: 14,
+    notes: v.notes,
+  };
+}
+
+const YGB_VENUES: ClubSeed[] = [
+  {
+    name: "OuttaBounds",
+    slug: "outtabounds",
+    courses: [
+      ygbVenue({
+        slug: "outtabounds-simulators",
+        name: "OuttaBounds Simulators",
+        suburb: "North Lake",
+        kind: "simulator",
+        venue: "outta-bounds",
+        group: "simulators",
+        website: "https://www.outtabounds.com.au",
+        notes: "9 simulator bays, up to 6 players. Bays open 4 weeks ahead.",
+      }),
+      ygbVenue({
+        slug: "outtabounds-range",
+        name: "OuttaBounds Driving Range",
+        suburb: "North Lake",
+        kind: "range",
+        venue: "outta-bounds",
+        group: "bays",
+        website: "https://www.outtabounds.com.au",
+        notes:
+          "18 range bays, up to 6 players. Priced per player, so no price is shown. Bays open 4 weeks ahead.",
+      }),
+    ],
+  },
+  {
+    name: "Albatross Lounge",
+    slug: "albatross-lounge",
+    courses: [
+      ygbVenue({
+        slug: "albatross-lounge",
+        name: "Albatross Lounge",
+        suburb: "Mount Pleasant",
+        kind: "simulator",
+        venue: "albatross-lounge",
+        group: "bays",
+        bays: ["1", "2"],
+        website: "https://www.albatrosslounge.au",
+        notes:
+          "2 simulator bays (the booking group also has darts and pool, which we leave out). Closed Mondays. Bays open 3 weeks ahead.",
+      }),
+    ],
+  },
+  {
+    name: "Elevate Golf Lounge",
+    slug: "elevate-golf-lounge",
+    courses: [
+      ygbVenue({
+        slug: "elevate-golf-lounge",
+        name: "Elevate Golf Lounge",
+        suburb: "Leederville",
+        kind: "simulator",
+        venue: "elevate-golf",
+        group: "bays",
+        website: "https://elevategolflounge.com.au",
+        notes: "4 Trackman simulator bays. Bays open 2 weeks ahead.",
+      }),
+    ],
+  },
+  {
+    name: "Lights Out Golf",
+    slug: "lights-out-golf",
+    courses: [
+      ygbVenue({
+        slug: "lights-out-golf",
+        name: "Lights Out Golf",
+        suburb: "Wangara",
+        kind: "simulator",
+        venue: "lights-out-golf",
+        group: "bays",
+        website: "https://www.lightsoutgolf.com.au",
+        notes:
+          "4 simulator bays, up to 4 players. The public rate runs 7 am to 9 pm. Bays open 6 weeks ahead.",
+      }),
+    ],
+  },
+];
+
+/**
  * Courses chosen by the owner on 17 October 2026 (five launch courses, then Fremantle
  * Public, Whaleback and Point Walter). Sources are in
  * docs/platforms.md. Coordinates are left empty until verified.
@@ -466,6 +579,7 @@ export const SEED_CLUBS: ClubSeed[] = [
       },
     ],
   },
+  ...YGB_VENUES,
 ];
 
 /** The owner's areas (18 October 2026). Admins can change a course's area afterwards. */
@@ -499,6 +613,11 @@ export const SEED_AREAS: Record<string, AreaId> = {
   geraldton: "regional",
   karratha: "regional",
   broome: "regional",
+  "outtabounds-simulators": "south",
+  "outtabounds-range": "south",
+  "albatross-lounge": "south",
+  "elevate-golf-lounge": "west",
+  "lights-out-golf": "north",
 };
 
 /** Insert or update the launch clubs and courses. Safe to run repeatedly. */

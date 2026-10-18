@@ -17,6 +17,11 @@ export const COURSE_LOCATIONS: Record<string, CourseLocation> = {
     longitude: 117.91944,
     source: "https://www.openstreetmap.org/way/129938365",
   },
+  "albatross-lounge": {
+    latitude: -32.01399,
+    longitude: 115.84741,
+    source: "https://www.openstreetmap.org/way/413890878",
+  },
   broome: {
     latitude: -17.97762,
     longitude: 122.21869,
@@ -46,6 +51,11 @@ export const COURSE_LOCATIONS: Record<string, CourseLocation> = {
     latitude: -33.62584,
     longitude: 115.11106,
     source: "https://www.openstreetmap.org/relation/3357583",
+  },
+  "elevate-golf-lounge": {
+    latitude: -31.93218,
+    longitude: 115.84111,
+    source: "https://www.openstreetmap.org/node/4920114973",
   },
   "fremantle-public": {
     latitude: -32.05268,
@@ -92,6 +102,11 @@ export const COURSE_LOCATIONS: Record<string, CourseLocation> = {
     longitude: 115.77961,
     source: "https://www.openstreetmap.org/way/438496706",
   },
+  "lights-out-golf": {
+    latitude: -31.7877,
+    longitude: 115.81415,
+    source: "https://www.openstreetmap.org/node/10038404391",
+  },
   marangaroo: {
     latitude: -31.82644,
     longitude: 115.83148,
@@ -111,6 +126,16 @@ export const COURSE_LOCATIONS: Record<string, CourseLocation> = {
     latitude: -32.50251,
     longitude: 115.74633,
     source: "https://www.openstreetmap.org/relation/4298420",
+  },
+  "outtabounds-range": {
+    latitude: -32.08122,
+    longitude: 115.84028,
+    source: "https://www.openstreetmap.org/way/663516621",
+  },
+  "outtabounds-simulators": {
+    latitude: -32.08122,
+    longitude: 115.84028,
+    source: "https://www.openstreetmap.org/way/663516621",
   },
   pinjarra: {
     latitude: -32.61553,

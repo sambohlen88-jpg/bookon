@@ -30,7 +30,9 @@ export async function createShareLink(
     now,
     slugs,
     Object.fromEntries(courses.map((c) => [c.slug, c.area])),
+    Object.fromEntries(courses.map((c) => [c.slug, c.kind])),
   );
+  if (form.play === "bays") return { error: "Sharing is for tee times only, for now." };
   if (course) {
     if (!slugs.includes(course)) return { error: "That course isn't on BookOn any more." };
     form.courses = [course];

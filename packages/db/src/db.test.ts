@@ -44,7 +44,8 @@ function teeTime(courseId: string, iso: string, overrides: Partial<TeeTime> = {}
 describe("seed", () => {
   it("creates the courses, with Wembley switched off", async () => {
     const enabled = await listEnabledCourses(handle.db);
-    expect(enabled).toHaveLength(26);
+    // 26 golf courses and 5 simulator or range venues.
+    expect(enabled).toHaveLength(31);
     expect(enabled.map((c) => c.slug)).toEqual(
       expect.arrayContaining(["collier-park", "hamersley", "the-cut"]),
     );
@@ -58,6 +59,13 @@ describe("seed", () => {
       bookingWindowDays: 11,
       platformConfig: { baseUrl: "https://marangaroo.miclub.com.au", bookingResourceId: "3000000" },
     });
+    expect(await findCourseBySlug(handle.db, "albatross-lounge")).toMatchObject({
+      platform: "ygb",
+      kind: "simulator",
+      holes: 0,
+      platformConfig: { venue: "albatross-lounge", group: "bays", bays: ["1", "2"] },
+    });
+    expect(await findCourseBySlug(handle.db, "collier-park")).toMatchObject({ kind: "course" });
     expect(await findCourseBySlug(handle.db, "joondalup-resort")).toMatchObject({
       platformConfig: expect.objectContaining({ bookingResourceId: "3900000" }),
     });
@@ -65,7 +73,7 @@ describe("seed", () => {
 
   it("can run twice without duplicating", async () => {
     await seed(handle.db);
-    expect(await listEnabledCourses(handle.db)).toHaveLength(26);
+    expect(await listEnabledCourses(handle.db)).toHaveLength(31);
   });
 });
 

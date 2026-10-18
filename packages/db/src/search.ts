@@ -1,5 +1,5 @@
-import { and, between, eq, gt, gte, inArray, lte, or } from "drizzle-orm";
-import { addPerthDays, eachPerthDate, perthDate, perthToUtc } from "@bookon/core";
+import { and, arrayContains, between, eq, gt, gte, inArray, lte, ne, or } from "drizzle-orm";
+import { addPerthDays, eachPerthDate, perthDate, perthToUtc, type VenueKind } from "@bookon/core";
 import type { Database } from "./client";
 import { availabilityChecks, availabilitySnapshots, courses } from "./schema";
 
@@ -17,16 +17,35 @@ export interface SearchParams {
   holes: 9 | 18 | null;
   /** Course slugs to include, or null for every searchable course. */
   courseSlugs: string[] | null;
+  /**
+   * Golf courses (the default, so saved alerts never pick up a simulator),
+   * simulator and range bays, or both.
+   */
+  play?: Play;
+  /** Bays only: a session this many minutes long must fit. */
+  minutes?: number | null;
+}
+
+export type Play = "golf" | "bays" | "all";
+
+/** Whether a course of this kind is part of a search for `play`. */
+export function playsAt(play: Play | undefined, kind: VenueKind): boolean {
+  if (play === "all") return true;
+  return play === "bays" ? kind !== "course" : kind === "course";
 }
 
 export interface ResultTeeTime {
   startTime: Date;
   playDate: string;
+  /** 0 for a simulator or range. */
   holes: number;
   layout: string | null;
   spotsAvailable: number;
+  /** For a bay: the cheapest known price for an hour. */
   priceCents: number | null;
   bookingUrl: string;
+  /** Simulators and ranges: the bays free from this time, e.g. ["1", "4"]. */
+  bays?: string[];
 }
 
 /**
@@ -68,6 +87,7 @@ export interface CourseResult {
     slug: string;
     name: string;
     suburb: string;
+    kind: VenueKind;
     bookingUrl: string;
     area: string | null;
     latitude: number | null;
@@ -91,6 +111,7 @@ export interface SearchableCourse {
   slug: string;
   name: string;
   suburb: string;
+  kind: VenueKind;
   /** An AreaId, or null if not given one yet. */
   area: string | null;
   latitude: number | null;
@@ -105,6 +126,7 @@ export async function listSearchableCourses(db: Database): Promise<SearchableCou
       slug: courses.slug,
       name: courses.name,
       suburb: courses.suburb,
+      kind: courses.kind,
       area: courses.area,
       latitude: courses.latitude,
       longitude: courses.longitude,
@@ -126,6 +148,7 @@ const detailColumns = {
   slug: courses.slug,
   name: courses.name,
   suburb: courses.suburb,
+  kind: courses.kind,
   area: courses.area,
   latitude: courses.latitude,
   longitude: courses.longitude,
@@ -159,6 +182,7 @@ export async function searchTeeTimes(
   now: Date,
   staleAfterMs = STALE_AFTER_MS,
 ): Promise<SearchResult> {
+  const play = params.play ?? "golf";
   const courseRows = await db
     .select()
     .from(courses)
@@ -166,6 +190,11 @@ export async function searchTeeTimes(
       and(
         eq(courses.enabled, true),
         params.courseSlugs ? inArray(courses.slug, params.courseSlugs) : undefined,
+        play === "golf"
+          ? eq(courses.kind, "course")
+          : play === "bays"
+            ? ne(courses.kind, "course")
+            : undefined,
       ),
     )
     .orderBy(courses.name);
@@ -195,7 +224,10 @@ export async function searchTeeTimes(
         gt(availabilitySnapshots.startTime, now),
         gte(availabilitySnapshots.spotsAvailable, params.players),
         lte(availabilitySnapshots.minPlayers, params.players),
-        params.holes ? eq(availabilitySnapshots.holes, params.holes) : undefined,
+        params.holes && play === "golf" ? eq(availabilitySnapshots.holes, params.holes) : undefined,
+        params.minutes && play !== "golf"
+          ? arrayContains(availabilitySnapshots.durations, [params.minutes])
+          : undefined,
         // The golfer's time window on each day, so rows outside it never leave the database.
         or(
           ...dates.map((date) =>
@@ -256,17 +288,19 @@ export async function searchTeeTimes(
       }
     }
 
-    const teeTimes = (snapshotsFor.get(course.id) ?? [])
-      .filter((s) => freshDates.has(s.playDate))
-      .map((s) => ({
-        startTime: s.startTime,
-        playDate: s.playDate,
-        holes: s.holes,
-        layout: s.layout,
-        spotsAvailable: s.spotsAvailable,
-        priceCents: s.priceCents,
-        bookingUrl: s.bookingUrl ?? course.bookingUrl,
-      }));
+    const rows = (snapshotsFor.get(course.id) ?? []).filter((s) => freshDates.has(s.playDate));
+    const teeTimes =
+      course.kind === "course"
+        ? rows.map((s) => ({
+            startTime: s.startTime,
+            playDate: s.playDate,
+            holes: s.holes,
+            layout: s.layout,
+            spotsAvailable: s.spotsAvailable,
+            priceCents: s.priceCents,
+            bookingUrl: s.bookingUrl ?? course.bookingUrl,
+          }))
+        : byStartTime(rows, course.bookingUrl);
 
     return {
       course: {
@@ -274,6 +308,7 @@ export async function searchTeeTimes(
         slug: course.slug,
         name: course.name,
         suburb: course.suburb,
+        kind: course.kind,
         bookingUrl: course.bookingUrl,
         area: course.area,
         latitude: course.latitude,
@@ -297,6 +332,40 @@ export async function searchTeeTimes(
 }
 
 /**
+ * A simulator or range lists every free bay at every start. Golfers pick a
+ * time, then any bay, so each start becomes one row listing its free bays,
+ * with the cheapest hourly price among them.
+ */
+function byStartTime(
+  rows: (typeof availabilitySnapshots.$inferSelect)[],
+  bookingUrl: string,
+): ResultTeeTime[] {
+  const starts = new Map<number, ResultTeeTime>();
+  for (const s of rows) {
+    const key = s.startTime.getTime();
+    const start = starts.get(key);
+    if (!start) {
+      starts.set(key, {
+        startTime: s.startTime,
+        playDate: s.playDate,
+        holes: 0,
+        layout: null,
+        spotsAvailable: s.spotsAvailable,
+        priceCents: s.priceCents,
+        bookingUrl: s.bookingUrl ?? bookingUrl,
+        bays: s.bay ? [s.bay] : [],
+      });
+      continue;
+    }
+    if (s.bay) start.bays!.push(s.bay);
+    start.spotsAvailable = Math.max(start.spotsAvailable, s.spotsAvailable);
+    if (s.priceCents !== null && (start.priceCents === null || s.priceCents < start.priceCents))
+      start.priceCents = s.priceCents;
+  }
+  return [...starts.values()];
+}
+
+/**
  * Free times from now on, today and tomorrow (or `days` days), for "Free
  * soon", My courses and course pages. Times starting in the next 15 minutes
  * are left out: there's no time to get there.
@@ -304,7 +373,7 @@ export async function searchTeeTimes(
 export async function nextTeeTimes(
   db: Database,
   now: Date,
-  options: { players?: number; courseSlugs?: string[] | null; days?: number } = {},
+  options: { players?: number; courseSlugs?: string[] | null; days?: number; play?: Play } = {},
 ): Promise<CourseResult[]> {
   const today = perthDate(now);
   const result = await searchTeeTimes(
@@ -317,6 +386,7 @@ export async function nextTeeTimes(
       players: options.players ?? 1,
       holes: null,
       courseSlugs: options.courseSlugs ?? null,
+      play: options.play,
     },
     now,
   );

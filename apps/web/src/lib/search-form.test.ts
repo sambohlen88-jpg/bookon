@@ -25,10 +25,10 @@ describe("defaultForm", () => {
 });
 
 describe("TIME_OPTIONS", () => {
-  it("runs every half hour from 5 am to 8 pm", () => {
+  it("runs every half hour from 5 am to 10 pm, for late simulator sessions", () => {
     expect(TIME_OPTIONS[0]).toBe("05:00");
     expect(TIME_OPTIONS[1]).toBe("05:30");
-    expect(TIME_OPTIONS.at(-1)).toBe("20:00");
+    expect(TIME_OPTIONS.at(-1)).toBe("22:00");
   });
 });
 
@@ -48,12 +48,14 @@ describe("parseSearchForm", () => {
       slugs,
     );
     expect(form).toEqual({
+      play: "golf",
       date: "2026-10-19",
       days: 3,
       from: "06:30",
       to: "11:00",
       players: 4,
       holes: "18",
+      minutes: 60,
       courses: ["hamersley"],
       area: null,
     });
@@ -74,12 +76,14 @@ describe("parseSearchForm", () => {
       slugs,
     );
     expect(form).toEqual({
+      play: "golf",
       date: "2026-10-17",
       days: 1,
       from: "05:00",
       to: "20:00",
       players: 2,
       holes: "any",
+      minutes: 60,
       courses: [],
       area: null,
     });
@@ -127,6 +131,67 @@ describe("searchHref", () => {
     );
     const query = Object.fromEntries(new URL(searchHref(form), "https://x").searchParams);
     expect(parseSearchForm({ ...query, course: ["hamersley"] }, morning, slugs)).toEqual(form);
+  });
+});
+
+describe("sims and ranges", () => {
+  const all = ["collier-park", "hamersley", "lights-out-golf", "outtabounds-range"];
+  const kinds = {
+    "lights-out-golf": "simulator",
+    "outtabounds-range": "range",
+  } as const;
+
+  it("reads a bays search, with up to 6 players and a session length", () => {
+    const form = parseSearchForm(
+      { play: "bays", players: "6", mins: "90", course: ["lights-out-golf", "hamersley"] },
+      morning,
+      all,
+      {},
+      kinds,
+    );
+    expect(form).toMatchObject({
+      play: "bays",
+      players: 6,
+      minutes: 90,
+      to: "22:00",
+      // A golf course can't be part of a bays search.
+      courses: ["lights-out-golf"],
+    });
+    expect(toSearchParams(form, morning)).toMatchObject({
+      play: "bays",
+      minutes: 90,
+      holes: null,
+      courseSlugs: ["lights-out-golf"],
+    });
+    const query = Object.fromEntries(new URL(searchHref(form), "https://x").searchParams);
+    expect(query).toMatchObject({ play: "bays", mins: "90" });
+    expect(query.holes).toBeUndefined();
+    expect(
+      parseSearchForm({ ...query, course: ["lights-out-golf"] }, morning, all, {}, kinds),
+    ).toEqual(form);
+  });
+
+  it("keeps golf searches to golf courses, with at most 4 players", () => {
+    const form = parseSearchForm(
+      { players: "6", mins: "30", course: ["lights-out-golf"] },
+      morning,
+      all,
+      {},
+      kinds,
+    );
+    expect(form).toMatchObject({ play: "golf", players: 2, courses: [] });
+    // No `play` or `minutes`, so saved alerts stay tee time searches.
+    expect(toSearchParams(form, morning)).not.toHaveProperty("play");
+  });
+
+  it("picks only an area's venues for a bays search", () => {
+    const areas = { "collier-park": "south", "outtabounds-range": "south" };
+    const form = parseSearchForm({ play: "bays", area: "south" }, morning, all, areas, kinds);
+    expect(form).toMatchObject({ area: "south", courses: ["outtabounds-range"] });
+  });
+
+  it("falls back to an hour for an odd session length", () => {
+    expect(parseSearchForm({ play: "bays", mins: "45" }, morning, all, {}, kinds).minutes).toBe(60);
   });
 });
 

@@ -7,6 +7,7 @@ describe("course info", () => {
     expect(courseScenery("point-walter")).toBe("river");
     expect(courseScenery("karratha")).toBe("red-earth");
     expect(courseScenery("new-course")).toBe("parkland");
+    expect(courseScenery("lights-out-golf")).toBe("simulator");
   });
 
   it("shortens names for tight spaces", () => {

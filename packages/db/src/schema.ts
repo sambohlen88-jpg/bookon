@@ -30,7 +30,15 @@ import type { SharedCourse } from "./shares";
 
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
 
-export const platformEnum = pgEnum("platform", ["miclub", "quick18", "chronogolf", "manual"]);
+export const platformEnum = pgEnum("platform", [
+  "miclub",
+  "quick18",
+  "chronogolf",
+  "manual",
+  "ygb",
+]);
+/** A golf course (tee times), or a simulator or driving range venue (bays booked by the hour). */
+export const venueKindEnum = pgEnum("venue_kind", ["course", "simulator", "range"]);
 export const checkStatusEnum = pgEnum("check_status", ["ok", "error"]);
 export const contactTypeEnum = pgEnum("contact_type", ["email", "push"]);
 export const alertStatusEnum = pgEnum("alert_status", [
@@ -72,7 +80,9 @@ export const courses = pgTable("courses", {
   area: text("area"),
   latitude: doublePrecision("latitude"),
   longitude: doublePrecision("longitude"),
+  /** 0 for a simulator or range. */
   holes: smallint("holes").notNull(),
+  kind: venueKindEnum("kind").notNull().default("course"),
   platform: platformEnum("platform").notNull(),
   platformConfig: jsonb("platform_config").$type<Record<string, unknown>>().notNull().default({}),
   websiteUrl: text("website_url").notNull(),
@@ -103,6 +113,10 @@ export const availabilitySnapshots = pgTable(
     startTime: timestamp("start_time", { withTimezone: true }).notNull(),
     holes: smallint("holes").notNull(),
     layout: text("layout"),
+    /** The bay at a simulator or range; null for a tee time. */
+    bay: text("bay"),
+    /** Session lengths in minutes that can start then in that bay. */
+    durations: smallint("durations").array(),
     spotsAvailable: smallint("spots_available").notNull(),
     minPlayers: smallint("min_players").notNull().default(1),
     priceCents: integer("price_cents"),

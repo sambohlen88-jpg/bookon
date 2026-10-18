@@ -18,6 +18,17 @@ describe("course illustrations", () => {
     expect(svg).toContain("prefers-color-scheme:dark");
   });
 
+  it("draw a simulator screen for sims, and bays and distance boards for ranges", () => {
+    const sim = courseArtSvg("x", { scenery: "simulator" });
+    expect(sim).toContain("var(--room)");
+    expect(sim).toContain("var(--mat)");
+    expect(sim).toContain("var(--fairway)");
+    expect(courseArtSvg("x", { scenery: "range" })).toContain("var(--board)");
+    expect(courseArtSvg("x", { scenery: "simulator", wide: true })).toContain(
+      'viewBox="0 0 1200 225"',
+    );
+  });
+
   it("have a wide version for banners", () => {
     expect(courseArtSvg("x", { wide: true })).toContain('viewBox="0 0 1200 225"');
     expect(courseArtUrl("the-cut", true)).toMatch(/^\/art\/the-cut-wide\.svg\?v=\d+$/);

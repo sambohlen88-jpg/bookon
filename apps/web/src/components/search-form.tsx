@@ -2,14 +2,18 @@ import { AREAS, addPerthDays, perthDate } from "@bookon/core";
 import type { SearchableCourse } from "@bookon/db";
 import {
   DAY_OPTIONS,
+  LATEST_BAY_TIME,
+  LATEST_TIME,
   MAX_DAYS_AHEAD,
+  SESSION_OPTIONS,
   TIME_OPTIONS,
   formatFormTime,
+  kindPlays,
   quickDays,
   type Near,
   type SearchForm as SearchFormValues,
 } from "@/lib/search-form";
-import { NearMe, QuickDays } from "@/components/search-extras";
+import { NearMe, PlaySwitch, QuickDays } from "@/components/search-extras";
 
 const fieldLabel = "block text-sm font-medium mb-1.5";
 const control =
@@ -44,8 +48,17 @@ export function SearchForm({
   const today = perthDate(now);
   const areas = AREAS.filter((a) => courses.some((c) => c.area === a.id));
   const located = courses.some((c) => c.latitude !== null);
+  const golf = courses.filter((c) => kindPlays(c.kind, "golf"));
+  const bays = courses.filter((c) => kindPlays(c.kind, "bays"));
   return (
-    <form action="/search" method="get" className="flex flex-col gap-5">
+    <form action="/search" method="get" className="search-form flex flex-col gap-5">
+      {bays.length > 0 && (
+        <PlaySwitch
+          initial={values.play}
+          toId={id("to")}
+          latest={{ golf: LATEST_TIME, bays: LATEST_BAY_TIME }}
+        />
+      )}
       <QuickDays inputId={id("date")} days={quickDays(now)} initial={values.date} />
       <div className="-mt-2 grid grid-cols-2 gap-3">
         <div>
@@ -108,19 +121,35 @@ export function SearchForm({
         legend="Players"
         name="players"
         value={String(values.players)}
-        options={["1", "2", "3", "4"].map((v) => ({ value: v, label: v }))}
+        options={["1", "2", "3", "4", "5", "6"].map((v) => ({
+          value: v,
+          label: v,
+          // Bays take up to 6; a tee time takes 4.
+          className: Number(v) > 4 ? "play-bays" : undefined,
+        }))}
       />
 
       <Choice
         legend="Holes"
         name="holes"
         value={values.holes}
+        className="play-golf"
         options={[
           { value: "any", label: "Either" },
           { value: "9", label: "9" },
           { value: "18", label: "18" },
         ]}
       />
+
+      {bays.length > 0 && (
+        <Choice
+          legend="How long"
+          name="mins"
+          value={String(values.minutes)}
+          className="play-bays"
+          options={SESSION_OPTIONS.map((o) => ({ value: String(o.value), label: o.label }))}
+        />
+      )}
 
       {areas.length > 1 && (
         // min-w-0: fieldsets don't shrink by default, which would let the row widen the page.
@@ -163,45 +192,59 @@ export function SearchForm({
         </label>
       )}
 
-      {courses.length > 1 && (
-        <details className="rounded-lg border border-border">
-          <summary className="min-h-12 cursor-pointer px-3 py-3 text-sm font-medium">
-            Courses:{" "}
-            {values.area
-              ? `all in ${AREAS.find((a) => a.id === values.area)?.name}`
-              : values.courses.length === 0
-                ? "all"
-                : `${values.courses.length} chosen`}
-          </summary>
-          <fieldset className="flex flex-col border-t border-border px-3 py-2 lg:max-h-80 lg:overflow-y-auto">
-            <legend className="sr-only">Courses to search</legend>
-            {courses.map((course) => (
-              <label key={course.slug} className="flex min-h-11 items-center gap-3 text-base">
-                <input
-                  type="checkbox"
-                  name="course"
-                  value={course.slug}
-                  defaultChecked={!values.area && values.courses.includes(course.slug)}
-                  className="size-5 accent-brand"
-                />
-                <span>
-                  {course.name} <span className="text-muted">· {course.suburb}</span>
-                </span>
-              </label>
-            ))}
-            <p className="py-2 text-sm text-muted">
-              Ticked courses are searched instead of an area. Leave all unticked to search{" "}
-              {areas.length > 1 ? "the area you picked" : "every course"}.
-            </p>
-          </fieldset>
-        </details>
-      )}
+      {(
+        [
+          { play: "golf", list: golf, noun: "Courses" },
+          { play: "bays", list: bays, noun: "Venues" },
+        ] as const
+      ).map(({ play, list, noun }) => {
+        if (list.length < 2) return null;
+        const mine = values.play === play;
+        return (
+          <details key={play} className={`play-${play} rounded-lg border border-border`}>
+            <summary className="min-h-12 cursor-pointer px-3 py-3 text-sm font-medium">
+              {noun}:{" "}
+              {mine && values.area
+                ? `all in ${AREAS.find((a) => a.id === values.area)?.name}`
+                : !mine || values.courses.length === 0
+                  ? "all"
+                  : `${values.courses.length} chosen`}
+            </summary>
+            <fieldset className="flex flex-col border-t border-border px-3 py-2 lg:max-h-80 lg:overflow-y-auto">
+              <legend className="sr-only">{noun} to search</legend>
+              {list.map((course) => (
+                <label key={course.slug} className="flex min-h-11 items-center gap-3 text-base">
+                  <input
+                    type="checkbox"
+                    name="course"
+                    value={course.slug}
+                    defaultChecked={mine && !values.area && values.courses.includes(course.slug)}
+                    className="size-5 accent-brand"
+                  />
+                  <span>
+                    {course.name} <span className="text-muted">· {course.suburb}</span>
+                  </span>
+                </label>
+              ))}
+              <p className="py-2 text-sm text-muted">
+                Ticked {noun.toLowerCase()} are searched instead of an area. Leave all unticked to
+                search{" "}
+                {areas.length > 1
+                  ? "the area you picked"
+                  : `every ${noun === "Courses" ? "course" : "venue"}`}
+                .
+              </p>
+            </fieldset>
+          </details>
+        );
+      })}
 
       <button
         type="submit"
         className="min-h-12 rounded-lg bg-brand px-4 text-base font-semibold text-brand-foreground"
       >
-        Find tee times
+        <span className="play-golf">Find tee times</span>
+        <span className="play-bays">Find a bay</span>
       </button>
     </form>
   );
@@ -213,18 +256,20 @@ function Choice({
   name,
   value,
   options,
+  className,
 }: {
   legend: string;
   name: string;
   value: string;
-  options: { value: string; label: string }[];
+  options: { value: string; label: string; className?: string }[];
+  className?: string;
 }) {
   return (
-    <fieldset>
+    <fieldset className={className}>
       <legend className={fieldLabel}>{legend}</legend>
       <div className="flex gap-2">
         {options.map((o) => (
-          <label key={o.value} className="flex-1">
+          <label key={o.value} className={`flex-1 ${o.className ?? ""}`}>
             <input
               type="radio"
               name={name}

@@ -115,7 +115,9 @@ export function CourseResults({
       {teeTimes.length === 0 && notices.length === 0 && (
         <p className="mt-3 text-sm text-muted">
           {result.fullyBooked
-            ? "Fully booked: the club has no public times free."
+            ? course.kind === "course"
+              ? "Fully booked: the club has no public times free."
+              : "Fully booked: no bays free."
             : "No times here match your search."}
         </p>
       )}
@@ -237,6 +239,7 @@ function TeeTimeRow({
   course: string;
   href: string;
 }) {
+  if (teeTime.bays) return <BayRow start={teeTime} venue={course} href={href} />;
   const time = formatPerthTime(teeTime.startTime);
   const spots = `${teeTime.spotsAvailable} ${teeTime.spotsAvailable === 1 ? "spot" : "spots"}`;
   return (
@@ -257,6 +260,37 @@ function TeeTimeRow({
         target="_blank"
         rel="noopener"
         aria-label={`Book ${time} at ${course} (opens the club's site)`}
+        className="tee-book"
+      >
+        Book
+      </a>
+    </li>
+  );
+}
+
+/** A start time at a simulator or range: how many bays are free, and the price for an hour. */
+function BayRow({ start, venue, href }: { start: ResultTeeTime; venue: string; href: string }) {
+  const time = formatPerthTime(start.startTime);
+  const count = start.bays!.length;
+  return (
+    <li className="tee-row">
+      <span className="tee-time">{time}</span>
+      <span className="tee-info">
+        <span>
+          {count} {count === 1 ? "bay" : "bays"} free
+        </span>
+        <span className="text-muted">
+          Up to {start.spotsAvailable} players ·{" "}
+          {start.priceCents === null
+            ? "Price at venue"
+            : `${formatPrice(start.priceCents)} an hour`}
+        </span>
+      </span>
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener"
+        aria-label={`Book a bay at ${time} at ${venue} (opens the venue's site)`}
         className="tee-book"
       >
         Book
@@ -347,10 +381,13 @@ export function NoMatchList({
   now,
   others,
   clubHref,
+  noun = "course",
 }: {
   results: CourseResult[];
   now: Date;
   others: boolean;
+  /** "course", or "venue" for simulators and ranges. */
+  noun?: "course" | "venue";
   /** The club's own booking page (tracked), for courses we couldn't check. */
   clubHref: (result: CourseResult) => string;
 }) {
@@ -368,11 +405,11 @@ export function NoMatchList({
     <details className="rounded-xl border border-border bg-background">
       <summary className="flex min-h-12 cursor-pointer items-center px-4 py-3 text-sm font-medium">
         {unchecked === results.length ? (
-          `Couldn't check ${results.length} ${results.length === 1 ? "course" : "courses"}`
+          `Couldn't check ${results.length} ${results.length === 1 ? noun : `${noun}s`}`
         ) : (
           <span>
             No times at {results.length} {others ? "other " : ""}
-            {results.length === 1 ? "course" : "courses"}
+            {results.length === 1 ? noun : `${noun}s`}
             {breakdown.length > 1 && (
               <span className="block font-normal text-muted">{breakdown.join(" · ")}</span>
             )}

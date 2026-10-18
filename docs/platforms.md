@@ -291,7 +291,11 @@ The owner asked for Perth's golf simulators and bookable driving ranges. Venues 
   - Other addresses (bay groups, ranges, bay options) need a login, and aren't used.
 - **How BookOn would read it:** each venue's group page about once a day (bays, hours, prices), and the public bookings once per check per day. Free bays for each start time come from the bookable bays, minus those booked, inside opening hours. The first live checks are compared with what the booking page shows.
 
-### Big Swing Golf (bigswinggolf.com.au): recommended
+- **Owner approval (18 October 2026):** "Yes read your golf bookings. Ignore any without live times. Ignore big swing for now." BookOn reads OuttaBounds (Simulators, and Driving Range bays), Albatross Lounge (sim bays 1 and 2 only, not darts or pool), Elevate Golf Lounge and Lights Out Golf, through `PoliteHttpClient`, as `BookOnBot` (and obeying `Claude-User` rules when Claude runs it). Each check reads the group page once and the public bookings once per open day, up to 14 days ahead.
+- **First live check (18 October 2026):** Lights Out Golf for Monday 19 October matched its booking page exactly, bay by bay (every taken half hour on all four bays). An earlier check of OuttaBounds' simulators at 9 am Monday also matched (SIM 1 and SIM 9 taken).
+- **How it's read, in detail:** see `packages/adapters/src/ygb/index.ts`. Only options a member of the public can book count (not admin-only, hidden, perk or member options, coaching, darts or pool). Prices are shown only when the price for the bay doesn't depend on the number of players.
+
+### Big Swing Golf (bigswinggolf.com.au): recommended, not approved yet
 
 - **Venues:** Booragoon (Unit 2/80 Norma Rd) and Mandurah. Both booking pages exist (`/booking/booragoon`, `/booking/mandurah`).
 - **robots.txt:** `User-agent: *` with nothing disallowed.

@@ -41,8 +41,9 @@ import { pushPublicKey } from "@/lib/push";
 import { SESSION_COOKIE, validSessionId } from "@/lib/session";
 import {
   EARLIEST_TIME,
-  LATEST_TIME,
+  SESSION_OPTIONS,
   formatFormTime,
+  latestTime,
   parseNear,
   parseSearchForm,
   searchHref,
@@ -71,7 +72,9 @@ export default async function SearchPage({
     now,
     courses.map((c) => c.slug),
     Object.fromEntries(courses.map((c) => [c.slug, c.area])),
+    Object.fromEntries(courses.map((c) => [c.slug, c.kind])),
   );
+  const bays = parsed.play === "bays";
   // "My courses only" swaps in the golfer's favourites.
   const mine = query.mine === "1" && favourites.length > 0;
   const form = mine ? { ...parsed, courses: favourites.map((c) => c.slug), area: null } : parsed;
@@ -118,8 +121,10 @@ export default async function SearchPage({
     db,
     result.courses.map((c) => c.course.id),
   );
+  const kinds = new Map(courses.map((c) => [c.id, c.kind]));
   const weatherFor = (courseId: string): Map<string, WeatherSummary> => {
-    const hours = forecasts.get(courseId);
+    // Simulators are indoors.
+    const hours = kinds.get(courseId) === "simulator" ? undefined : forecasts.get(courseId);
     const days = new Map<string, WeatherSummary>();
     if (!hours) return days;
     for (let d = params.dateFrom; d <= params.dateTo; d = addPerthDays(d, 1)) {
@@ -132,7 +137,16 @@ export default async function SearchPage({
     }
     return days;
   };
-  await recordSearch(db, params, result, now);
+  await recordSearch(
+    db,
+    params,
+    result,
+    now,
+    // A bays search across every venue isn't a search of every golf course.
+    bays && !params.courseSlugs
+      ? courses.filter((c) => c.kind !== "course").map((c) => c.id)
+      : null,
+  );
   const multiDay = params.dateFrom !== params.dateTo;
   const withTimes = result.courses.filter((c) => c.teeTimes.length > 0).length;
   // A handful of courses each get a card, so their notices show. Beyond that, courses with
@@ -202,10 +216,14 @@ export default async function SearchPage({
               {nothingChecked
                 ? "We can't show times right now"
                 : result.totalTeeTimes === 0
-                  ? "No tee times match"
-                  : `${result.totalTeeTimes.toLocaleString("en-AU")} tee ${result.totalTeeTimes === 1 ? "time" : "times"} at ${withTimes} ${withTimes === 1 ? "course" : "courses"}`}
+                  ? bays
+                    ? "No bays free"
+                    : "No tee times match"
+                  : bays
+                    ? `${result.totalTeeTimes.toLocaleString("en-AU")} start ${result.totalTeeTimes === 1 ? "time" : "times"} at ${withTimes} ${withTimes === 1 ? "venue" : "venues"}`
+                    : `${result.totalTeeTimes.toLocaleString("en-AU")} tee ${result.totalTeeTimes === 1 ? "time" : "times"} at ${withTimes} ${withTimes === 1 ? "course" : "courses"}`}
             </h1>
-            {result.totalTeeTimes > 0 && <ShareButton query={here} />}
+            {result.totalTeeTimes > 0 && !bays && <ShareButton query={here} />}
           </div>
 
           {alertStatus === "created" && (
@@ -256,7 +274,7 @@ export default async function SearchPage({
             </div>
           )}
           {result.totalTeeTimes === 0 && !nothingChecked && <EmptyState form={form} />}
-          {result.totalTeeTimes === 0 && alertStatus !== "created" && (
+          {result.totalTeeTimes === 0 && alertStatus !== "created" && !bays && (
             <AlertCard here={here} signedIn={Boolean(user)} empty />
           )}
 
@@ -275,7 +293,7 @@ export default async function SearchPage({
                 }
                 courseHref={searchHref({ ...form, courses: [r.course.slug], area: null })}
                 photoId={photos.get(r.course.id)}
-                shareQuery={here}
+                shareQuery={bays ? undefined : here}
                 distanceKm={distances.get(r.course.id) ?? null}
                 weather={weatherFor(r.course.id)}
                 bookHref={(t) =>
@@ -291,6 +309,7 @@ export default async function SearchPage({
             {folded.length > 0 && (
               <NoMatchList
                 results={folded}
+                noun={bays ? "venue" : "course"}
                 now={now}
                 others={cards.length > 0}
                 clubHref={(r) =>
@@ -305,15 +324,16 @@ export default async function SearchPage({
             )}
           </div>
 
-          {result.totalTeeTimes > 0 && alertStatus !== "created" && (
+          {result.totalTeeTimes > 0 && alertStatus !== "created" && !bays && (
             <div className="mt-6">
               <AlertCard here={here} signedIn={Boolean(user)} />
             </div>
           )}
 
           <p className="mt-8 pb-16 text-xs text-muted">
-            Times and prices come from each club&apos;s booking page and can change. You book and
-            pay with the club.
+            {bays
+              ? "Free bays and prices come from each venue's booking page and can change. You book and pay with the venue."
+              : "Times and prices come from each club's booking page and can change. You book and pay with the club."}
             {forecasts.size > 0 && (
               <>
                 {" "}
@@ -343,30 +363,42 @@ function summarise(form: SearchFormValues, dateTo: string): string {
       ? formatPerthDay(form.date)
       : `${formatPerthDay(form.date)} to ${formatPerthDay(dateTo)}`;
   const time =
-    form.from === EARLIEST_TIME && form.to === LATEST_TIME
+    form.from === EARLIEST_TIME && form.to === latestTime(form.play)
       ? "any time"
       : `${formatFormTime(form.from)} to ${formatFormTime(form.to)}`;
   const players = `${form.players} ${form.players === 1 ? "player" : "players"}`;
-  const holes = form.holes === "any" ? "9 or 18 holes" : `${form.holes} holes`;
+  const what =
+    form.play === "bays"
+      ? `${SESSION_OPTIONS.find((o) => o.value === form.minutes)?.label} bay`
+      : form.holes === "any"
+        ? "9 or 18 holes"
+        : `${form.holes} holes`;
   const where = form.area ? ` · ${areaName(form.area)}` : "";
-  return `${days} · ${time} · ${players} · ${holes}${where}`;
+  return `${days} · ${time} · ${players} · ${what}${where}`;
 }
 
 function EmptyState({ form }: { form: SearchFormValues }) {
   const widen = [
-    form.from !== EARLIEST_TIME || form.to !== LATEST_TIME
+    form.from !== EARLIEST_TIME || form.to !== latestTime(form.play)
       ? {
           label: "Any time of day",
-          href: searchHref({ ...form, from: EARLIEST_TIME, to: LATEST_TIME }),
+          href: searchHref({ ...form, from: EARLIEST_TIME, to: latestTime(form.play) }),
         }
       : null,
     form.days < 7 ? { label: "The next 7 days", href: searchHref({ ...form, days: 7 }) } : null,
-    form.holes !== "any"
+    form.play === "golf" && form.holes !== "any"
       ? { label: "9 or 18 holes", href: searchHref({ ...form, holes: "any" }) }
+      : null,
+    form.play === "bays" && form.minutes > 60
+      ? { label: "1 hour", href: searchHref({ ...form, minutes: 60 }) }
       : null,
     form.courses.length > 0
       ? {
-          label: form.area ? `Anywhere, not just ${areaName(form.area)}` : "All courses",
+          label: form.area
+            ? `Anywhere, not just ${areaName(form.area)}`
+            : form.play === "bays"
+              ? "All venues"
+              : "All courses",
           href: searchHref({ ...form, courses: [], area: null }),
         }
       : null,
@@ -433,7 +465,14 @@ function AlertCard({
 }
 
 /** Log the search for club reports. Skips bots and prefetches, and never breaks the page. */
-async function recordSearch(db: Database, params: SearchParams, result: SearchResult, now: Date) {
+async function recordSearch(
+  db: Database,
+  params: SearchParams,
+  result: SearchResult,
+  now: Date,
+  /** The venues a bays search covered, when it named none. */
+  venueIds: string[] | null,
+) {
   const requestHeaders = await headers();
   const sessionId = validSessionId((await cookies()).get(SESSION_COOKIE)?.value);
   if (!sessionId || isBot(requestHeaders.get("user-agent"))) return;
@@ -445,7 +484,7 @@ async function recordSearch(db: Database, params: SearchParams, result: SearchRe
     await logSearch(db, {
       sessionId,
       params,
-      courseIds: await courseIdsForSlugs(db, params.courseSlugs ?? []),
+      courseIds: venueIds ?? (await courseIdsForSlugs(db, params.courseSlugs ?? [])),
       resultCount: result.totalTeeTimes,
       shownCourseIds: result.courses.filter((c) => c.teeTimes.length > 0).map((c) => c.course.id),
       now,

@@ -21,6 +21,9 @@ Saved public booking pages used by the adapter tests, so tests never hit live cl
 | `quick18/live-hamersley-2026-10-17.html` | Hamersley search matrix, evening with nothing left, raw | 17 Oct 2026 |
 | `quick18/live-hamersley-2026-10-19.html` | Hamersley search matrix, raw | 17 Oct 2026 |
 
+| `ygb/<venue>-<group>-2026-10-18.html` | Your Golf Booking group pages: OuttaBounds simulators and range bays, Albatross Lounge, Elevate Golf Lounge, Lights Out Golf, raw | 18 Oct 2026 |
+| `ygb/<venue>-bookings-2026-10-19.json` | The same venues' public bookings for Monday 19 October (bay, start and end only), raw | 18 Oct 2026 |
+
 Source of the 2025 files: the test data of [TeeTimeFinder](https://github.com/Ay1tsMe/TeeTimeFinder) by Adam Wyatt, MIT licence.
 
 The 2025 files were saved from a browser, after scripts ran. The `live-*` files are raw server responses recorded by `pnpm --filter @bookon/worker record` (see `apps/worker/README.md`). Record new ones the same way when a club's page changes.

@@ -1,6 +1,6 @@
 # Launch checklist
 
-Things that must be done before BookOn launches publicly (SPEC section 11, Milestone 11). Claude Code is asked, in `CLAUDE.md`, to raise these with the owner before any launch work.
+Things that must be done before BookOn launches publicly (SPEC section 11, Milestone 12). Claude Code is asked, in `CLAUDE.md`, to raise these with the owner before any launch work.
 
 ## Platform access (owner asked to be reminded)
 
@@ -9,6 +9,8 @@ Data is read from public booking pages with the owner's approval, ahead of forma
 - [ ] **MiClub** (Perth, owned by Northstar). Ask for read access to the live feed that powers TeeNet. Covers Collier Park, Fremantle Public, Whaleback, Wembley and other MiClub courses.
 - [ ] **Sagacity Golf** (Quick18). Ask for API or feed access. Covers Hamersley.
 - [ ] **Lightspeed Golf** (Chronogolf), only if a BookOn course turns out to use it. Apply for the [Partner API](https://partner-api.docs.chronogolf.com/). The Chronogolf pages for Marangaroo, The Cut and Point Walter now return 404, so they may be on MiClub instead.
+- [ ] **Your Golf Booking** (yourgolfbooking.com, linked with TrackMan). Ask for permission or a feed for the golf sims and ranges: OuttaBounds, Albatross Lounge, Elevate Golf Lounge and Lights Out Golf. The venues themselves could also say yes.
+- [ ] **X-Golf** (six WA venues). Its robots.txt blocks the booking pages, so BookOn doesn't read them. If wanted, ask X-Golf for a feed or permission.
 - [ ] **Wembley** (Town of Cambridge). Its timesheets are behind a CAPTCHA; it stays switched off until the club gives permission or a feed.
 
 ## Other data sources (Milestone 10)

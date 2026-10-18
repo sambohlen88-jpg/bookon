@@ -41,7 +41,14 @@ import { getDb } from "@/lib/db";
 import { PROBLEM_LABEL } from "@/lib/check-problems";
 import { shortCourseName } from "@/lib/course-info";
 import { RATE_CATEGORIES } from "@/lib/rate-labels";
-import { EARLIEST_TIME, LATEST_TIME, searchHref } from "@/lib/search-form";
+import {
+  DEFAULT_SESSION,
+  EARLIEST_TIME,
+  kindPlays,
+  latestTime,
+  searchHref,
+  type PlayChoice,
+} from "@/lib/search-form";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +62,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const course = await courseDetails(getDb(), (await params).slug);
   if (!course) return { title: "Course not found · BookOn" };
+  if (course.kind !== "course")
+    return {
+      title: `${course.name} free bays · BookOn`,
+      description: `Free ${KIND_NAME[course.kind].toLowerCase()} bays at ${course.name}, ${course.suburb}, for the next ${DAYS_SHOWN} days. Book with the venue.`,
+    };
   return {
     title: `${course.name} tee times · BookOn`,
     description: `Free tee times at ${course.name}, ${course.suburb}, for the next ${DAYS_SHOWN} days. Book with the club.`,
@@ -67,10 +79,19 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
   if (!course) notFound();
   const now = new Date();
   const today = perthDate(now);
+  // A golf simulator or driving range: bays booked by the hour rather than tee times.
+  const venue = course.kind !== "course";
+  const play: PlayChoice = venue ? "bays" : "golf";
   // One after another: the local database takes one query at a time.
   const days = await upcomingDays(db, course, now);
   const photoId = (await approvedCoursePhotos(db)).get(course.id) ?? null;
-  const next = (await nextTeeTimes(db, now, { players: 2, courseSlugs: [course.slug] }))[0];
+  const next = (
+    await nextTeeTimes(db, now, {
+      players: 2,
+      courseSlugs: [course.slug],
+      play: venue ? "bays" : "golf",
+    })
+  )[0];
   const { profile, rates } = await coursePublicInfo(db, course.id, today);
   const forecast = await forecastFor(db, course.id);
   const nearby = nearbyCourses(course, await listCourseDetails(db));
@@ -78,12 +99,14 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
   const starred = user ? (await listFavourites(db, user.id)).some((f) => f.id === course.id) : null;
 
   const form = (date: string, extra: { days?: number } = {}) => ({
+    play,
     date,
     days: extra.days ?? 1,
     from: EARLIEST_TIME,
-    to: LATEST_TIME,
+    to: latestTime(play),
     players: 2,
     holes: "any" as const,
+    minutes: DEFAULT_SESSION,
     courses: [course.slug],
     area: null,
   });
@@ -105,8 +128,9 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
         ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${course.name}, ${address}`)}`
         : null;
   const facilities = profile.extras?.facilities ?? [];
+  // Simulators are indoors, so no weather.
   const dayWeather = (date: string) =>
-    forecast
+    forecast && course.kind !== "simulator"
       ? summariseWeather(forecast.hours, perthToUtc(date, "06:00"), perthToUtc(date, "18:00"))
       : null;
   const upcoming = (next?.teeTimes ?? []).slice(0, NEXT_SHOWN);
@@ -120,7 +144,7 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
             "@context": "https://schema.org",
-            "@type": "GolfCourse",
+            "@type": venue ? "SportsActivityLocation" : "GolfCourse",
             name: course.name,
             address: {
               "@type": "PostalAddress",
@@ -153,11 +177,14 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
               <div>
                 <h1 className="text-3xl font-bold tracking-tight md:text-4xl">{course.name}</h1>
                 <p className="mt-2 text-muted md:text-lg">
-                  {course.suburb} · {areaName(course.area)} · {course.holes} holes
+                  {course.suburb} · {areaName(course.area)} ·{" "}
+                  {venue ? KIND_NAME[course.kind] : `${course.holes} holes`}
                 </p>
               </div>
               <div className="mt-1 flex items-center gap-1">
-                <ShareButton query={weekSearch} course={course.slug} courseName={course.name} />
+                {!venue && (
+                  <ShareButton query={weekSearch} course={course.slug} courseName={course.name} />
+                )}
                 <FavouriteStar
                   courseId={course.id}
                   name={course.name}
@@ -173,12 +200,16 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
 
             <section aria-labelledby="next" className="mt-8">
               <h2 id="next" className="text-xl font-semibold">
-                Next free times
+                {venue ? "Next free bays" : "Next free times"}
               </h2>
-              <p className="mt-1 text-sm text-muted">Today and tomorrow, for 2 players.</p>
+              <p className="mt-1 text-sm text-muted">
+                Today and tomorrow, for 2 players{venue ? ", for an hour or more" : ""}.
+              </p>
               {upcoming.length === 0 ? (
                 <p className="mt-3 rounded-xl border border-border px-4 py-3 text-sm text-muted">
-                  Nothing free today or tomorrow. Check the week below, or set an alert.
+                  {venue
+                    ? "Nothing free today or tomorrow. Check the week below."
+                    : "Nothing free today or tomorrow. Check the week below, or set an alert."}
                 </p>
               ) : (
                 <ul className="tee-list mt-3 rounded-xl border border-border px-4">
@@ -188,11 +219,15 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
                       <span className="tee-time">{formatPerthTime(t.startTime)}</span>
                       <span className="tee-info">
                         <span>
-                          {t.playDate === today ? "Today" : "Tomorrow"} · {t.holes} holes
+                          {t.playDate === today ? "Today" : "Tomorrow"} ·{" "}
+                          {t.bays
+                            ? `${t.bays.length} ${t.bays.length === 1 ? "bay" : "bays"} free`
+                            : `${t.holes} holes`}
                         </span>
                         <span className="text-muted">
-                          {t.spotsAvailable} {t.spotsAvailable === 1 ? "spot" : "spots"} ·{" "}
-                          {t.priceCents === null ? "Price at club" : formatPrice(t.priceCents)}
+                          {t.bays
+                            ? `Up to ${t.spotsAvailable} players · ${t.priceCents === null ? "Price at venue" : `${formatPrice(t.priceCents)} an hour`}`
+                            : `${t.spotsAvailable} ${t.spotsAvailable === 1 ? "spot" : "spots"} · ${t.priceCents === null ? "Price at club" : formatPrice(t.priceCents)}`}
                         </span>
                       </span>
                       <a
@@ -204,7 +239,7 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
                         })}
                         target="_blank"
                         rel="noopener"
-                        aria-label={`Book ${formatPerthTime(t.startTime)} at ${course.name} (opens the club's site)`}
+                        aria-label={`Book ${formatPerthTime(t.startTime)} at ${course.name} (opens the ${venue ? "venue" : "club"}'s site)`}
                         className="tee-book"
                       >
                         Book
@@ -220,8 +255,9 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
                 This week
               </h2>
               <p className="mt-1 text-sm text-muted">
-                Free times for 2 players, any time of day
-                {forecast ? ", with the daytime weather" : ""}.
+                {venue ? "Start times with a bay free for an hour" : "Free times"} for 2 players,
+                any time of day
+                {forecast && course.kind !== "simulator" ? ", with the daytime weather" : ""}.
               </p>
               <ul className="mt-4 rounded-xl border border-border">
                 {days.map((d) => {
@@ -266,7 +302,7 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
                   );
                 })}
               </ul>
-              {forecast && (
+              {forecast && course.kind !== "simulator" && (
                 <p className="mt-2 text-xs text-muted">
                   Weather from{" "}
                   <a href="https://www.met.no/en" className="underline">
@@ -319,7 +355,7 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
             {nearby.length > 0 && (
               <section aria-labelledby="nearby" className="mt-8">
                 <h2 id="nearby" className="text-xl font-semibold">
-                  Courses nearby
+                  {venue ? "Sims & ranges nearby" : "Courses nearby"}
                 </h2>
                 <ul className="mt-3 overflow-hidden rounded-xl border border-border">
                   {nearby.map((n) => (
@@ -343,12 +379,12 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
           <aside className="mt-8 md:mt-10">
             <div className="flex flex-col gap-3 rounded-xl border border-border p-5 md:sticky md:top-6">
               <Link href={weekSearch} className={primaryButton}>
-                See tee times
+                {venue ? "See free bays" : "See tee times"}
               </Link>
               <a href={clubLink} target="_blank" rel="noopener" className={secondaryButton}>
-                Go to the club&apos;s booking page
+                Go to the {venue ? "venue" : "club"}&apos;s booking page
               </a>
-              {user ? (
+              {venue ? null : user ? (
                 <form action={createAlertFromSearch}>
                   <input type="hidden" name="query" value={weekSearch.replace(/^\/search\?/, "")} />
                   <button type="submit" className={`${secondaryButton} w-full`}>
@@ -388,13 +424,14 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
                   rel="noopener"
                   className="min-h-11 py-3 text-brand"
                 >
-                  Club website
+                  {venue ? "Venue website" : "Club website"}
                 </a>
               </div>
               {address && <p className="text-center text-sm text-muted">{address}</p>}
               <p className="text-sm text-muted">
-                {course.name} releases tee times up to {course.bookingWindowDays} days ahead. You
-                book and pay with the club.
+                {venue
+                  ? `BookOn shows bays up to ${course.bookingWindowDays} days ahead. You book and pay with the venue.`
+                  : `${course.name} releases tee times up to ${course.bookingWindowDays} days ahead. You book and pay with the club.`}
               </p>
             </div>
           </aside>
@@ -446,9 +483,21 @@ function PriceList({ rates }: { rates: ClubRate[] }) {
   );
 }
 
-/** The closest other courses, or others in the same area when locations aren't known yet. */
+const KIND_NAME = {
+  course: "Golf course",
+  simulator: "Golf simulator",
+  range: "Driving range",
+} as const;
+
+/**
+ * The closest other courses, or others in the same area when locations aren't
+ * known yet. Sims and ranges list other sims and ranges.
+ */
 function nearbyCourses(course: CourseDetails, all: CourseDetails[]) {
-  const others = all.filter((c) => c.id !== course.id);
+  const play = kindPlays(course.kind, "bays") ? "bays" : "golf";
+  const others = all.filter(
+    (c) => c.id !== course.id && kindPlays(c.kind, play) && c.slug !== sibling(course.slug),
+  );
   const here =
     course.latitude !== null && course.longitude !== null
       ? { latitude: course.latitude, longitude: course.longitude }
@@ -467,6 +516,15 @@ function nearbyCourses(course: CourseDetails, all: CourseDetails[]) {
     .filter((c) => course.area && c.area === course.area)
     .slice(0, 3)
     .map((c) => ({ ...c, km: null }));
+}
+
+/** OuttaBounds' simulators and range are next door to each other, so not "nearby". */
+function sibling(slug: string): string | null {
+  return slug.endsWith("-simulators")
+    ? slug.replace(/-simulators$/, "-range")
+    : slug.endsWith("-range")
+      ? slug.replace(/-range$/, "-simulators")
+      : null;
 }
 
 const DAY_STATUS = {
@@ -490,16 +548,18 @@ async function upcomingDays(
   now: Date,
 ): Promise<DaySummary[]> {
   const today = perthDate(now);
+  const bays = course.kind !== "course";
   const result = await searchTeeTimes(
     db,
     {
       dateFrom: today,
       dateTo: addPerthDays(today, DAYS_SHOWN - 1),
       timeFrom: EARLIEST_TIME,
-      timeTo: LATEST_TIME,
+      timeTo: latestTime(bays ? "bays" : "golf"),
       players: 2,
       holes: null,
       courseSlugs: [course.slug],
+      ...(bays ? { play: "bays" as const, minutes: DEFAULT_SESSION } : {}),
     },
     now,
   );

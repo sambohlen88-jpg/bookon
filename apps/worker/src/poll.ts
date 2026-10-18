@@ -80,7 +80,7 @@ export async function pollCourse(
   );
 
   try {
-    const days = await adapter.fetchAvailability(course, range, { http: counted });
+    const days = await adapter.fetchAvailability(course, range, { http: counted, now: startedAt });
     const fetchedAt = now();
     const teeTimes = days.reduce((n, day) => n + day.teeTimes.length, 0);
     await exclusive(async () => {

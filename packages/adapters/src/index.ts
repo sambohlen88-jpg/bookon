@@ -1,9 +1,11 @@
 import type { Course, CourseAdapter } from "@bookon/core";
 import { miclubAdapter } from "./miclub";
 import { quick18Adapter } from "./quick18";
+import { ygbAdapter } from "./ygb";
 
 export { miclubAdapter } from "./miclub";
 export { quick18Adapter } from "./quick18";
+export { ygbAdapter, SESSION_MINUTES } from "./ygb";
 export { CaptchaRequiredError, ConfigError, PageFormatError } from "./shared";
 export { PoliteHttpClient, HttpError, RobotsDisallowedError } from "./http";
 export type { PoliteHttpOptions } from "./http";
@@ -11,6 +13,7 @@ export type { PoliteHttpOptions } from "./http";
 const adapters: Partial<Record<Course["platform"], CourseAdapter>> = {
   miclub: miclubAdapter,
   quick18: quick18Adapter,
+  ygb: ygbAdapter,
 };
 
 /** The adapter for a course's platform, or undefined when it cannot be searched (chronogolf, manual). */

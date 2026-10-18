@@ -128,3 +128,53 @@ export function NearMe({ initial }: { initial: Near | null }) {
     </fieldset>
   );
 }
+
+/**
+ * Golf courses or Sims & ranges. CSS shows the fields for the one picked
+ * (`.play-golf` and `.play-bays` in globals.css), so it works without
+ * JavaScript. With it, Latest moves to the picked one's usual close.
+ */
+export function PlaySwitch({
+  initial,
+  toId,
+  latest,
+}: {
+  initial: "golf" | "bays";
+  /** The Latest field's id. */
+  toId: string;
+  /** Each choice's default Latest time. */
+  latest: { golf: string; bays: string };
+}) {
+  function picked(play: "golf" | "bays") {
+    const to = document.getElementById(toId) as HTMLSelectElement | null;
+    const other = play === "golf" ? latest.bays : latest.golf;
+    if (to && to.value === other) to.value = latest[play];
+  }
+  return (
+    <fieldset>
+      <legend className="sr-only">What are you booking?</legend>
+      <div className="flex rounded-xl bg-surface p-1">
+        {(
+          [
+            { value: "golf", label: "Golf courses" },
+            { value: "bays", label: "Sims & ranges" },
+          ] as const
+        ).map((o) => (
+          <label key={o.value} className="relative flex-1">
+            <input
+              type="radio"
+              name="play"
+              value={o.value}
+              defaultChecked={initial === o.value}
+              onChange={() => picked(o.value)}
+              className="peer sr-only"
+            />
+            <span className="flex min-h-11 cursor-pointer items-center justify-center rounded-lg text-sm font-semibold text-muted peer-checked:bg-background peer-checked:text-foreground peer-checked:shadow-sm peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-brand">
+              {o.label}
+            </span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}

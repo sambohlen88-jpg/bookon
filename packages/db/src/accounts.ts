@@ -166,11 +166,18 @@ export interface FavouriteCourse {
   slug: string;
   name: string;
   suburb: string;
+  kind: "course" | "simulator" | "range";
 }
 
 export async function listFavourites(db: Database, userId: string): Promise<FavouriteCourse[]> {
   return db
-    .select({ id: courses.id, slug: courses.slug, name: courses.name, suburb: courses.suburb })
+    .select({
+      id: courses.id,
+      slug: courses.slug,
+      name: courses.name,
+      suburb: courses.suburb,
+      kind: courses.kind,
+    })
     .from(favourites)
     .innerJoin(courses, eq(courses.id, favourites.courseId))
     .where(eq(favourites.userId, userId))

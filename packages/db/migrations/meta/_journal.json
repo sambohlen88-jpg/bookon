@@ -64,6 +64,20 @@
       "when": 1792307564965,
       "tag": "0008_course_locations",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792328832174,
+      "tag": "0009_venue_kinds_and_bays",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792329088879,
+      "tag": "0010_golf_sim_venues",
+      "breakpoints": true
     }
   ]
 }

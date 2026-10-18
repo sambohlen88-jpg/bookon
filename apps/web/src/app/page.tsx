@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { formatPerthTime, perthDate } from "@bookon/core";
+import { formatPerthTime, perthDate, type VenueKind } from "@bookon/core";
 import {
   approvedCoursePhotos,
   listCourseDetails,
@@ -17,7 +17,7 @@ import { SiteHeader } from "@/components/site-header";
 import { currentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { shortCourseName } from "@/lib/course-info";
-import { defaultForm, searchHref } from "@/lib/search-form";
+import { LATEST_BAY_TIME, defaultForm, searchHref } from "@/lib/search-form";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +36,10 @@ const FEATURED = [
 export default async function Home() {
   const now = new Date();
   // The form must still show if the database is down; search will explain.
-  const courses: CourseDetails[] = await listCourseDetails(getDb()).catch(() => []);
+  const all: CourseDetails[] = await listCourseDetails(getDb()).catch(() => []);
+  // Golf courses for the counts and lists; the search also offers sims and ranges.
+  const courses = all.filter((c) => c.kind === "course");
+  const venues = all.length - courses.length;
   const photos = await approvedCoursePhotos(getDb()).catch(() => new Map<string, string>());
   const featured = FEATURED.map((slug) => courses.find((c) => c.slug === slug)).filter(
     (c): c is CourseDetails => Boolean(c),
@@ -45,7 +48,11 @@ export default async function Home() {
   const user = await currentUser();
   const favourites = user ? await listFavourites(getDb(), user.id) : [];
   // One query for Free soon and My courses. Kept one after another for the local database.
-  const upcoming: CourseResult[] = await nextTeeTimes(getDb(), now, { players: 2 }).catch(() => []);
+  const upcoming: CourseResult[] = await nextTeeTimes(getDb(), now, {
+    players: 2,
+    play: "all",
+  }).catch(() => []);
+  const upcomingGolf = upcoming.filter((u) => u.course.kind === "course");
   const today = perthDate(now);
   const seeAll = searchHref({ ...defaultForm(now), date: today });
 
@@ -58,7 +65,7 @@ export default async function Home() {
         <h1 className="text-3xl font-bold tracking-tight">Find a tee time</h1>
         <p className="mt-2 text-muted">Every Perth public course we check, in one search.</p>
         <div className="mt-6">
-          <SearchForm values={defaultForm(now)} courses={courses} now={now} />
+          <SearchForm values={defaultForm(now)} courses={all} now={now} />
         </div>
         <RecentSearches today={today} />
         {favourites.length > 0 && (
@@ -72,7 +79,7 @@ export default async function Home() {
           />
         )}
         <div className="mt-10">
-          <FreeSoon results={upcoming} now={now} players={2} seeAll={seeAll} />
+          <FreeSoon results={upcomingGolf} now={now} players={2} seeAll={seeAll} />
         </div>
         <section aria-labelledby="how" className="mt-10">
           <h2 id="how" className="text-lg font-semibold">
@@ -121,8 +128,9 @@ export default async function Home() {
                 Every Perth public tee time, in one search.
               </h1>
               <p className="mt-5 max-w-xl text-lg text-hero-muted">
-                {courses.length} courses across Perth and WA, checked through the day. Find a time
-                that suits, then book with the club. Free for golfers.
+                {courses.length} courses across Perth and WA
+                {venues > 0 ? `, plus ${venues} golf sims and ranges,` : ""} checked through the
+                day. Find a time that suits, then book with the club. Free for golfers.
               </p>
               <dl className="mt-10 grid max-w-lg grid-cols-3 gap-6">
                 <Stat value={String(courses.length)} label="courses" />
@@ -132,7 +140,7 @@ export default async function Home() {
             </div>
             <div className="rounded-2xl bg-background p-6 text-foreground shadow-2xl">
               <h2 className="mb-5 text-2xl font-bold tracking-tight">Find a tee time</h2>
-              <SearchForm values={defaultForm(now)} courses={courses} now={now} idPrefix="d-" />
+              <SearchForm values={defaultForm(now)} courses={all} now={now} idPrefix="d-" />
             </div>
           </div>
           <CourseArt
@@ -285,7 +293,7 @@ function MyCourses({
   today,
   now,
 }: {
-  courses: { id: string; slug: string; name: string; result?: CourseResult }[];
+  courses: { id: string; slug: string; name: string; kind: VenueKind; result?: CourseResult }[];
   today: string;
   now: Date;
 }) {
@@ -302,6 +310,7 @@ function MyCourses({
               <Link
                 href={searchHref({
                   ...defaultForm(now),
+                  ...(c.kind === "course" ? {} : { play: "bays" as const, to: LATEST_BAY_TIME }),
                   date: next?.playDate ?? today,
                   courses: [c.slug],
                 })}
