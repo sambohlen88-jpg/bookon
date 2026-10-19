@@ -12,7 +12,7 @@ export async function SiteHeader() {
   const { user, admin, clubs, coach } = await currentAccess();
   return (
     <>
-      <header className="md:border-b md:border-border">
+      <header className="md:border-b md:border-border print:hidden">
         <div className="mx-auto flex max-w-md items-center justify-between px-4 pt-4 md:max-w-6xl md:px-6 md:py-4">
           <Link
             href="/"

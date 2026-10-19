@@ -16,3 +16,4 @@ export * from "./course-locations";
 export * from "./coaches";
 export * from "./unbooked";
 export * from "./users";
+export * from "./settings";

@@ -71,6 +71,9 @@ export function UnbookedSection({
                   <th className={`${thClass} text-right`}>Green fees</th>
                   <th className={thClass}>Mostly</th>
                   <th className={`${thClass} text-right`}>Checked</th>
+                  <th className={thClass}>
+                    <span className="sr-only">Pitch report</span>
+                  </th>
                 </tr>
               </thead>
               <tbody className="tabular-nums">
@@ -92,6 +95,14 @@ export function UnbookedSection({
                           : "—"}
                       </td>
                       <td className={`${tdClass} text-right`}>{percent(r.coverage)}</td>
+                      <td className={tdClass}>
+                        <a
+                          href={`/admin/reports/pitch?course=${r.slug}&from=${from}&to=${to}`}
+                          className="font-medium whitespace-nowrap text-brand"
+                        >
+                          Pitch report
+                        </a>
+                      </td>
                     </tr>
                   );
                 })}
@@ -102,6 +113,7 @@ export function UnbookedSection({
                   <td className={`${tdClass} text-right`}>{dollars(totals.valueCents)}</td>
                   <td className={tdClass} />
                   <td className={`${tdClass} text-right`}>{percent(totals.coverage)}</td>
+                  <td className={tdClass} />
                 </tr>
               </tbody>
             </table>

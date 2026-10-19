@@ -132,3 +132,15 @@ body {
 .search-form:not(:has(input[name="play"][value="bays"]:checked)) .play-bays {
   display: none;
 }
+
+/* Pitch reports print on one A4 page, with their colours. */
+@page {
+  size: A4;
+  margin: 12mm;
+}
+@media print {
+  .pitch {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}

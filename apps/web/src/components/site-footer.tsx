@@ -6,7 +6,7 @@ const link = "text-sm text-muted hover:text-brand";
 /** On every page. Says who runs BookOn and that bookings are made with the club. */
 export function SiteFooter() {
   return (
-    <footer className="mt-12 border-t border-border bg-surface">
+    <footer className="mt-12 border-t border-border bg-surface print:hidden">
       <div className="mx-auto grid max-w-md gap-8 px-4 py-8 md:max-w-6xl md:grid-cols-[2fr_1fr_1fr] md:px-6 md:py-12">
         <div>
           <p className="flex items-center gap-3 text-xl font-bold tracking-tight text-brand">

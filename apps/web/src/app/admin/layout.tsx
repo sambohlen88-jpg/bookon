@@ -15,8 +15,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <>
       <SiteHeader />
-      <div className="mx-auto max-w-md px-4 pb-12 pt-6 md:grid md:max-w-6xl md:grid-cols-[200px_minmax(0,1fr)] md:gap-10 md:px-6 md:pt-10">
-        <div className="mb-6 md:mb-0">
+      <div className="mx-auto max-w-md px-4 pb-12 pt-6 md:grid md:max-w-6xl md:grid-cols-[200px_minmax(0,1fr)] md:gap-10 md:px-6 md:pt-10 print:block print:max-w-none print:p-0">
+        <div className="mb-6 md:mb-0 print:hidden">
           <p className="mb-2 hidden px-3 text-xs font-semibold uppercase tracking-wide text-muted md:block">
             Admin
           </p>
