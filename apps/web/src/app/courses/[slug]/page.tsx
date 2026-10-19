@@ -41,6 +41,7 @@ import { getDb } from "@/lib/db";
 import { PROBLEM_LABEL } from "@/lib/check-problems";
 import { shortCourseName } from "@/lib/course-info";
 import { RATE_CATEGORIES } from "@/lib/rate-labels";
+import { SEO_PAGES } from "@/lib/seo-pages";
 import {
   DEFAULT_SESSION,
   EARLIEST_TIME,
@@ -134,6 +135,8 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
       ? summariseWeather(forecast.hours, perthToUtc(date, "06:00"), perthToUtc(date, "18:00"))
       : null;
   const upcoming = (next?.teeTimes ?? []).slice(0, NEXT_SHOWN);
+  const areaPage = SEO_PAGES.find((p) => p.kind === "area" && p.area === course.area) as
+    Extract<(typeof SEO_PAGES)[number], { kind: "area" }> | undefined;
 
   return (
     <>
@@ -373,6 +376,18 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
                   ))}
                 </ul>
               </section>
+            )}
+            {areaPage && (
+              <p className="mt-4 text-sm">
+                <Link
+                  href={`/golf/${venue ? "golf-simulators-perth" : areaPage.slug}`}
+                  className="font-medium text-brand"
+                >
+                  {venue
+                    ? "All golf simulators and ranges in Perth"
+                    : `More golf in ${areaPage.place}`}
+                </Link>
+              </p>
             )}
           </div>
 

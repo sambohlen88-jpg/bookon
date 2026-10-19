@@ -38,6 +38,11 @@ export function SiteFooter() {
               </Link>
             </li>
             <li>
+              <Link href="/golf" className={link}>
+                Golf in Perth
+              </Link>
+            </li>
+            <li>
               <Link href="/account" className={link}>
                 My account and alerts
               </Link>
