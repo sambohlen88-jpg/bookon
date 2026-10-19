@@ -155,6 +155,8 @@ Each milestone ends with a short written summary, a list of open issues, and a d
 
 **Owner's change, 19 October 2026:** Milestone 13 is unbooked tee times in admin Reports, for pitching to clubs: tee times still free in a check within the hour before they started, per golf course, with empty player spots, green fees not earned, and breakdowns by day of the week and time of day, plus a CSV. Golf courses only, and admins only. Hardening and launch move to Milestone 14.
 
+**Owner's change, 19 October 2026 (later):** Milestone 14 is an admin Users tab (one admin, the owner; everyone else grouped as Customer, Club Owner, Club Staff or Coach from what they can do), a one-page club pitch report an admin can print or save as a PDF (with the contact set in admin), pages written for Google (one for each area of Perth and regional WA, and for common searches such as tee times today, this weekend, twilight, 9 holes, cheap golf, simulators and lessons, with live times, a sitemap and structured data), and a private test mode (a site password that also keeps search engines out) for hosting before launch. Hardening and launch move to Milestone 15.
+
 ## 12. Phase 2 preview (do not build yet)
 
 Stripe Connect style payments and commission, official partner API adapters that can book and cancel, support for a booking history and refunds, more cities, and native apps. Keep the adapter interface flexible enough that a `book()` and `cancel()` method can be added later.

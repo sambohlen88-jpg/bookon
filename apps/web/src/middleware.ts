@@ -1,8 +1,39 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { hasSitePassword, sitePassword } from "@/lib/private-site";
 import { SESSION_COOKIE, SESSION_MAX_AGE_SECONDS, validSessionId } from "@/lib/session";
 
-/** Give each visitor an anonymous id, visible to the page on their very first request. */
+/** Pages that give each visitor an anonymous id, visible to the page on their very first request. */
+const SESSION_PATHS = /^\/($|search$|go\/|s\/)/;
+
+/**
+ * Open even in private test mode: robots.txt so crawlers can read "keep out"
+ * (Google reads a 401 there as "anything goes"), and the uptime check.
+ */
+const OPEN_PATHS = new Set(["/robots.txt", "/api/health"]);
+
 export function middleware(request: NextRequest) {
+  // Private test mode: ask for the site password, and keep search engines out.
+  const password = sitePassword();
+  if (
+    password &&
+    !OPEN_PATHS.has(request.nextUrl.pathname) &&
+    !hasSitePassword(request.headers.get("authorization"), password)
+  ) {
+    return new NextResponse("BookOn is a private test site for now.", {
+      status: 401,
+      headers: {
+        "WWW-Authenticate": 'Basic realm="BookOn test site", charset="UTF-8"',
+        "X-Robots-Tag": "noindex, nofollow",
+      },
+    });
+  }
+  const response = session(request);
+  if (password) response.headers.set("X-Robots-Tag", "noindex, nofollow");
+  return response;
+}
+
+function session(request: NextRequest): NextResponse {
+  if (!SESSION_PATHS.test(request.nextUrl.pathname)) return NextResponse.next();
   if (validSessionId(request.cookies.get(SESSION_COOKIE)?.value)) return NextResponse.next();
 
   const id = crypto.randomUUID();
@@ -19,5 +50,6 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/search", "/go/:path*", "/s/:path*"],
+  // Everything but Next's own files, so private test mode covers the whole site.
+  matcher: ["/((?!_next/static|_next/image).*)"],
 };

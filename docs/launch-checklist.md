@@ -1,6 +1,6 @@
 # Launch checklist
 
-Things that must be done before BookOn launches publicly (SPEC section 11, Milestone 14). Claude Code is asked, in `CLAUDE.md`, to raise these with the owner before any launch work.
+Things that must be done before BookOn launches publicly (SPEC section 11, Milestone 15). Claude Code is asked, in `CLAUDE.md`, to raise these with the owner before any launch work.
 
 ## Platform access (owner asked to be reminded)
 
@@ -32,6 +32,13 @@ Data is read from public booking pages with the owner's approval, ahead of forma
 
 - [ ] Before showing unbooked numbers to a club or in a pitch, check how much of the period BookOn checked ("Checked" in Admin, Reports). It only counts while the worker runs, so hosting the worker comes first.
 - [ ] Decide whether clubs ever see their own unbooked times. They're admin-only for now.
+
+## Users, pitch report and Google (Milestone 14)
+
+- [ ] **Remove `BOOKON_SITE_PASSWORD`** from the website host on launch day. While it's set, every page asks for a password and search engines are told to keep out.
+- [ ] Set the pitch report contact (name, phone, email) in Admin, Settings before printing a pitch for a club.
+- [ ] Once the site is on its real domain: add it to Google Search Console, submit `/sitemap.xml`, and check a few `/golf/...` pages with the URL inspection tool.
+- [ ] Read the wording on the `/golf` pages (`apps/web/src/lib/seo-pages.ts`) and change anything that doesn't sound like BookOn.
 
 ## Business and legal
 

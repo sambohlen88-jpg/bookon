@@ -59,6 +59,8 @@ Search only shows times checked in the last 90 minutes, so they're never out of 
 
 **Admin area:** add your email to `apps/web/.env.local` as `BOOKON_ADMIN_EMAIL=you@example.com`, restart `pnpm dev`, sign in, and open http://localhost:3000/admin. BookOn has one admin: if more than one address is set, admin stays off until it's fixed.
 
+**Private test mode:** set `BOOKON_SITE_PASSWORD` on a hosted site and every page asks for that password (any user name), with search engines told to keep out. Remove it at launch.
+
 Locally, emails (sign-in links and alerts) are not sent. Open http://localhost:3000/dev/outbox to read them.
 
 Checks (the same ones CI runs):
