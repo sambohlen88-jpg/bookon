@@ -80,7 +80,7 @@ const WA_MICLUB_COURSES: MiClubSeed[] = [
     notes: "Booking window not confirmed.",
   },
   {
-    slug: "south",
+    slug: "rockingham",
     name: "Rockingham Golf Club",
     suburb: "Rockingham",
     holes: 18,

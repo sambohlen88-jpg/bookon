@@ -136,7 +136,8 @@ export async function unbookedReport(
   const rows = golf.map((course) => {
     const counts = emptyCounts();
     for (const s of slots) {
-      if (s.courseId !== course.id) continue;
+      // Only since recording began, to match how much was checked.
+      if (s.courseId !== course.id || (since && s.startTime < since)) continue;
       counts.unbooked++;
       counts.spots += s.spotsLeft;
       if (s.priceCents !== null) {
