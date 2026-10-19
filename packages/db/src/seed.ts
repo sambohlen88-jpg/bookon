@@ -80,7 +80,7 @@ const WA_MICLUB_COURSES: MiClubSeed[] = [
     notes: "Booking window not confirmed.",
   },
   {
-    slug: "rockingham",
+    slug: "south",
     name: "Rockingham Golf Club",
     suburb: "Rockingham",
     holes: 18,
@@ -582,7 +582,7 @@ export const SEED_CLUBS: ClubSeed[] = [
   ...YGB_VENUES,
 ];
 
-/** The owner's areas (18 October 2026). Admins can change a course's area afterwards. */
+/** The owner's areas (18 October 2026, simplified 19 October). Admins can change a course's area afterwards. */
 export const SEED_AREAS: Record<string, AreaId> = {
   marangaroo: "north",
   "joondalup-resort": "north",
@@ -598,17 +598,17 @@ export const SEED_AREAS: Record<string, AreaId> = {
   "collier-park": "south",
   whaleback: "south",
   kwinana: "south",
-  rockingham: "rockingham",
-  "secret-harbour": "rockingham",
-  "kennedy-bay": "rockingham",
-  "meadow-springs": "peel",
-  "the-cut": "peel",
-  pinjarra: "peel",
-  bunbury: "south-west",
-  capel: "south-west",
-  busselton: "south-west",
-  "dunsborough-lakes": "south-west",
-  "margaret-river": "south-west",
+  rockingham: "south",
+  "secret-harbour": "south",
+  "kennedy-bay": "south",
+  "meadow-springs": "south",
+  "the-cut": "south",
+  pinjarra: "south",
+  bunbury: "regional",
+  capel: "regional",
+  busselton: "regional",
+  "dunsborough-lakes": "regional",
+  "margaret-river": "regional",
   albany: "regional",
   geraldton: "regional",
   karratha: "regional",

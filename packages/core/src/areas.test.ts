@@ -3,7 +3,9 @@ import { AREAS, areaName, distanceKm, formatDistance, isAreaId } from "./areas";
 
 describe("areas", () => {
   it("names areas, with Other for none", () => {
-    expect(areaName("peel")).toBe("Mandurah & Peel");
+    expect(areaName("regional")).toBe("Regional WA");
+    // Areas from before 19 October 2026 show as Other until moved.
+    expect(areaName("peel")).toBe("Other");
     expect(areaName(null)).toBe("Other");
     expect(isAreaId("south")).toBe(true);
     expect(isAreaId("mars")).toBe(false);

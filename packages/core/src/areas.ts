@@ -4,12 +4,9 @@
  */
 export const AREAS = [
   { id: "north", name: "North" },
-  { id: "west", name: "West & Fremantle" },
-  { id: "east", name: "East & Hills" },
+  { id: "east", name: "East" },
   { id: "south", name: "South" },
-  { id: "rockingham", name: "Rockingham" },
-  { id: "peel", name: "Mandurah & Peel" },
-  { id: "south-west", name: "South West" },
+  { id: "west", name: "West" },
   { id: "regional", name: "Regional WA" },
 ] as const;
 
