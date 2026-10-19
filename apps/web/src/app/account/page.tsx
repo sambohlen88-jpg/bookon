@@ -3,12 +3,15 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { formatAgo, formatPerthDay, formatPerthTime, perthDate } from "@bookon/core";
 import {
+  coachById,
+  lessonsForGolfer,
   listAlerts,
   listFavourites,
   listPushSubscriptions,
   listSearchableCourses,
   listVisits,
   type Alert,
+  type Coach,
 } from "@bookon/db";
 import {
   changeAlert,
@@ -32,10 +35,21 @@ export const metadata: Metadata = { title: "My account · BookOn" };
 const TABS = [
   { id: "courses", label: "My courses" },
   { id: "alerts", label: "Alerts" },
+  { id: "lessons", label: "Lessons" },
   { id: "visits", label: "Looked at" },
   { id: "settings", label: "Settings" },
 ] as const;
 type Tab = (typeof TABS)[number]["id"];
+
+const LESSON_STATUS = {
+  checkout: "not paid",
+  requested: "waiting for the coach",
+  confirmed: "booked",
+  declined: "declined",
+  lapsed: "lapsed",
+  cancelled: "cancelled",
+  abandoned: "not paid",
+} as const;
 
 const section = "mt-6";
 const heading = "text-lg font-semibold";
@@ -57,14 +71,18 @@ export default async function AccountPage({
     );
   const db = getDb();
   const now = new Date();
-  const [favourites, alerts, visits, courses, devices, publicKey] = [
+  const [favourites, alerts, visits, courses, devices, publicKey, lessons] = [
     await listFavourites(db, user.id),
     await listAlerts(db, user.id),
     await listVisits(db, user.id),
     await listSearchableCourses(db),
     await listPushSubscriptions(db, user.id),
     await pushPublicKey(),
+    tab === "lessons" ? await lessonsForGolfer(db, user.email, user.id) : [],
   ];
+  const lessonCoaches = new Map<string, Coach | null>();
+  for (const l of lessons)
+    if (!lessonCoaches.has(l.coachId)) lessonCoaches.set(l.coachId, await coachById(db, l.coachId));
   const courseNames = new Map(courses.map((c) => [c.slug, c.name]));
 
   return (
@@ -203,6 +221,41 @@ export default async function AccountPage({
               </div>
             </section>
           </>
+        )}
+
+        {tab === "lessons" && (
+          <section className={section} aria-labelledby="lessons">
+            <h2 id="lessons" className={heading}>
+              Lessons
+            </h2>
+            {lessons.length === 0 ? (
+              <p className="mt-2 text-sm text-muted">
+                Lessons you book and pay for on BookOn show up here.{" "}
+                <Link href="/coaches" className="text-brand">
+                  Find a coach
+                </Link>
+              </p>
+            ) : (
+              <ul className={card}>
+                {lessons.map((l) => (
+                  <li key={l.id} className={row}>
+                    <span>
+                      <span className="block font-medium">
+                        {lessonCoaches.get(l.coachId)?.profile?.name ?? "Coach"} · {l.rate.name}
+                      </span>
+                      <span className="block text-sm text-muted">
+                        {formatPerthDay(perthDate(l.startTime))} {formatPerthTime(l.startTime)} ·{" "}
+                        {LESSON_STATUS[l.status]}
+                      </span>
+                    </span>
+                    <Link href={`/lessons/${l.manageToken}`} className={secondaryButton}>
+                      Open
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         )}
 
         {tab === "visits" && (

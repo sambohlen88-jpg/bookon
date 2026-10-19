@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gte, inArray, isNotNull } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { perthDate, weekDates, type CoachProfile } from "@bookon/core";
 import type { Database } from "./client";
 import { logChange, type Actor } from "./admin";
@@ -66,6 +66,8 @@ export interface LiveCoach {
   longitude: number | null;
   /** The newest approved photo. */
   photoId: string | null;
+  /** Golfers can book and pay through BookOn: the coach turned it on and Stripe is set up. */
+  takesBookings: boolean;
 }
 
 /** Every coach golfers can see, by name. */
@@ -104,6 +106,7 @@ export async function listLiveCoaches(db: Database, slug?: string): Promise<Live
       latitude: r.latitude,
       longitude: r.longitude,
       photoId: photos.find((p) => p.coachId === r.id)?.id ?? null,
+      takesBookings: r.takesBookings && r.paymentsReady,
     }))
     .sort((a, b) => a.profile.name.localeCompare(b.profile.name));
 }
@@ -558,7 +561,10 @@ export const SAMPLE_COACHES: {
 /** Add the sample coaches if they aren't there. Only ever call this on a local database. */
 export async function seedSampleCoaches(db: Database, now = new Date()): Promise<number> {
   const [existing] = await db.select({ n: count() }).from(coaches).where(eq(coaches.sample, true));
-  if ((existing?.n ?? 0) > 0) return 0;
+  if ((existing?.n ?? 0) > 0) {
+    await samplesTakePracticeBookings(db, now);
+    return 0;
+  }
   const next = weekDates(perthDate(now), "next");
   for (const sample of SAMPLE_COACHES) {
     const profile =
@@ -582,7 +588,25 @@ export async function seedSampleCoaches(db: Database, now = new Date()): Promise
       })
       .onConflictDoNothing();
   }
+  await samplesTakePracticeBookings(db, now);
   return SAMPLE_COACHES.length;
+}
+
+/**
+ * Sample coaches take bookings with made-up payment accounts, so booking a
+ * lesson can be tried locally in practice mode (Milestone 15). With real
+ * Stripe keys, practice accounts are never offered for booking.
+ */
+async function samplesTakePracticeBookings(db: Database, now: Date): Promise<void> {
+  await db
+    .update(coaches)
+    .set({
+      paymentAccountId: sql`'practice_acct_' || ${coaches.slug}`,
+      paymentsReady: true,
+      takesBookings: true,
+      updatedAt: now,
+    })
+    .where(and(eq(coaches.sample, true), isNull(coaches.paymentAccountId)));
 }
 
 /** Whether the database is a local one, where sample coaches may be added. */

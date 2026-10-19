@@ -134,11 +134,13 @@ export function Checkbox({
   name,
   value = "1",
   defaultChecked,
+  required,
   children,
 }: {
   name: string;
   value?: string;
   defaultChecked?: boolean;
+  required?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -148,6 +150,7 @@ export function Checkbox({
         name={name}
         value={value}
         defaultChecked={defaultChecked}
+        required={required}
         className="mt-0.5 size-5 shrink-0 accent-brand"
       />
       <span>{children}</span>

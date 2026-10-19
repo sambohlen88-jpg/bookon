@@ -18,7 +18,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
-import type { CoachProfile, WeatherHour } from "@bookon/core";
+import type { CoachProfile, CoachRate, WeatherHour } from "@bookon/core";
 import type { SearchParams } from "./search";
 import type { SharedCourse } from "./shares";
 
@@ -659,6 +659,12 @@ export const coaches = pgTable(
     /** BookOn's note to the coach on the last decision. */
     reviewNote: text("review_note"),
     approvedAt: timestamp("approved_at", { withTimezone: true }),
+    /** The coach's Stripe account (Milestone 15). Stripe holds their ID and bank details, never BookOn. */
+    paymentAccountId: text("payment_account_id"),
+    /** Stripe says the account can take payments and pay out. */
+    paymentsReady: boolean("payments_ready").notNull().default(false),
+    /** The coach turned on booking and paying through BookOn. */
+    takesBookings: boolean("takes_bookings").notNull().default(false),
     createdAt: createdAt(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -732,5 +738,74 @@ export const unbookedSlots = pgTable(
       sql`coalesce(${t.layout}, '')`,
     ),
     index("unbooked_slots_date_idx").on(t.playDate),
+  ],
+);
+
+/*
+ * Lesson bookings (Milestone 15). The golfer's card is held at checkout; the
+ * coach accepts (charged) or declines (released). Amounts are copied from the
+ * coach's rate when booked, so later price changes don't touch them.
+ */
+export const lessonStatusEnum = pgEnum("lesson_status", [
+  /** On the checkout page. Holds the time until checkout_expires_at. */
+  "checkout",
+  /** Card held; waiting for the coach. */
+  "requested",
+  /** Coach accepted; card charged. */
+  "confirmed",
+  "declined",
+  /** The coach didn't answer in time; the hold was released. */
+  "lapsed",
+  "cancelled",
+  /** The golfer left the checkout page without paying. */
+  "abandoned",
+]);
+
+export const lessonBookings = pgTable(
+  "lesson_bookings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    coachId: uuid("coach_id")
+      .notNull()
+      .references(() => coaches.id, { onDelete: "restrict" }),
+    status: lessonStatusEnum("status").notNull().default("checkout"),
+    /** The rate as it was when booked. */
+    rate: jsonb("rate").$type<CoachRate>().notNull(),
+    startTime: timestamp("start_time", { withTimezone: true }).notNull(),
+    endTime: timestamp("end_time", { withTimezone: true }).notNull(),
+    place: text("place").notNull(),
+    golferName: text("golfer_name").notNull(),
+    /** Lower case. */
+    golferEmail: text("golfer_email").notNull(),
+    golferPhone: text("golfer_phone").notNull(),
+    note: text("note"),
+    /** Set when the golfer was signed in. */
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    lessonCents: integer("lesson_cents").notNull(),
+    /** BookOn's booking fee, paid by the golfer on top. */
+    feeCents: integer("fee_cents").notNull(),
+    /** In the golfer's link to see or cancel the booking, like an alert's manage link. */
+    manageToken: text("manage_token").notNull().unique(),
+    /** "stripe" or "practice". */
+    provider: text("provider").notNull(),
+    checkoutId: text("checkout_id"),
+    checkoutExpiresAt: timestamp("checkout_expires_at", { withTimezone: true }).notNull(),
+    /** The held or charged payment. */
+    paymentId: text("payment_id"),
+    requestedAt: timestamp("requested_at", { withTimezone: true }),
+    /** The request lapses if the coach hasn't answered by then. */
+    respondBy: timestamp("respond_by", { withTimezone: true }),
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+    cancelledBy: text("cancelled_by"),
+    refundCents: integer("refund_cents").notNull().default(0),
+    /** The coach's note when declining or cancelling. */
+    coachNote: text("coach_note"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("lesson_bookings_coach_time_idx").on(t.coachId, t.startTime),
+    index("lesson_bookings_email_idx").on(t.golferEmail),
+    index("lesson_bookings_status_idx").on(t.status),
   ],
 );

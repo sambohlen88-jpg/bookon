@@ -21,6 +21,7 @@ export default function robots(): MetadataRoute.Robots {
         "/clubs/join",
         "/admin",
         "/club/",
+        "/lessons/",
       ],
     },
     sitemap: `${siteUrl()}/sitemap.xml`,

@@ -59,6 +59,8 @@ Search only shows times checked in the last 90 minutes, so they're never out of 
 
 **Admin area:** add your email to `apps/web/.env.local` as `BOOKON_ADMIN_EMAIL=you@example.com`, restart `pnpm dev`, sign in, and open http://localhost:3000/admin. BookOn has one admin: if more than one address is set, admin stays off until it's fixed.
 
+**Lesson payments:** with no Stripe keys, a local database uses practice payments: booking a lesson with a sample coach goes through a stand-in checkout page and no money moves. To try real Stripe test mode, see `docs/m15-review.md`.
+
 **Private test mode:** set `BOOKON_SITE_PASSWORD` on a hosted site and every page asks for that password (any user name), with search engines told to keep out. Remove it at launch.
 
 After `git pull`, `pnpm dev` and `pnpm dev:worker` both bring the local database up to date before starting, so new pages never ask for a table it doesn't have yet.

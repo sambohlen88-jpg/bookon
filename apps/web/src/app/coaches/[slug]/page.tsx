@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import {
   WEEKDAYS,
   areaName,
+  bookableRates,
   emailLink,
   formatAuPhone,
   formatPerthDay,
@@ -13,12 +14,15 @@ import {
   weekDates,
   whatsappLink,
 } from "@bookon/core";
-import { courseDetails, liveCoachBySlug } from "@bookon/db";
+import { coachById, courseDetails, liveCoachBySlug } from "@bookon/db";
+import { coachTakesBookings } from "@bookon/payments";
 import { CoachAvatar, CoachBadges } from "@/components/coach-avatar";
 import { ContactLink } from "@/components/coach-contact";
 import { SiteHeader } from "@/components/site-header";
+import { primaryButton } from "@/components/ui";
 import { clockLabel, coachWeeks, dayLabel } from "@/lib/coaches";
 import { getDb } from "@/lib/db";
+import { lessonPayments } from "@/lib/lessons";
 
 export const dynamic = "force-dynamic";
 
@@ -61,6 +65,12 @@ export default async function CoachPage({ params }: { params: Promise<{ slug: st
       ? `https://www.google.com/maps/dir/?api=1&destination=${coach.latitude},${coach.longitude}`
       : null;
   const awayAhead = profile.away.filter((a) => a.to >= today);
+  const payments = await lessonPayments();
+  const bookable =
+    payments !== null &&
+    coach.takesBookings &&
+    bookableRates(profile).length > 0 &&
+    (await coachTakesBookings({ db, payments }, (await coachById(db, coach.id))!));
 
   return (
     <>
@@ -168,7 +178,8 @@ export default async function CoachPage({ params }: { params: Promise<{ slug: st
               </p>
             )}
             <p className="mt-2 text-sm text-muted">
-              These are {first}&apos;s usual teaching hours. Message {first} to book a time.
+              These are {first}&apos;s usual teaching hours.{" "}
+              {bookable ? "Book and pay to pick a time." : `Message ${first} to book a time.`}
             </p>
           </section>
 
@@ -237,13 +248,23 @@ export default async function CoachPage({ params }: { params: Promise<{ slug: st
             <h2 id="book" className="text-lg font-semibold">
               Book a lesson
             </h2>
+            {bookable && (
+              <>
+                <Link href={`/coaches/${coach.slug}/book`} className={primaryButton}>
+                  Book and pay
+                </Link>
+                <p className="-mt-1 text-sm text-muted">
+                  Pick a time and pay securely. Your card is only charged once {first} accepts.
+                </p>
+              </>
+            )}
             {contact.whatsapp && (
               <ContactLink
                 slug={coach.slug}
                 method="whatsapp"
                 href={whatsappLink(contact.whatsapp, message)}
                 label="Message on WhatsApp"
-                primary
+                primary={!bookable}
                 external
               />
             )}
@@ -253,7 +274,7 @@ export default async function CoachPage({ params }: { params: Promise<{ slug: st
                 method="email"
                 href={emailLink(contact.email, "Golf lesson (found you on BookOn)", message)}
                 label="Email"
-                primary={!contact.whatsapp}
+                primary={!bookable && !contact.whatsapp}
               />
             )}
             {contact.phone && (
@@ -273,15 +294,11 @@ export default async function CoachPage({ params }: { params: Promise<{ slug: st
                 external
               />
             )}
-            <div
-              aria-disabled
-              className="flex min-h-12 items-center justify-center gap-2 rounded-lg border border-dashed border-border px-4 text-sm text-muted"
-            >
-              Pay through BookOn · coming soon
-            </div>
-            <p className="text-sm text-muted">
-              You book and pay with {first}. Say you found them on BookOn.
-            </p>
+            {!bookable && (
+              <p className="text-sm text-muted">
+                You book and pay with {first}. Say you found them on BookOn.
+              </p>
+            )}
           </div>
         </aside>
       </main>

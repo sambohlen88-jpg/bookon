@@ -66,6 +66,13 @@ export default async function AdminCoach({
           <Pill tone="muted">PGA not checked</Pill>
         )}
         {coach!.sample && <Pill tone="muted">Sample</Pill>}
+        {coach!.paymentsReady ? (
+          <Pill tone={coach!.takesBookings ? "good" : "muted"}>
+            {coach!.takesBookings ? "Takes bookings" : "Payments set up, bookings off"}
+          </Pill>
+        ) : (
+          coach!.paymentAccountId && <Pill tone="muted">Setting up payments</Pill>
+        )}
       </div>
       {query.done && (
         <div className="mb-4">

@@ -157,9 +157,11 @@ Each milestone ends with a short written summary, a list of open issues, and a d
 
 **Owner's change, 19 October 2026 (later):** Milestone 14 is an admin Users tab (one admin, the owner; everyone else grouped as Customer, Club Owner, Club Staff or Coach from what they can do), a one-page club pitch report an admin can print or save as a PDF (with the contact set in admin), pages written for Google (one for each area of Perth and regional WA, and for common searches such as tee times today, this weekend, twilight, 9 holes, cheap golf, simulators and lessons, with live times, a sitemap and structured data), and a private test mode (a site password that also keeps search engines out) for hosting before launch. Hardening and launch move to Milestone 15.
 
+**Owner's change, 19 October 2026 (night):** Milestone 15 is booking and paying for coach lessons through Stripe Connect. Coaches set up a Stripe account from My coaching (Stripe holds their ID and bank details, never BookOn) and turn bookings on. Golfers pick a lesson, day and time inside the coach's usual hours, and pay on Stripe's checkout page: the lesson price plus BookOn's booking fee ($2.50, set in admin), held on the card until the coach accepts within 48 hours (charged) or declines or doesn't answer (released). Golfers can cancel for a full refund up to 24 hours before; coaches cancelling always refund in full; payment is in full, not a deposit. Group clinics stay "contact the coach". A practice mode stands in for Stripe on a local database without keys. Hardening and launch move to Milestone 16.
+
 ## 12. Phase 2 preview (do not build yet)
 
-Stripe Connect style payments and commission, official partner API adapters that can book and cancel, support for a booking history and refunds, more cities, and native apps. Keep the adapter interface flexible enough that a `book()` and `cancel()` method can be added later.
+Stripe Connect style payments for tee times (lessons are Milestone 15), official partner API adapters that can book and cancel, support for a booking history and refunds, more cities, and native apps. Keep the adapter interface flexible enough that a `book()` and `cancel()` method can be added later.
 
 ## 13. Decisions the owner still needs to make
 

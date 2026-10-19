@@ -1,0 +1,11 @@
+{
+  "id": "acct_1QcoachMia",
+  "object": "account",
+  "type": "express",
+  "country": "AU",
+  "email": "mia@coach.test",
+  "charges_enabled": false,
+  "payouts_enabled": false,
+  "details_submitted": false,
+  "capabilities": { "card_payments": "inactive", "transfers": "inactive" }
+}

@@ -7,8 +7,10 @@
  *   record --course <slug> [--days <n>]       one pass, saving raw pages to recordings/
  *   alerts                                    email alert matches from data already stored
  *   weather                                   refresh course forecasts from MET Norway
+ *   lessons                                   close unpaid lesson checkouts, lapse unanswered requests
  *
- * poll and run email alert matches after each pass. run also keeps the weather fresh.
+ * poll and run email alert matches and tidy lesson bookings after each pass. run also keeps
+ * the weather fresh.
  */
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
@@ -25,6 +27,7 @@ import {
   type PollableCourse,
 } from "@bookon/db";
 import { WebPushSender, createMailer, siteUrl, vapidKeys } from "@bookon/email";
+import { paymentProvider, tidyLessons } from "@bookon/payments";
 import { sendAlertNotifications } from "./alerts";
 import { loadConfig } from "./config";
 import type { HttpClient } from "@bookon/core";
@@ -120,6 +123,31 @@ async function alertsOnce() {
   }
 }
 
+/**
+ * Lesson bookings (Milestone 15): release holds the coach didn't answer in time,
+ * and free times left at checkout. Never stops the worker either.
+ */
+async function lessonsOnce() {
+  const payments = paymentProvider(process.env, {
+    site: siteUrl(),
+    localDatabase: isLocalDatabaseUrl(config.databaseUrl),
+  });
+  if (!payments) return;
+  try {
+    const result = await tidyLessons({
+      db: handle.db,
+      payments,
+      mailer: createMailer(handle.db),
+      site: siteUrl(),
+      now: new Date(),
+    });
+    if (result.closed || result.lapsed)
+      console.log(`[lessons] ${result.closed} checkouts closed, ${result.lapsed} requests lapsed`);
+  } catch (error) {
+    console.error("[lessons] could not tidy lesson bookings", error);
+  }
+}
+
 /** Never stops the worker either. Forecasts only need courses that have a location. */
 async function weatherOnce() {
   try {
@@ -138,8 +166,11 @@ try {
   if (command === "poll") {
     await pollOnce(http);
     await alertsOnce();
+    await lessonsOnce();
   } else if (command === "alerts") {
     await alertsOnce();
+  } else if (command === "lessons") {
+    await lessonsOnce();
   } else if (command === "weather") {
     await weatherOnce();
   } else if (command === "record") {
@@ -157,10 +188,13 @@ try {
       await weatherOnce();
       await pollOnce(http);
       await alertsOnce();
+      await lessonsOnce();
       await new Promise((resolve) => setTimeout(resolve, intervalMs));
     }
   } else {
-    throw new Error(`Unknown command "${command}". Use poll, run, record, alerts or weather.`);
+    throw new Error(
+      `Unknown command "${command}". Use poll, run, record, alerts, lessons or weather.`,
+    );
   }
 } finally {
   await handle.close();

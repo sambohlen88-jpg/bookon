@@ -276,6 +276,15 @@ The owner approved weather and Near me on 18 October 2026. Neither is a booking 
 - **How we use it:** `pnpm courses:locate` (`apps/worker/src/locate.ts`) prints what it finds for a person to check, and saves only with `--save`. Results go in `packages/db/src/course-locations.ts` and the database. Admins can correct any course.
 - **Run 18 October 2026:** 21 courses found by name. 8 that the map names differently were found and checked by hand. All 29 are in `course-locations.ts`.
 
+### Stripe (lesson payments, Milestone 15, 19 October 2026)
+
+The owner approved taking lesson payments through Stripe Connect on 19 October 2026 ("Go with your suggestions"). Stripe isn't a booking platform BookOn reads: it's the payment service BookOn calls, with BookOn's own keys.
+
+- **What:** Stripe Connect with Express accounts for coaches (Stripe collects their ID, ABN and bank details; BookOn never sees them), and Stripe Checkout for golfers (card, Apple Pay, Google Pay on Stripe's page; BookOn never sees card numbers). Payments are destination charges: the golfer pays the lesson price plus BookOn's booking fee, the coach's account gets the lesson price, and BookOn keeps the fee. Cards are held at checkout (manual capture) and charged when the coach accepts.
+- **Terms:** Stripe's Services Agreement and Connected Account Agreement (coaches accept Stripe's terms during setup). Card fees come out of BookOn's share with destination charges. See https://stripe.com/au/legal and https://stripe.com/au/pricing.
+- **How we use it:** `packages/payments` (the official `stripe` library, pinned). Keys: `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`. Webhook at `/api/stripe/webhook`.
+- **Not checked live yet:** this cloud environment can't reach api.stripe.com, so tests use hand-written Stripe responses (`packages/payments/fixtures/stripe/`). The owner's Stripe test mode is the first live check.
+
 ## Golf simulators and driving ranges (Milestone 11 research, 18 October 2026)
 
 The owner asked for Perth's golf simulators and bookable driving ranges. Venues come from Golf WA's simulator list, news and the venues' own sites. Each venue's booking system was checked for robots.txt rules, terms, and whether free times can be seen without logging in. Nothing below is read by BookOn until the owner approves it.

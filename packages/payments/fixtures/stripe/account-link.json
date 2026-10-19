@@ -1,0 +1,6 @@
+{
+  "object": "account_link",
+  "created": 1792900000,
+  "expires_at": 1792900300,
+  "url": "https://connect.stripe.com/setup/e/acct_1QcoachMia/abc123"
+}

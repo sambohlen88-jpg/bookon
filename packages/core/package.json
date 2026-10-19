@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./areas": "./src/areas.ts",
-    "./coaching": "./src/coaching.ts"
+    "./coaching": "./src/coaching.ts",
+    "./lessons": "./src/lessons.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

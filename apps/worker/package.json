@@ -9,6 +9,7 @@
     "poll": "tsx src/index.ts poll",
     "record": "tsx src/index.ts record",
     "alerts": "tsx src/index.ts alerts",
+    "lessons": "tsx src/index.ts lessons",
     "clubs": "tsx src/clubs-cli.ts",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit",
@@ -20,7 +21,8 @@
     "@bookon/core": "workspace:*",
     "@bookon/adapters": "workspace:*",
     "@bookon/db": "workspace:*",
-    "@bookon/email": "workspace:*"
+    "@bookon/email": "workspace:*",
+    "@bookon/payments": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

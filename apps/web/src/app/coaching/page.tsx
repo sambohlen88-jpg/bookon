@@ -58,10 +58,11 @@ export default async function CoachingPage() {
               </p>
             </div>
             <div className={card}>
-              <h3 className="text-lg font-semibold">3. Golfers get in touch</h3>
+              <h3 className="text-lg font-semibold">3. Golfers book you</h3>
               <p className="mt-2 text-muted">
-                Golfers message you on WhatsApp, email or call to book, and you see how many got in
-                touch. Paying through BookOn is coming soon.
+                Golfers message you on WhatsApp, email or call. Or set up payments with Stripe and
+                they can book and pay on BookOn: you accept each request and keep your full lesson
+                price.
               </p>
             </div>
           </div>

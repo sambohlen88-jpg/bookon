@@ -7,9 +7,10 @@ const SESSION_PATHS = /^\/($|search$|go\/|s\/)/;
 
 /**
  * Open even in private test mode: robots.txt so crawlers can read "keep out"
- * (Google reads a 401 there as "anything goes"), and the uptime check.
+ * (Google reads a 401 there as "anything goes"), the uptime check, and Stripe's
+ * webhook (it checks Stripe's own signature instead).
  */
-const OPEN_PATHS = new Set(["/robots.txt", "/api/health"]);
+const OPEN_PATHS = new Set(["/robots.txt", "/api/health", "/api/stripe/webhook"]);
 
 export function middleware(request: NextRequest) {
   // Private test mode: ask for the site password, and keep search engines out.

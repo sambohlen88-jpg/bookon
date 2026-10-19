@@ -1,6 +1,6 @@
 # Launch checklist
 
-Things that must be done before BookOn launches publicly (SPEC section 11, Milestone 15). Claude Code is asked, in `CLAUDE.md`, to raise these with the owner before any launch work.
+Things that must be done before BookOn launches publicly (SPEC section 11, Milestone 16). Claude Code is asked, in `CLAUDE.md`, to raise these with the owner before any launch work.
 
 ## Platform access (owner asked to be reminded)
 
@@ -25,7 +25,7 @@ Data is read from public booking pages with the owner's approval, ahead of forma
 - [ ] Decide how PGA membership is checked (PGA of Australia's "Find a PGA Professional", or asking PGA for a way to confirm members), and who does it.
 - [ ] Coach listing terms: what coaches agree to when they list, and that BookOn isn't party to lessons. The consent wording is `COACH_CONSENT` in `packages/db/src/coaches.ts`.
 - [ ] The privacy policy covers coach contact details shown publicly and the counting of WhatsApp, email and call taps.
-- [ ] Paying for lessons through BookOn is shown as "coming soon". Before building it: payments provider, coach payouts, refunds and GST.
+- [x] Paying for lessons through BookOn: built in Milestone 15 with Stripe Connect. The items left are under "Lesson payments" below.
 - [ ] BookOn's Instagram, Facebook and TikTok addresses entered in Admin, Settings.
 
 ## Unbooked tee times (Milestone 13)
@@ -39,6 +39,17 @@ Data is read from public booking pages with the owner's approval, ahead of forma
 - [ ] Set the pitch report contact (name, phone, email) in Admin, Settings before printing a pitch for a club.
 - [ ] Once the site is on its real domain: add it to Google Search Console, submit `/sitemap.xml`, and check a few `/golf/...` pages with the URL inspection tool.
 - [ ] Read the wording on the `/golf` pages (`apps/web/src/lib/seo-pages.ts`) and change anything that doesn't sound like BookOn.
+
+## Lesson payments (Milestone 15)
+
+- [ ] **Stripe account in BookOn's name**, with Connect turned on (Express accounts, Australia). Going live needs your ABN, ID and bank account. Fill in the Connect branding (name, icon, colour) so coaches see "BookOn" during setup.
+- [ ] **Try it in Stripe test mode first** on your Mac (steps in `docs/m15-review.md`), including a coach setting up with Stripe's test details and a full book, accept and refund.
+- [ ] Set `STRIPE_SECRET_KEY` (live) and `STRIPE_WEBHOOK_SECRET` on the website host and the worker. In the Stripe dashboard, add a webhook to `https://<site>/api/stripe/webhook` for `checkout.session.completed` and `checkout.session.expired`, and a Connect webhook for `account.updated`.
+- [ ] **Lesson booking terms** (the coach terms in `LESSON_PAYMENT_TERMS`, `packages/db/src/lessons.ts`, and the golfer's cancellation rule on the booking page) reviewed by a lawyer, including what happens if a coach doesn't turn up. Changing the coach terms means bumping `LESSON_PAYMENT_TERMS_VERSION`.
+- [ ] **GST:** check with your accountant whether BookOn's booking fee needs GST (once BookOn is registered) and how Stripe's fees are recorded.
+- [ ] Privacy policy: a golfer's name, email and mobile go to the coach they book; Stripe processes card details.
+- [ ] Decide who handles disputes and chargebacks (Stripe emails the account owner).
+- [ ] Check the fee covers costs: with a $2.50 fee BookOn keeps about 60c on a $90 lesson after Stripe's card fee, less Connect's per-account and payout fees. Change it in Admin, Settings.
 
 ## Business and legal
 

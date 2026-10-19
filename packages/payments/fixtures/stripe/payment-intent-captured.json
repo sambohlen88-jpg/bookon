@@ -1,0 +1,13 @@
+{
+  "id": "pi_3Qlesson",
+  "object": "payment_intent",
+  "amount": 9250,
+  "amount_capturable": 0,
+  "amount_received": 9250,
+  "application_fee_amount": 250,
+  "capture_method": "manual",
+  "currency": "aud",
+  "status": "succeeded",
+  "transfer_data": { "destination": "acct_1QcoachMia" },
+  "metadata": { "booking": "booking-id" }
+}

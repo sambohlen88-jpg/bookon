@@ -1,0 +1,7 @@
+{
+  "error": {
+    "type": "invalid_request_error",
+    "code": "payment_intent_unexpected_state",
+    "message": "This PaymentIntent could not be captured because it has a status of canceled. Only a PaymentIntent with one of the following statuses may be captured: requires_capture."
+  }
+}

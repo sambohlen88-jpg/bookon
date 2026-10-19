@@ -1,0 +1,15 @@
+{
+  "id": "cs_test_a1lesson",
+  "object": "checkout.session",
+  "mode": "payment",
+  "status": "complete",
+  "payment_status": "unpaid",
+  "payment_intent": "pi_3Qlesson",
+  "amount_total": 9250,
+  "currency": "aud",
+  "client_reference_id": "booking-id",
+  "customer_email": "golfer@example.com",
+  "expires_at": 1792901800,
+  "url": null,
+  "metadata": { "booking": "booking-id" }
+}

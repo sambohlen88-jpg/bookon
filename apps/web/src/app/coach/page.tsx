@@ -6,10 +6,14 @@ import {
   COACH_CONSENT,
   coachContactCounts,
   coachForEmail,
+  lessonPaymentSettings,
+  lessonsForCoach,
   listCoachPhotos,
   listCourseDetails,
 } from "@bookon/db";
+import { refreshCoachPayments } from "@bookon/payments";
 import { saveCoachListing, sendCoachListing } from "@/app/coach/actions";
+import { CoachLessons } from "@/components/coach-lessons";
 import { CoachPhotoUploader } from "@/components/coach-photo-uploader";
 import { Checkbox, Field, Fieldset, Select, TextArea, fieldLabel } from "@/components/form";
 import { SiteHeader } from "@/components/site-header";
@@ -17,6 +21,7 @@ import { Notice, primaryButton, secondaryButton, textInput } from "@/components/
 import { currentUser } from "@/lib/auth";
 import { MAX_AWAY, MAX_PLACES, MAX_RATES } from "@/lib/coach-form";
 import { getDb } from "@/lib/db";
+import { lessonContext } from "@/lib/lessons";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "My coaching · BookOn", robots: { index: false } };
@@ -66,6 +71,18 @@ export default async function CoachPortal({
     problems = [];
   }
   const consent = coach?.consents.public as { by?: string } | undefined;
+  // Lesson bookings and payments (Milestone 15), once the listing is live.
+  const ctx = coach?.status === "live" ? await lessonContext() : null;
+  // Back from Stripe, or part-way through: ask Stripe whether the account is ready now.
+  if (ctx && coach?.paymentAccountId && !coach.paymentsReady) {
+    try {
+      coach.paymentsReady = await refreshCoachPayments(ctx, coach);
+    } catch {
+      // Stripe didn't answer; the page still shows, and it's checked again next time.
+    }
+  }
+  const lessons = coach && ctx ? await lessonsForCoach(db, coach.id, ctx.now) : null;
+  const paymentSettings = await lessonPaymentSettings(db);
   const changesWaiting = Boolean(coach?.profile && coach.draft);
 
   return (
@@ -107,6 +124,22 @@ export default async function CoachPortal({
             </Notice>
           )}
           {query.saved && <Notice tone="info">Saved.</Notice>}
+          {query.done && (
+            <Notice tone="info">
+              {query.done === "accepted"
+                ? "Accepted. The golfer's card is charged and we've emailed them to confirm."
+                : query.done === "declined"
+                  ? "Declined. The hold on the golfer's card is released and we've told them."
+                  : "Cancelled. The golfer is refunded in full and we've told them."}
+            </Notice>
+          )}
+          {query.bookings === "on" && (
+            <Notice tone="info">Bookings are on. Golfers can now book and pay on your page.</Notice>
+          )}
+          {query.bookings === "off" && (
+            <Notice tone="info">Bookings are off. Golfers can still contact you directly.</Notice>
+          )}
+          {query.problem && <Notice tone="warning">{query.problem}</Notice>}
           {query.sent && <Notice tone="info">Thanks, it&apos;s with BookOn to check.</Notice>}
           {problems.length > 0 && (
             <div className="rounded-lg border border-warning-border bg-warning-bg px-3 py-2 text-sm text-warning-fg">
@@ -135,6 +168,26 @@ export default async function CoachPortal({
                 {contacts.phone} and your website {contacts.website}.
               </p>
             )}
+          </section>
+        )}
+
+        {coach?.status === "live" && lessons && (
+          <CoachLessons
+            coach={coach}
+            lessons={lessons}
+            provider={ctx?.payments.kind ?? null}
+            enabled={paymentSettings.enabled}
+            feeCents={paymentSettings.feeCents}
+            now={ctx!.now}
+          />
+        )}
+        {coach?.status === "live" && !ctx && (
+          <section id="payments" className="mt-6 rounded-xl border border-border p-4 md:p-6">
+            <h2 className="text-lg font-semibold">Bookings and payments</h2>
+            <p className="mt-2 text-sm text-muted">
+              Booking and paying through BookOn isn&apos;t available right now. Golfers contact you
+              directly.
+            </p>
           </section>
         )}
 
