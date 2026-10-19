@@ -18,16 +18,29 @@ import { getDb } from "./db";
 /** Admins sign in again after this long, as the admin area changes live data. */
 export const ADMIN_SESSION_MS = 12 * 60 * 60 * 1000;
 
-/** Admins are the emails in BOOKON_ADMIN_EMAILS (comma separated). */
-export function adminEmails(env: NodeJS.ProcessEnv = process.env): string[] {
-  return (env.BOOKON_ADMIN_EMAILS ?? "")
+/**
+ * The one admin: the email in BOOKON_ADMIN_EMAIL (or the older
+ * BOOKON_ADMIN_EMAILS). BookOn has a single admin, so if more than one
+ * address is set, nobody is admin until it's fixed. Admin can't be given
+ * from inside the site.
+ */
+export function adminEmail(env: NodeJS.ProcessEnv = process.env): string | null {
+  const emails = (env.BOOKON_ADMIN_EMAIL ?? env.BOOKON_ADMIN_EMAILS ?? "")
     .split(",")
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
+  if (emails.length > 1) {
+    console.error(
+      "[access] Only one admin is allowed: set BOOKON_ADMIN_EMAIL to a single address. Admin is off until then.",
+    );
+    return null;
+  }
+  return emails[0] ?? null;
 }
 
 export function isAdminEmail(email: string, env: NodeJS.ProcessEnv = process.env): boolean {
-  return adminEmails(env).includes(email.toLowerCase());
+  const admin = adminEmail(env);
+  return admin !== null && admin === email.toLowerCase();
 }
 
 async function session(): Promise<{ user: User; startedAt: Date } | null> {

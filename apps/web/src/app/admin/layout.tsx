@@ -29,6 +29,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               { href: "/admin/courses", label: "Courses" },
               { href: "/admin/clubs", label: "Clubs", badge: counts.changeRequests },
               { href: "/admin/coaches", label: "Coaches", badge: counts.coaches },
+              { href: "/admin/users", label: "Users" },
               { href: "/admin/reports", label: "Reports" },
               { href: "/admin/log", label: "Change log" },
               { href: "/admin/settings", label: "Settings" },
