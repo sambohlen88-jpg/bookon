@@ -699,3 +699,38 @@ export const coachContacts = pgTable(
   },
   (t) => [index("coach_contacts_coach_idx").on(t.coachId, t.at)],
 );
+
+/*
+ * Unbooked tee times (Milestone 13). A tee time is recorded here when it was
+ * still free in a check within the hour before it started. Golf courses
+ * only; admins see the totals in Reports.
+ */
+export const unbookedSlots = pgTable(
+  "unbooked_slots",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    courseId: uuid("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    /** Perth date. */
+    playDate: date("play_date").notNull(),
+    startTime: timestamp("start_time", { withTimezone: true }).notNull(),
+    holes: smallint("holes").notNull(),
+    layout: text("layout"),
+    /** Player spots still empty. */
+    spotsLeft: smallint("spots_left").notNull(),
+    /** Per player, when the club shows a price. */
+    priceCents: integer("price_cents"),
+    /** The last check that saw it free. */
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [
+    uniqueIndex("unbooked_slots_once").on(
+      t.courseId,
+      t.startTime,
+      t.holes,
+      sql`coalesce(${t.layout}, '')`,
+    ),
+    index("unbooked_slots_date_idx").on(t.playDate),
+  ],
+);

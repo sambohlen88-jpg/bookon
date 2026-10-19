@@ -1,5 +1,6 @@
 import { addPerthDays, perthDate } from "@bookon/core";
-import type { CourseActivity } from "@bookon/db";
+import { WEEKDAYS } from "@bookon/core";
+import { DAY_PARTS, type CourseActivity, type UnbookedRow } from "@bookon/db";
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -39,6 +40,39 @@ export function activityCsv(rows: CourseActivity[], from: string, to: string): s
   ];
   const lines = rows.map((r) =>
     [r.name, from, to, r.searches, r.impressions, r.clicks, r.golfers, r.alertClicks, r.shareClicks]
+      .map(cell)
+      .join(","),
+  );
+  return [header.join(","), ...lines].join("\r\n") + "\r\n";
+}
+
+/** Unbooked tee times per course as CSV. Green fees in dollars; "checked" as a percentage. */
+export function unbookedCsv(rows: UnbookedRow[], from: string, to: string): string {
+  const header = [
+    "Course",
+    "From",
+    "To",
+    "Unbooked tee times",
+    "Empty player spots",
+    "Green fees not earned ($)",
+    "Tee times with a price",
+    "Checked (%)",
+    ...WEEKDAYS,
+    ...DAY_PARTS.map((p) => p.name),
+  ];
+  const lines = rows.map((r) =>
+    [
+      r.name,
+      from,
+      to,
+      r.unbooked,
+      r.spots,
+      Math.round(r.valueCents / 100),
+      r.priced,
+      r.coverage === null ? "" : Math.round(r.coverage * 100),
+      ...r.byWeekday,
+      ...DAY_PARTS.map((p) => r.byPart[p.id]),
+    ]
       .map(cell)
       .join(","),
   );

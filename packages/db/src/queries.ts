@@ -44,6 +44,33 @@ export async function findCourseBySlug(db: Database, slug: string): Promise<Poll
   return row ? toCourse(row) : null;
 }
 
+/** A tee time counts as unbooked if a check this soon before it started still saw it free. */
+export const UNBOOKED_WINDOW_MINUTES = 60;
+
+type Tx = Parameters<Parameters<Database["transaction"]>[0]>[0];
+
+/**
+ * Keep the tee times about to be cleared away that started (by `now`) while
+ * still free: seen free by a check within the hour before they started.
+ * Golf courses only.
+ */
+async function recordUnbooked(
+  tx: Database | Tx,
+  where: ReturnType<typeof sql>,
+  now: Date,
+): Promise<void> {
+  await tx.execute(sql`
+    insert into unbooked_slots (course_id, play_date, start_time, holes, layout, spots_left, price_cents, last_seen_at)
+    select s.course_id, s.play_date, s.start_time, s.holes, s.layout, s.spots_available, s.price_cents, s.fetched_at
+    from availability_snapshots s
+    join courses c on c.id = s.course_id and c.kind = 'course'
+    where ${where}
+      and s.start_time <= ${now}
+      and s.fetched_at < s.start_time
+      and s.fetched_at >= s.start_time - make_interval(mins => ${UNBOOKED_WINDOW_MINUTES})
+    on conflict do nothing`);
+}
+
 /** Replace one course and date's availability with a fresh, complete read. */
 export async function saveDayAvailability(
   db: Database,
@@ -53,6 +80,11 @@ export async function saveDayAvailability(
   fetchedAt: Date,
 ): Promise<void> {
   await db.transaction(async (tx) => {
+    await recordUnbooked(
+      tx,
+      sql`s.course_id = ${courseId} and s.play_date = ${playDate}`,
+      fetchedAt,
+    );
     await tx
       .delete(availabilitySnapshots)
       .where(
@@ -162,7 +194,12 @@ export async function finishFetchRun(
 }
 
 /** Drop snapshots for days that have passed. */
-export async function pruneOldSnapshots(db: Database, beforeDate: string): Promise<void> {
+export async function pruneOldSnapshots(
+  db: Database,
+  beforeDate: string,
+  now = new Date(),
+): Promise<void> {
+  await recordUnbooked(db, sql`s.play_date < ${beforeDate}`, now);
   await db
     .delete(availabilitySnapshots)
     .where(sql`${availabilitySnapshots.playDate} < ${beforeDate}`);

@@ -153,6 +153,8 @@ Each milestone ends with a short written summary, a list of open issues, and a d
 
 **Owner's change, 18 October 2026 (night):** Milestone 12 is now Find a Coach and more on the home page. Golfers see PGA coaches around Perth (who teaches this week and next, areas, Near me, specialities, rates, where they teach) and contact them by WhatsApp, email or phone, with paying through BookOn shown as coming soon. Coaches list themselves through their own login, and BookOn approves every listing and change, checking PGA membership. The desktop home banner gains Free soon, shortcuts to sims and coaches, and BookOn's social links (set in admin). Three made-up sample coaches fill local databases only. Hardening and launch move to Milestone 13.
 
+**Owner's change, 19 October 2026:** Milestone 13 is unbooked tee times in admin Reports, for pitching to clubs: tee times still free in a check within the hour before they started, per golf course, with empty player spots, green fees not earned, and breakdowns by day of the week and time of day, plus a CSV. Golf courses only, and admins only. Hardening and launch move to Milestone 14.
+
 ## 12. Phase 2 preview (do not build yet)
 
 Stripe Connect style payments and commission, official partner API adapters that can book and cancel, support for a booking history and refunds, more cities, and native apps. Keep the adapter interface flexible enough that a `book()` and `cancel()` method can be added later.

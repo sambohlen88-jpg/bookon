@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activityCsv, reportRange } from "./report";
+import { activityCsv, reportRange, unbookedCsv } from "./report";
 
 const now = new Date("2026-10-18T02:00:00Z");
 
@@ -55,5 +55,35 @@ describe("activityCsv", () => {
     expect(lines[1]).toBe('"Lake, Pines",2026-10-01,2026-10-31,3,2,1,1,0,0');
     // A name that looks like a formula is never run by Excel.
     expect(lines[2]!.startsWith(`"'=HYPERLINK(""x"")"`)).toBe(true);
+  });
+});
+
+describe("unbookedCsv", () => {
+  it("lists each course's unbooked tee times, green fees in dollars and the breakdowns", () => {
+    const csv = unbookedCsv(
+      [
+        {
+          courseId: "1",
+          slug: "collier-park",
+          name: "Collier Park Golf Course",
+          unbooked: 2,
+          spots: 6,
+          valueCents: 16050,
+          priced: 1,
+          coverage: 0.615,
+          byWeekday: [2, 0, 0, 0, 0, 0, 0],
+          byPart: { early: 1, morning: 0, midday: 0, afternoon: 0, twilight: 1 },
+        },
+      ],
+      "2026-10-19",
+      "2026-10-19",
+    );
+    const [header, row] = csv.trim().split("\r\n");
+    expect(header).toBe(
+      "Course,From,To,Unbooked tee times,Empty player spots,Green fees not earned ($),Tee times with a price,Checked (%),Mon,Tue,Wed,Thu,Fri,Sat,Sun,Before 7 am,7 to 10 am,10 am to 1 pm,1 to 4 pm,4 pm on",
+    );
+    expect(row).toBe(
+      "Collier Park Golf Course,2026-10-19,2026-10-19,2,6,161,1,62,2,0,0,0,0,0,0,1,0,0,0,1",
+    );
   });
 });

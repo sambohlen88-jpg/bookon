@@ -1,6 +1,6 @@
 # Launch checklist
 
-Things that must be done before BookOn launches publicly (SPEC section 11, Milestone 13). Claude Code is asked, in `CLAUDE.md`, to raise these with the owner before any launch work.
+Things that must be done before BookOn launches publicly (SPEC section 11, Milestone 14). Claude Code is asked, in `CLAUDE.md`, to raise these with the owner before any launch work.
 
 ## Platform access (owner asked to be reminded)
 
@@ -27,6 +27,11 @@ Data is read from public booking pages with the owner's approval, ahead of forma
 - [ ] The privacy policy covers coach contact details shown publicly and the counting of WhatsApp, email and call taps.
 - [ ] Paying for lessons through BookOn is shown as "coming soon". Before building it: payments provider, coach payouts, refunds and GST.
 - [ ] BookOn's Instagram, Facebook and TikTok addresses entered in Admin, Settings.
+
+## Unbooked tee times (Milestone 13)
+
+- [ ] Before showing unbooked numbers to a club or in a pitch, check how much of the period BookOn checked ("Checked" in Admin, Reports). It only counts while the worker runs, so hosting the worker comes first.
+- [ ] Decide whether clubs ever see their own unbooked times. They're admin-only for now.
 
 ## Business and legal
 

@@ -126,7 +126,7 @@ export async function pollAll(
 ): Promise<PollResult[]> {
   const results = await Promise.all(courses.map((course) => pollCourse(db, course, http, options)));
   const now = (options.now ?? (() => new Date()))();
-  await exclusive(() => pruneOldSnapshots(db, perthDate(now)));
+  await exclusive(() => pruneOldSnapshots(db, perthDate(now), now));
   await exclusive(() => pruneExpiredShares(db, now));
   return results;
 }
