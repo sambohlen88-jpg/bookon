@@ -1,7 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["@bookon/core", "@bookon/db", "@bookon/email", "@bookon/payments"],
+  transpilePackages: [
+    "@bookon/adapters",
+    "@bookon/core",
+    "@bookon/db",
+    "@bookon/email",
+    "@bookon/payments",
+  ],
   // PGlite ships WebAssembly and is only used in tests, so keep it out of the bundle.
   serverExternalPackages: ["@electric-sql/pglite", "web-push", "sharp", "stripe"],
   poweredByHeader: false,

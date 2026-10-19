@@ -10,6 +10,7 @@
     "record": "tsx src/index.ts record",
     "alerts": "tsx src/index.ts alerts",
     "lessons": "tsx src/index.ts lessons",
+    "calendars": "tsx src/index.ts calendars",
     "clubs": "tsx src/clubs-cli.ts",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit",

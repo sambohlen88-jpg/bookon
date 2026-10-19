@@ -8,8 +8,9 @@
  *   alerts                                    email alert matches from data already stored
  *   weather                                   refresh course forecasts from MET Norway
  *   lessons                                   close unpaid lesson checkouts, lapse unanswered requests
+ *   calendars                                 re-read coaches' own calendar links for busy times
  *
- * poll and run email alert matches and tidy lesson bookings after each pass. run also keeps
+ * poll and run email alert matches, tidy lesson bookings and re-read coaches' calendars after each pass. run also keeps
  * the weather fresh.
  */
 import { fileURLToPath } from "node:url";
@@ -29,6 +30,7 @@ import {
 import { WebPushSender, createMailer, siteUrl, vapidKeys } from "@bookon/email";
 import { paymentProvider, tidyLessons } from "@bookon/payments";
 import { sendAlertNotifications } from "./alerts";
+import { refreshCoachCalendars } from "./calendars";
 import { loadConfig } from "./config";
 import type { HttpClient } from "@bookon/core";
 import { pollAll, type PollResult } from "./poll";
@@ -148,6 +150,22 @@ async function lessonsOnce() {
   }
 }
 
+/** Coaches' own calendars, for times they're busy (Milestone 16). Never stops the worker either. */
+async function calendarsOnce() {
+  try {
+    const result = await refreshCoachCalendars(handle.db, {
+      userAgent: config.userAgent,
+      now: new Date(),
+    });
+    if (result.read || result.failed)
+      console.log(
+        `[calendars] ${result.read} read, ${result.fresh} still fresh, ${result.failed} failed`,
+      );
+  } catch (error) {
+    console.error("[calendars] could not read coaches' calendars", error);
+  }
+}
+
 /** Never stops the worker either. Forecasts only need courses that have a location. */
 async function weatherOnce() {
   try {
@@ -167,10 +185,13 @@ try {
     await pollOnce(http);
     await alertsOnce();
     await lessonsOnce();
+    await calendarsOnce();
   } else if (command === "alerts") {
     await alertsOnce();
   } else if (command === "lessons") {
     await lessonsOnce();
+  } else if (command === "calendars") {
+    await calendarsOnce();
   } else if (command === "weather") {
     await weatherOnce();
   } else if (command === "record") {
@@ -189,11 +210,12 @@ try {
       await pollOnce(http);
       await alertsOnce();
       await lessonsOnce();
+      await calendarsOnce();
       await new Promise((resolve) => setTimeout(resolve, intervalMs));
     }
   } else {
     throw new Error(
-      `Unknown command "${command}". Use poll, run, record, alerts, lessons or weather.`,
+      `Unknown command "${command}". Use poll, run, record, alerts, lessons, calendars or weather.`,
     );
   }
 } finally {

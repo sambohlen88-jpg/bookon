@@ -11,6 +11,8 @@ const SESSION_PATHS = /^\/($|search$|go\/|s\/)/;
  * webhook (it checks Stripe's own signature instead).
  */
 const OPEN_PATHS = new Set(["/robots.txt", "/api/health", "/api/stripe/webhook"]);
+/** Coaches' calendar links: calendar apps can't type the site password, and the link is private. */
+const OPEN_PREFIXES = ["/calendar/"];
 
 export function middleware(request: NextRequest) {
   // Private test mode: ask for the site password, and keep search engines out.
@@ -18,6 +20,7 @@ export function middleware(request: NextRequest) {
   if (
     password &&
     !OPEN_PATHS.has(request.nextUrl.pathname) &&
+    !OPEN_PREFIXES.some((p) => request.nextUrl.pathname.startsWith(p)) &&
     !hasSitePassword(request.headers.get("authorization"), password)
   ) {
     return new NextResponse("BookOn is a private test site for now.", {

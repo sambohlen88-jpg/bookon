@@ -157,9 +157,14 @@ export default async function CoachPortal({
           <section className="mt-6 rounded-xl border border-border p-4 md:p-6">
             <div className="flex flex-wrap items-baseline justify-between gap-3">
               <h2 className="text-lg font-semibold">Live on BookOn</h2>
-              <Link href={`/coaches/${coach.slug}`} className="font-medium text-brand">
-                See your page
-              </Link>
+              <span className="flex gap-4">
+                <Link href="/coach/calendar" className="font-medium text-brand">
+                  My calendar
+                </Link>
+                <Link href={`/coaches/${coach.slug}`} className="font-medium text-brand">
+                  See your page
+                </Link>
+              </span>
             </div>
             {contacts && (
               <p className="mt-2 text-sm text-muted">

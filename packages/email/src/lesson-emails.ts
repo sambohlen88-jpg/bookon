@@ -1,9 +1,12 @@
 import {
+  BOOKON_UID_SUFFIX,
   formatAuPhone,
   formatPerthDay,
   formatPerthTime,
   formatPrice,
+  googleCalendarEventLink,
   perthDate,
+  type CalendarEvent,
 } from "@bookon/core";
 import type { LessonBooking } from "@bookon/db";
 import type { EmailMessage } from "./mailer";
@@ -24,6 +27,46 @@ type Lesson = Pick<
   | "feeCents"
 >;
 
+/**
+ * A lesson as a calendar event (Milestone 16): for the coach's calendar
+ * feed, or the golfer's "Add to calendar". Waiting requests show as not
+ * confirmed. The UID stays the same, so a calendar app updates the event.
+ */
+export function lessonCalendarEvent(
+  lesson: Lesson & Pick<LessonBooking, "id" | "endTime"> & { status?: LessonBooking["status"] },
+  options: { for: "coach" | "golfer"; coachName: string; url?: string },
+): CalendarEvent {
+  const waiting = lesson.status === "requested";
+  const coach = options.for === "coach";
+  return {
+    uid: `lesson-${lesson.id}${BOOKON_UID_SUFFIX}`,
+    start: lesson.startTime,
+    end: lesson.endTime,
+    summary: coach
+      ? `${waiting ? "Request (not confirmed)" : "Lesson"}: ${lesson.golferName}, ${lesson.rate.name}`
+      : `Golf lesson with ${options.coachName}`,
+    description: (coach
+      ? [
+          `${lessonName(lesson)} with ${lesson.golferName}`,
+          `Mobile: ${formatAuPhone(lesson.golferPhone)}`,
+          `Email: ${lesson.golferEmail}`,
+          lesson.note ? `Note: ${lesson.note}` : null,
+          waiting ? "Accept or decline in My coaching on BookOn." : null,
+          `Booked through BookOn${options.url ? `: ${options.url}` : ""}`,
+        ]
+      : [
+          `${lessonName(lesson)} with ${options.coachName}`,
+          `Booked through BookOn${options.url ? `: ${options.url}` : ""}`,
+        ]
+    )
+      .filter(Boolean)
+      .join("\n"),
+    location: lesson.place,
+    url: options.url,
+    status: waiting ? "TENTATIVE" : "CONFIRMED",
+  };
+}
+
 /** "Sat 24 Oct, 9:00 am". */
 export function lessonWhen(start: Date): string {
   return `${formatPerthDay(perthDate(start))}, ${formatPerthTime(start)}`;
@@ -41,6 +84,8 @@ function message(input: {
   paragraphs: (string | null | undefined | false)[];
   details?: [string, string | null | undefined][];
   link?: { href: string; label: string };
+  /** Smaller links under the button, such as "Add to calendar". */
+  links?: { href: string; label: string }[];
   after?: (string | null | undefined | false)[];
 }): EmailMessage {
   const clean = (list: (string | null | undefined | false)[] = []) =>
@@ -57,6 +102,7 @@ function message(input: {
       ...paragraphs.flatMap((p) => [p, ""]),
       ...(details.length ? [...details.map(([k, v]) => `${k}: ${v}`), ""] : []),
       ...(input.link ? [`${input.link.label}: ${input.link.href}`, ""] : []),
+      ...(input.links ?? []).flatMap((l) => [`${l.label}: ${l.href}`, ""]),
       ...after.flatMap((p) => [p, ""]),
       SENDER,
     ].join("\n"),
@@ -74,6 +120,13 @@ ${
     : ""
 }
 ${input.link ? `<p style="margin:0 0 16px">${button(input.link.href, input.link.label)}</p>` : ""}
+${
+  input.links?.length
+    ? `<p style="margin:0 0 16px;font-size:15px">${input.links
+        .map((l) => `<a href="${escape(l.href)}" style="color:#1f6f43">${escape(l.label)}</a>`)
+        .join(" &middot; ")}</p>`
+    : ""
+}
 ${after.map((p) => `<p style="margin:0 0 16px;font-size:14px;color:#5b6b62">${escape(p)}</p>`).join("\n")}`,
       escape(SENDER),
     ),
@@ -157,12 +210,17 @@ export function lessonRequestCoachEmail(input: {
 
 /** To the golfer: the coach accepted and the card was charged. */
 export function lessonConfirmedEmail(input: {
-  lesson: Lesson;
+  lesson: Lesson & Pick<LessonBooking, "id" | "endTime">;
   coachName: string;
   coachContact: { phone?: string; email?: string };
   manageLink: string;
 }): EmailMessage {
   const { lesson } = input;
+  const event = lessonCalendarEvent(lesson, {
+    for: "golfer",
+    coachName: input.coachName,
+    url: input.manageLink,
+  });
   return message({
     to: lesson.golferEmail,
     subject: `Booked: ${lessonName(lesson)} with ${input.coachName}, ${lessonWhen(lesson.startTime)}`,
@@ -177,6 +235,10 @@ export function lessonConfirmedEmail(input: {
       ["Coach's email", input.coachContact.email],
     ],
     link: { href: input.manageLink, label: "See or cancel your booking" },
+    links: [
+      { href: `${input.manageLink}/calendar.ics`, label: "Add to Apple or Outlook calendar" },
+      { href: googleCalendarEventLink(event), label: "Add to Google Calendar" },
+    ],
     after: [CANCEL_RULE, "Your receipt comes from Stripe, who handles payments for BookOn."],
   });
 }

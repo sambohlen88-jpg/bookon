@@ -276,6 +276,15 @@ The owner approved weather and Near me on 18 October 2026. Neither is a booking 
 - **How we use it:** `pnpm courses:locate` (`apps/worker/src/locate.ts`) prints what it finds for a person to check, and saves only with `--save`. Results go in `packages/db/src/course-locations.ts` and the database. Admins can correct any course.
 - **Run 18 October 2026:** 21 courses found by name. 8 that the map names differently were found and checked by hand. All 29 are in `course-locations.ts`.
 
+### Coaches' own calendar links (Milestone 16, 20 October 2026)
+
+The owner approved reading calendar links coaches give BookOn on 20 October 2026 ("approve", to "OK to read the calendar links coaches give us"). These aren't booking platforms: each is one coach's own private calendar address, read the way a calendar app reads it.
+
+- **What:** Google Calendar's "secret address in iCal format", iCloud public calendar links and Outlook published calendars (iCalendar files). Only those three services are accepted (`normaliseCalendarUrl` in `packages/adapters/src/calendar`), including after redirects, so a pasted link can never point the worker at another server.
+- **How we use it:** the worker reads each link at most every 25 minutes (once a pass) with the BookOnBot user agent, and when the coach saves it or taps Check now. Files over 5 MB are refused. Only start and end times of busy events in the next five weeks are kept; events marked free, cancelled events and BookOn's own lessons are skipped. Parsing uses `ical.js` (Mozilla, MPL 2.0, pinned).
+- **Not robots.txt-checked:** like a calendar app, BookOn reads a private address its owner gave it; it doesn't crawl. Tests use hand-written calendar files (`packages/adapters/fixtures/calendar/`).
+- **Not checked live yet:** this cloud environment can't reach Google, iCloud or Outlook.
+
 ### Stripe (lesson payments, Milestone 15, 19 October 2026)
 
 The owner approved taking lesson payments through Stripe Connect on 19 October 2026 ("Go with your suggestions"). Stripe isn't a booking platform BookOn reads: it's the payment service BookOn calls, with BookOn's own keys.

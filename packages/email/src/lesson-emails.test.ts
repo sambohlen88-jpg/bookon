@@ -2,12 +2,15 @@ import { describe, expect, it } from "vitest";
 import { perthToUtc } from "@bookon/core";
 import {
   lessonCancelledEmail,
+  lessonCalendarEvent,
   lessonConfirmedEmail,
   lessonRequestCoachEmail,
   lessonRequestedEmail,
 } from "./lesson-emails";
 
 const lesson = {
+  id: "3f0c1a2b-0000-4000-8000-000000000000",
+  endTime: perthToUtc("2026-10-24", "10:00"),
   rate: { name: "Private lesson", minutes: 60, priceCents: 9000, people: "1" as const },
   startTime: perthToUtc("2026-10-24", "09:00"),
   place: "Range, Como",
@@ -18,6 +21,28 @@ const lesson = {
   lessonCents: 9000,
   feeCents: 250,
 };
+
+describe("lessonCalendarEvent", () => {
+  it("shows the coach the golfer's details, and marks waiting requests as not confirmed", () => {
+    const waiting = lessonCalendarEvent(
+      { ...lesson, status: "requested" },
+      { for: "coach", coachName: "Jo Coach" },
+    );
+    expect(waiting).toMatchObject({
+      uid: "lesson-3f0c1a2b-0000-4000-8000-000000000000@bookon",
+      summary: "Request (not confirmed): Alex <Golfer>, Private lesson",
+      status: "TENTATIVE",
+      location: "Range, Como",
+    });
+    expect(waiting.description).toContain("Mobile: 0491 570 110");
+    const golfer = lessonCalendarEvent(
+      { ...lesson, status: "confirmed" },
+      { for: "golfer", coachName: "Jo Coach" },
+    );
+    expect(golfer).toMatchObject({ summary: "Golf lesson with Jo Coach", status: "CONFIRMED" });
+    expect(golfer.description).not.toContain("0491");
+  });
+});
 
 describe("lesson emails", () => {
   it("tell the golfer their card is held, not charged, and when the coach will answer", () => {
@@ -61,6 +86,12 @@ describe("lesson emails", () => {
     expect(email.text).toContain("Total: $92.50");
     expect(email.text).toContain("Coach's phone: 0491 570 159");
     expect(email.text).toContain("full refund up to 24 hours before");
+    expect(email.text).toContain(
+      "Add to Apple or Outlook calendar: https://bookon.test/lessons/abc/calendar.ics",
+    );
+    expect(email.text).toMatch(
+      /Add to Google Calendar: https:\/\/calendar\.google\.com\/.*dates=20261024T010000Z%2F20261024T020000Z/,
+    );
   });
 
   it("say whether a cancellation was refunded", () => {

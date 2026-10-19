@@ -11,6 +11,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@bookon/adapters": "workspace:*",
     "@bookon/core": "workspace:*",
     "@bookon/db": "workspace:*",
     "@bookon/email": "workspace:*",

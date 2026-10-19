@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./calendar": "./src/calendar/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -13,7 +14,8 @@
   },
   "dependencies": {
     "@bookon/core": "workspace:*",
-    "cheerio": "^1.0.0"
+    "cheerio": "^1.0.0",
+    "ical.js": "2.2.1"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

@@ -25,8 +25,20 @@ import { lessonContext } from "@/lib/lessons";
 
 /** Lesson bookings and payments in My coaching (Milestone 15). Every action checks it's the coach's own. */
 
-function back(query: Record<string, string>, anchor = "lessons"): never {
-  redirect(`/coach?${new URLSearchParams(query)}#${anchor}`);
+function back(query: Record<string, string>, anchor = "lessons", page = "/coach"): never {
+  redirect(`${page}?${new URLSearchParams(query)}#${anchor}`);
+}
+
+/** Back to the calendar day the coach answered from (Milestone 16), or My coaching. */
+function returnPage(formData: FormData): {
+  page: string;
+  query: Record<string, string>;
+  anchor: string;
+} {
+  const day = String(formData.get("calendarDay") ?? "");
+  return /^\d{4}-\d{2}-\d{2}$/.test(day)
+    ? { page: "/coach/calendar", query: { day }, anchor: "day" }
+    : { page: "/coach", query: {}, anchor: "lessons" };
 }
 
 async function signedInCoach(): Promise<Coach> {
@@ -117,35 +129,42 @@ export async function turnBookingsOff() {
   back({ bookings: "off" }, "payments");
 }
 
-async function run(action: () => Promise<unknown>, done: string) {
+async function run(action: () => Promise<unknown>, done: string, formData: FormData) {
+  const to = returnPage(formData);
   try {
     const result = await action();
-    if (!result) back({ problem: "That booking has already moved on. Here's where it's at now." });
+    if (!result)
+      back(
+        { ...to.query, problem: "That booking has already moved on. Here's where it's at now." },
+        to.anchor,
+        to.page,
+      );
   } catch (error) {
-    if (error instanceof PaymentError) back({ problem: error.message });
+    if (error instanceof PaymentError)
+      back({ ...to.query, problem: error.message }, to.anchor, to.page);
     throw error;
   }
   revalidatePath("/coach");
-  back({ done });
+  back({ ...to.query, done }, to.anchor, to.page);
 }
 
 export async function acceptLessonFromPortal(formData: FormData) {
   const coach = await signedInCoach();
   const booking = await ownBooking(coach, formData);
   const ctx = await context();
-  await run(() => acceptLessonRequest(ctx, booking), "accepted");
+  await run(() => acceptLessonRequest(ctx, booking), "accepted", formData);
 }
 
 export async function declineLessonFromPortal(formData: FormData) {
   const coach = await signedInCoach();
   const booking = await ownBooking(coach, formData);
   const ctx = await context();
-  await run(() => declineLessonRequest(ctx, booking, note(formData)), "declined");
+  await run(() => declineLessonRequest(ctx, booking, note(formData)), "declined", formData);
 }
 
 export async function cancelLessonFromPortal(formData: FormData) {
   const coach = await signedInCoach();
   const booking = await ownBooking(coach, formData);
   const ctx = await context();
-  await run(() => cancelLessonByCoach(ctx, booking, note(formData)), "cancelled");
+  await run(() => cancelLessonByCoach(ctx, booking, note(formData)), "cancelled", formData);
 }

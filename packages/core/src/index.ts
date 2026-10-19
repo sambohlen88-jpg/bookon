@@ -7,3 +7,4 @@ export * from "./areas";
 export * from "./weather";
 export * from "./coaching";
 export * from "./lessons";
+export * from "./ics";

@@ -665,6 +665,13 @@ export const coaches = pgTable(
     paymentsReady: boolean("payments_ready").notNull().default(false),
     /** The coach turned on booking and paying through BookOn. */
     takesBookings: boolean("takes_bookings").notNull().default(false),
+    /** In the coach's private calendar subscription link (Milestone 16). */
+    calendarToken: text("calendar_token").unique(),
+    /** The coach's own calendar link (Google, iCloud, Outlook), read for busy times. */
+    busyCalendarUrl: text("busy_calendar_url"),
+    busyCalendarReadAt: timestamp("busy_calendar_read_at", { withTimezone: true }),
+    /** Why the last read failed, in words for the coach; null when it worked. */
+    busyCalendarError: text("busy_calendar_error"),
     createdAt: createdAt(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -808,4 +815,27 @@ export const lessonBookings = pgTable(
     index("lesson_bookings_email_idx").on(t.golferEmail),
     index("lesson_bookings_status_idx").on(t.status),
   ],
+);
+
+/*
+ * Times a coach can't be booked, besides their lessons (Milestone 16): times
+ * they blocked out on BookOn, and busy times read from their own calendar.
+ * Only start and end are kept from their calendar, never what the event is.
+ */
+export const coachBusy = pgTable(
+  "coach_busy",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    coachId: uuid("coach_id")
+      .notNull()
+      .references(() => coaches.id, { onDelete: "cascade" }),
+    /** "block" (set on BookOn) or "calendar" (read from their calendar, replaced on each read). */
+    source: text("source").notNull(),
+    startTime: timestamp("start_time", { withTimezone: true }).notNull(),
+    endTime: timestamp("end_time", { withTimezone: true }).notNull(),
+    /** The coach's own note on a block. Never set for calendar times. */
+    note: text("note"),
+    createdAt: createdAt(),
+  },
+  (t) => [index("coach_busy_coach_time_idx").on(t.coachId, t.startTime)],
 );

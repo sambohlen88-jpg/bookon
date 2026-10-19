@@ -9,7 +9,7 @@ import {
 } from "@bookon/core";
 import type { Database } from "./client";
 import { logChange, type Actor } from "./admin";
-import { appSettings, coaches, lessonBookings } from "./schema";
+import { appSettings, coachBusy, coaches, lessonBookings } from "./schema";
 
 /**
  * Lesson bookings (Milestone 15). These functions only move a booking from
@@ -125,13 +125,17 @@ export function acceptedLessonPaymentTerms(consents: Record<string, unknown>): b
 
 /* Bookings */
 
-/** Times a coach can't be booked: lessons held or booked, and checkouts still open. */
+/**
+ * Times a coach can't be booked: lessons held or booked, checkouts still
+ * open, times they blocked out, and busy times from their own calendar.
+ */
 export async function takenLessonTimes(
   db: Database,
   coachId: string,
   now: Date,
 ): Promise<TakenTime[]> {
-  return db
+  // One after another: the local database takes one query at a time.
+  const lessons = await db
     .select({ start: lessonBookings.startTime, end: lessonBookings.endTime })
     .from(lessonBookings)
     .where(
@@ -144,6 +148,11 @@ export async function takenLessonTimes(
         ),
       ),
     );
+  const busy = await db
+    .select({ start: coachBusy.startTime, end: coachBusy.endTime })
+    .from(coachBusy)
+    .where(and(eq(coachBusy.coachId, coachId), gt(coachBusy.endTime, now)));
+  return [...lessons, ...busy];
 }
 
 export class LessonTimeTaken extends Error {

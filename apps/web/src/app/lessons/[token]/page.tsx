@@ -7,9 +7,11 @@ import {
   formatPerthDay,
   formatPerthTime,
   formatPrice,
+  googleCalendarEventLink,
   perthDate,
 } from "@bookon/core";
 import { coachById, lessonByToken, lessonTotalCents, type LessonBooking } from "@bookon/db";
+import { lessonCalendarEvent } from "@bookon/email";
 import { checkLessonCheckout, golferCancelRefund } from "@bookon/payments";
 import { cancelLessonFromLink } from "@/app/lessons/[token]/actions";
 import { SiteHeader } from "@/components/site-header";
@@ -169,6 +171,24 @@ export default async function LessonPage({
               {booking.status === "requested" ? "Withdraw request" : "Cancel lesson"}
             </button>
           </form>
+        )}
+
+        {booking.status === "confirmed" && upcoming && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            <a href={`/lessons/${token}/calendar.ics`} className={secondaryButton}>
+              Add to Apple or Outlook calendar
+            </a>
+            <a
+              href={googleCalendarEventLink(
+                lessonCalendarEvent(booking, { for: "golfer", coachName: name }),
+              )}
+              target="_blank"
+              rel="noopener"
+              className={secondaryButton}
+            >
+              Add to Google Calendar
+            </a>
+          </div>
         )}
 
         <p className="mt-6 text-sm text-muted">

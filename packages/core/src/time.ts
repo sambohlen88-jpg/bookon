@@ -97,3 +97,46 @@ export function formatAgo(then: Date, now: Date): string {
   const days = Math.floor(hours / 24);
   return `${days} ${days === 1 ? "day" : "days"} ago`;
 }
+
+/**
+ * A wall-clock time in any IANA time zone (e.g. "Europe/London") as a UTC
+ * instant, for calendars that name their zone without defining it.
+ * Returns null for a zone name the system doesn't know.
+ */
+export function zonedToUtc(
+  parts: { year: number; month: number; day: number; hour: number; minute: number; second: number },
+  timeZone: string,
+): Date | null {
+  let format: Intl.DateTimeFormat;
+  try {
+    format = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      hourCycle: "h23",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  } catch {
+    return null;
+  }
+  const wall = Date.UTC(
+    parts.year,
+    parts.month - 1,
+    parts.day,
+    parts.hour,
+    parts.minute,
+    parts.second,
+  );
+  // The zone's offset at a moment: how far its wall clock is from UTC.
+  const offsetAt = (instant: number) => {
+    const p = Object.fromEntries(format.formatToParts(instant).map((x) => [x.type, x.value]));
+    return Date.UTC(+p.year!, +p.month! - 1, +p.day!, +p.hour!, +p.minute!, +p.second!) - instant;
+  };
+  // Twice, so a time just after a daylight-saving change lands on the right side of it.
+  let guess = wall - offsetAt(wall);
+  guess = wall - offsetAt(guess);
+  return new Date(guess);
+}

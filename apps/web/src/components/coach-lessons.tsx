@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   formatAuPhone,
   formatPerthDay,
@@ -84,9 +85,14 @@ export function CoachLessons({
     <>
       {(requests.length > 0 || lessons.upcoming.length > 0 || lessons.past.length > 0) && (
         <section id="lessons" className={box} aria-labelledby="lessons-heading">
-          <h2 id="lessons-heading" className="text-lg font-semibold">
-            Lessons booked through BookOn
-          </h2>
+          <div className="flex flex-wrap items-baseline justify-between gap-3">
+            <h2 id="lessons-heading" className="text-lg font-semibold">
+              Lessons booked through BookOn
+            </h2>
+            <Link href="/coach/calendar" className="font-medium text-brand">
+              See them in your calendar
+            </Link>
+          </div>
           {requests.length > 0 && (
             <>
               <h3 className="mt-4 font-semibold">Waiting for you ({requests.length})</h3>

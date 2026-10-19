@@ -1,6 +1,6 @@
 # Launch checklist
 
-Things that must be done before BookOn launches publicly (SPEC section 11, Milestone 16). Claude Code is asked, in `CLAUDE.md`, to raise these with the owner before any launch work.
+Things that must be done before BookOn launches publicly (SPEC section 11, Milestone 18). Claude Code is asked, in `CLAUDE.md`, to raise these with the owner before any launch work.
 
 ## Platform access (owner asked to be reminded)
 
@@ -50,6 +50,12 @@ Data is read from public booking pages with the owner's approval, ahead of forma
 - [ ] Privacy policy: a golfer's name, email and mobile go to the coach they book; Stripe processes card details.
 - [ ] Decide who handles disputes and chargebacks (Stripe emails the account owner).
 - [ ] Check the fee covers costs: with a $2.50 fee BookOn keeps about 60c on a $90 lesson after Stripe's card fee, less Connect's per-account and payout fees. Change it in Admin, Settings.
+
+## Coach calendars (Milestone 16)
+
+- [ ] **Try a real calendar link on the hosted site** (Google's secret address, an iCloud public calendar and an Outlook published calendar), and subscribe to a coach's BookOn link from an iPhone and from Google Calendar. Calendar apps can't reach a computer at home, so this needs the site hosted (with the site password on, `/calendar/` links still work for calendar apps).
+- [ ] Privacy policy: BookOn reads a coach's calendar link for busy times only (start and end), and keeps no event names or details.
+- [ ] Coaches' calendar links are private. If a coach's link leaks, they can make a new BookOn link in My calendar, and reset their own calendar's secret address in Google, iCloud or Outlook.
 
 ## Business and legal
 

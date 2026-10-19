@@ -18,3 +18,4 @@ export * from "./unbooked";
 export * from "./users";
 export * from "./settings";
 export * from "./lessons";
+export * from "./coach-calendar";
