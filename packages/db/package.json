@@ -12,6 +12,7 @@
     "test": "vitest run",
     "generate": "drizzle-kit generate",
     "migrate": "tsx src/scripts/migrate.ts",
+    "migrate:dev": "tsx src/scripts/migrate.ts --before-dev",
     "seed": "tsx src/scripts/seed.ts",
     "dev": "tsx src/scripts/db-dev.ts",
     "stats": "tsx src/scripts/stats.ts"

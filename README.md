@@ -61,6 +61,8 @@ Search only shows times checked in the last 90 minutes, so they're never out of 
 
 **Private test mode:** set `BOOKON_SITE_PASSWORD` on a hosted site and every page asks for that password (any user name), with search engines told to keep out. Remove it at launch.
 
+After `git pull`, `pnpm dev` and `pnpm dev:worker` both bring the local database up to date before starting, so new pages never ask for a table it doesn't have yet.
+
 Locally, emails (sign-in links and alerts) are not sent. Open http://localhost:3000/dev/outbox to read them.
 
 Checks (the same ones CI runs):
