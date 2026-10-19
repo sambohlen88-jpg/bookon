@@ -1,5 +1,9 @@
 import postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { createDb } from "../client";
+import { findCourseBySlug, pruneOldSnapshots, saveDayAvailability } from "../queries";
+import { unbookedSlots } from "../schema";
+import { seed } from "../seed";
 import { startLocalDatabase } from "./dev-server";
 
 const port = 5600 + Math.floor(Math.random() * 300);
@@ -48,5 +52,43 @@ describe("the local database server", () => {
       client(3, "script"),
     ]);
     expect([website, worker, script]).toEqual([120, 120, 120]);
+  }, 60_000);
+});
+
+describe("unbooked tee times through the worker's database driver", () => {
+  it("records them when a day is checked again or cleared", async () => {
+    // The worker talks to Postgres through postgres-js, which is stricter about values than PGlite.
+    const handle = createDb(`postgres://postgres@127.0.0.1:${port}/postgres`);
+    await handle.migrate();
+    await seed(handle.db);
+    const collier = (await findCourseBySlug(handle.db, "collier-park"))!.id;
+    const at = (hhmm: string) => new Date(`2026-10-19T${hhmm}:00+08:00`);
+    const slot = (hhmm: string) => ({
+      courseId: collier,
+      startTime: at(hhmm),
+      holes: 18,
+      layout: null,
+      spotsAvailable: 2,
+      minPlayers: 1,
+      priceCents: 4000,
+      sourceUrl: "https://example.com",
+      bookingUrl: null,
+    });
+    await saveDayAvailability(
+      handle.db,
+      collier,
+      "2026-10-19",
+      [slot("07:50"), slot("17:30")],
+      at("07:20"),
+    );
+    await saveDayAvailability(handle.db, collier, "2026-10-19", [slot("17:30")], at("08:00"));
+    await saveDayAvailability(handle.db, collier, "2026-10-19", [slot("17:30")], at("17:10"));
+    await pruneOldSnapshots(handle.db, "2026-10-20", new Date("2026-10-20T06:00:00+08:00"));
+    const rows = await handle.db.select().from(unbookedSlots);
+    expect(rows.map((r) => r.startTime.toISOString()).sort()).toEqual([
+      at("07:50").toISOString(),
+      at("17:30").toISOString(),
+    ]);
+    await handle.close();
   }, 60_000);
 });

@@ -65,9 +65,9 @@ async function recordUnbooked(
     from availability_snapshots s
     join courses c on c.id = s.course_id and c.kind = 'course'
     where ${where}
-      and s.start_time <= ${now}
+      and s.start_time <= ${now.toISOString()}::timestamptz
       and s.fetched_at < s.start_time
-      and s.fetched_at >= s.start_time - make_interval(mins => ${UNBOOKED_WINDOW_MINUTES})
+      and s.fetched_at >= s.start_time - make_interval(mins => ${UNBOOKED_WINDOW_MINUTES}::int)
     on conflict do nothing`);
 }
 
