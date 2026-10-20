@@ -6,14 +6,8 @@ import {
   areaName,
   distanceKm,
   formatDistance,
-  formatPerthDay,
-  formatPerthTime,
   formatPrice,
   perthDate,
-  perthToUtc,
-  summariseWeather,
-  weatherEmoji,
-  weatherWords,
 } from "@bookon/core";
 import {
   FACILITIES,
@@ -23,7 +17,6 @@ import {
   forecastFor,
   listCourseDetails,
   listFavourites,
-  nextTeeTimes,
   searchTeeTimes,
   type ClubRate,
   type CourseDetails,
@@ -33,15 +26,16 @@ import { createAlertFromSearch } from "@/app/actions";
 import { CourseArt } from "@/components/course-art";
 import { FavouriteStar } from "@/components/results";
 import { ShareButton } from "@/components/share-button";
+import { TeeSheet } from "@/components/tee-sheet";
 import { SiteHeader } from "@/components/site-header";
 import { primaryButton, secondaryButton } from "@/components/ui";
 import { currentUser } from "@/lib/auth";
 import { bookLink } from "@/lib/click-token";
 import { getDb } from "@/lib/db";
-import { PROBLEM_LABEL } from "@/lib/check-problems";
 import { shortCourseName } from "@/lib/course-info";
 import { RATE_CATEGORIES } from "@/lib/rate-labels";
 import { SEO_PAGES } from "@/lib/seo-pages";
+import { SHEET_DAYS, defaultDay, sheetDays, sheetOptions } from "@/lib/tee-sheet";
 import {
   DEFAULT_SESSION,
   EARLIEST_TIME,
@@ -53,9 +47,6 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const DAYS_SHOWN = 7;
-const NEXT_SHOWN = 6;
-
 export async function generateMetadata({
   params,
 }: {
@@ -66,15 +57,21 @@ export async function generateMetadata({
   if (course.kind !== "course")
     return {
       title: `${course.name} free bays · BookOn`,
-      description: `Free ${KIND_NAME[course.kind].toLowerCase()} bays at ${course.name}, ${course.suburb}, for the next ${DAYS_SHOWN} days. Book with the venue.`,
+      description: `Free ${KIND_NAME[course.kind].toLowerCase()} bays at ${course.name}, ${course.suburb}, for the next two weeks. Book with the venue.`,
     };
   return {
     title: `${course.name} tee times · BookOn`,
-    description: `Free tee times at ${course.name}, ${course.suburb}, for the next ${DAYS_SHOWN} days. Book with the club.`,
+    description: `Free tee times at ${course.name}, ${course.suburb}, for the next two weeks. Book with the club.`,
   };
 }
 
-export default async function CoursePage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function CoursePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
   const db = getDb();
   const course = await courseDetails(db, (await params).slug);
   if (!course) notFound();
@@ -84,15 +81,27 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
   const venue = course.kind !== "course";
   const play: PlayChoice = venue ? "bays" : "golf";
   // One after another: the local database takes one query at a time.
-  const days = await upcomingDays(db, course, now);
+  // The tee sheet: free times for the next two weeks, for the golfer's choices.
+  const chosen = sheetOptions(await searchParams, venue, today);
+  const sheetResult = (
+    await searchTeeTimes(
+      db,
+      {
+        dateFrom: today,
+        dateTo: addPerthDays(today, SHEET_DAYS - 1),
+        timeFrom: EARLIEST_TIME,
+        timeTo: latestTime(play),
+        players: chosen.players,
+        holes: venue ? null : chosen.holes,
+        courseSlugs: [course.slug],
+        ...(venue ? { play: "bays" as const, minutes: chosen.minutes } : {}),
+      },
+      now,
+    )
+  ).courses[0];
+  const sheetDayList = sheetDays(sheetResult, today);
+  const sheet = { ...chosen, day: chosen.day ?? defaultDay(sheetDayList) };
   const photoId = (await approvedCoursePhotos(db)).get(course.id) ?? null;
-  const next = (
-    await nextTeeTimes(db, now, {
-      players: 2,
-      courseSlugs: [course.slug],
-      play: venue ? "bays" : "golf",
-    })
-  )[0];
   const { profile, rates } = await coursePublicInfo(db, course.id, today);
   const forecast = await forecastFor(db, course.id);
   const nearby = nearbyCourses(course, await listCourseDetails(db));
@@ -129,12 +138,6 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
         ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${course.name}, ${address}`)}`
         : null;
   const facilities = profile.extras?.facilities ?? [];
-  // Simulators are indoors, so no weather.
-  const dayWeather = (date: string) =>
-    forecast && course.kind !== "simulator"
-      ? summariseWeather(forecast.hours, perthToUtc(date, "06:00"), perthToUtc(date, "18:00"))
-      : null;
-  const upcoming = (next?.teeTimes ?? []).slice(0, NEXT_SHOWN);
   const areaPage = SEO_PAGES.find((p) => p.kind === "area" && p.area === course.area) as
     Extract<(typeof SEO_PAGES)[number], { kind: "area" }> | undefined;
 
@@ -201,120 +204,18 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
               <p className="mt-4 whitespace-pre-line">{profile.extras.description}</p>
             )}
 
-            <section aria-labelledby="next" className="mt-8">
-              <h2 id="next" className="text-xl font-semibold">
-                {venue ? "Next free bays" : "Next free times"}
-              </h2>
-              <p className="mt-1 text-sm text-muted">
-                Today and tomorrow, for 2 players{venue ? ", for an hour or more" : ""}.
-              </p>
-              {upcoming.length === 0 ? (
-                <p className="mt-3 rounded-xl border border-border px-4 py-3 text-sm text-muted">
-                  {venue
-                    ? "Nothing free today or tomorrow. Check the week below."
-                    : "Nothing free today or tomorrow. Check the week below, or set an alert."}
-                </p>
-              ) : (
-                <ul className="tee-list mt-3 rounded-xl border border-border px-4">
-                  {upcoming.map((t, i) => (
-                    // Two tees can start at the same minute, so the position keeps keys apart.
-                    <li key={`${t.startTime.toISOString()}-${t.holes}-${i}`} className="tee-row">
-                      <span className="tee-time">{formatPerthTime(t.startTime)}</span>
-                      <span className="tee-info">
-                        <span>
-                          {t.playDate === today ? "Today" : "Tomorrow"} ·{" "}
-                          {t.bays
-                            ? `${t.bays.length} ${t.bays.length === 1 ? "bay" : "bays"} free`
-                            : `${t.holes} holes`}
-                        </span>
-                        <span className="text-muted">
-                          {t.bays
-                            ? `Up to ${t.spotsAvailable} players · ${t.priceCents === null ? "Price at venue" : `${formatPrice(t.priceCents)} an hour`}`
-                            : `${t.spotsAvailable} ${t.spotsAvailable === 1 ? "spot" : "spots"} · ${t.priceCents === null ? "Price at club" : formatPrice(t.priceCents)}`}
-                        </span>
-                      </span>
-                      <a
-                        href={bookLink({
-                          courseId: course.id,
-                          startTime: t.startTime.toISOString(),
-                          url: t.bookingUrl,
-                          source: "directory",
-                        })}
-                        target="_blank"
-                        rel="noopener"
-                        aria-label={`Book ${formatPerthTime(t.startTime)} at ${course.name} (opens the ${venue ? "venue" : "club"}'s site)`}
-                        className="tee-book"
-                      >
-                        Book
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-
-            <section aria-labelledby="week" className="mt-8">
-              <h2 id="week" className="text-xl font-semibold">
-                This week
-              </h2>
-              <p className="mt-1 text-sm text-muted">
-                {venue ? "Start times with a bay free for an hour" : "Free times"} for 2 players,
-                any time of day
-                {forecast && course.kind !== "simulator" ? ", with the daytime weather" : ""}.
-              </p>
-              <ul className="mt-4 rounded-xl border border-border">
-                {days.map((d) => {
-                  const w = dayWeather(d.date);
-                  return (
-                    <li
-                      key={d.date}
-                      className="flex min-h-14 items-center justify-between gap-3 border-t border-border px-4 py-2 first:border-t-0"
-                    >
-                      <span>
-                        <span className="font-medium">{formatPerthDay(d.date)}</span>
-                        {w && (
-                          <span className="block text-sm text-muted">
-                            <span role="img" aria-label={weatherWords(w.symbol)}>
-                              {weatherEmoji(w.symbol)}
-                            </span>{" "}
-                            {w.temperature}°
-                            {w.rainChance !== null
-                              ? w.rainChance >= 20
-                                ? ` · ${w.rainChance}% rain`
-                                : ""
-                              : w.rainMm >= 0.5
-                                ? ` · ${w.rainMm} mm rain`
-                                : ""}
-                          </span>
-                        )}
-                      </span>
-                      {d.status === "times" ? (
-                        <Link
-                          href={searchHref(form(d.date))}
-                          prefetch={false}
-                          className="text-sm font-semibold text-brand hover:underline"
-                        >
-                          {d.count} {d.count === 1 ? "time" : "times"}
-                        </Link>
-                      ) : (
-                        <span className="text-sm text-muted">
-                          {d.problem ?? DAY_STATUS[d.status]}
-                        </span>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-              {forecast && course.kind !== "simulator" && (
-                <p className="mt-2 text-xs text-muted">
-                  Weather from{" "}
-                  <a href="https://www.met.no/en" className="underline">
-                    MET Norway
-                  </a>
-                  , 6 am to 6 pm.
-                </p>
-              )}
-            </section>
+            <TeeSheet
+              slug={course.slug}
+              courseId={course.id}
+              courseName={course.name}
+              venue={venue}
+              indoor={course.kind === "simulator"}
+              result={sheetResult}
+              days={sheetDayList}
+              options={sheet}
+              forecast={forecast?.hours}
+              now={now}
+            />
 
             {rates.length > 0 && <PriceList rates={rates} />}
 
@@ -540,53 +441,4 @@ function sibling(slug: string): string | null {
     : slug.endsWith("-range")
       ? slug.replace(/-range$/, "-simulators")
       : null;
-}
-
-const DAY_STATUS = {
-  none: "Nothing free",
-  "not-open": "Not out yet",
-  unknown: "Not checked yet",
-} as const;
-
-interface DaySummary {
-  date: string;
-  status: "times" | keyof typeof DAY_STATUS;
-  count: number;
-  /** Why it couldn't be checked, in words. */
-  problem?: string;
-}
-
-/** How many times are free each day this week, from the latest check. */
-async function upcomingDays(
-  db: Parameters<typeof searchTeeTimes>[0],
-  course: CourseDetails,
-  now: Date,
-): Promise<DaySummary[]> {
-  const today = perthDate(now);
-  const bays = course.kind !== "course";
-  const result = await searchTeeTimes(
-    db,
-    {
-      dateFrom: today,
-      dateTo: addPerthDays(today, DAYS_SHOWN - 1),
-      timeFrom: EARLIEST_TIME,
-      timeTo: latestTime(bays ? "bays" : "golf"),
-      players: 2,
-      holes: null,
-      courseSlugs: [course.slug],
-      ...(bays ? { play: "bays" as const, minutes: DEFAULT_SESSION } : {}),
-    },
-    now,
-  );
-  const found = result.courses[0];
-  return Array.from({ length: DAYS_SHOWN }, (_, i) => {
-    const date = addPerthDays(today, i);
-    const notice = found?.notices.find((n) => n.date === date);
-    const count = found?.teeTimes.filter((t) => t.playDate === date).length ?? 0;
-    if (notice?.kind === "not-open") return { date, status: "not-open", count };
-    if (notice?.kind === "stale")
-      return { date, status: "unknown", count, problem: PROBLEM_LABEL[notice.problem] };
-    if (notice) return { date, status: "unknown", count };
-    return { date, status: count > 0 ? "times" : "none", count };
-  });
 }
