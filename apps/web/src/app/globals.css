@@ -23,6 +23,11 @@
   --hero-bg: #133f27;
   --hero-fg: #ffffff;
   --hero-muted: #c7dccd;
+  /* The logo's own colours, for the loader. The logo looks the same in light and dark. */
+  --logo-green: #1f6f43;
+  --logo-flag: #f2c14e;
+  --logo-white: #ffffff;
+  --logo-hole: #0e3a23;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -142,5 +147,173 @@ body {
   .pitch {
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
+  }
+}
+
+/*
+ * Motion (Milestone 18). Small and quick: buttons dip when pressed, primary
+ * buttons lift a little on hover, and colours fade rather than snap. All of
+ * it is off for people who ask their device to reduce motion.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  a,
+  button,
+  summary {
+    transition:
+      color 150ms ease,
+      background-color 150ms ease,
+      border-color 150ms ease,
+      box-shadow 150ms ease,
+      transform 120ms ease,
+      filter 150ms ease;
+  }
+  button:not(:disabled):active,
+  a.bg-brand:active,
+  a.tee-book:active,
+  a.rounded-lg:active,
+  a.rounded-full:active,
+  a.rounded-xl:active {
+    transform: scale(0.97);
+  }
+  @media (hover: hover) {
+    button.bg-brand:not(:disabled):hover,
+    a.bg-brand:hover,
+    a.tee-book:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.07);
+      box-shadow: 0 3px 10px -4px var(--brand);
+    }
+  }
+}
+
+/* The logo loader: the ball rolls into the hole and the flag waves. */
+.golf-loader {
+  opacity: 0;
+  animation: loader-in 200ms ease 200ms forwards;
+}
+.golf-loader .flag {
+  transform-origin: 241px 160px;
+}
+.golf-loader .ball {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .golf-loader .ball {
+    animation: ball-to-hole 1.6s cubic-bezier(0.35, 0, 0.25, 1) infinite;
+  }
+  .golf-loader .flag {
+    animation: flag-wave 1.6s ease-in-out infinite;
+  }
+}
+@keyframes loader-in {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes ball-to-hole {
+  0% {
+    transform: translate(110px, -10px);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  62% {
+    transform: translate(-92px, 22px);
+    opacity: 1;
+  }
+  72%,
+  100% {
+    transform: translate(-92px, 30px) scale(0.5);
+    opacity: 0;
+  }
+}
+@keyframes flag-wave {
+  0%,
+  100% {
+    transform: skewY(0deg);
+  }
+  50% {
+    transform: skewY(-7deg) scaleX(0.94);
+  }
+}
+
+/*
+ * Waiting on something you sent: the button shows a rolling ball and can't
+ * be pressed again (the second press is ignored, see PendingForms).
+ */
+button[data-pending] {
+  position: relative;
+  cursor: progress;
+  pointer-events: none;
+  color: transparent !important;
+}
+button[data-pending] > * {
+  visibility: hidden;
+}
+button[data-pending]::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.6rem;
+  height: 0.6rem;
+  margin: -0.3rem 0 0 -0.3rem;
+  border-radius: 9999px;
+  background: var(--brand);
+}
+button.bg-brand[data-pending]::after {
+  background: var(--brand-foreground);
+}
+@media (prefers-reduced-motion: no-preference) {
+  button[data-pending]::after {
+    animation: ball-roll 700ms ease-in-out infinite alternate;
+  }
+}
+@keyframes ball-roll {
+  from {
+    transform: translateX(-14px);
+  }
+  to {
+    transform: translateX(14px);
+  }
+}
+
+/* Moving to another page: a thin line along the top with a ball rolling on it. */
+.nav-progress {
+  position: fixed;
+  /* A little down from the top, so the ball isn't cut off. */
+  inset: 3px 0 auto 0;
+  z-index: 60;
+  height: 3px;
+  background: color-mix(in srgb, var(--brand) 25%, transparent);
+  opacity: 0;
+  pointer-events: none;
+}
+html[data-navigating] .nav-progress {
+  animation: loader-in 150ms ease 300ms forwards;
+}
+.nav-progress::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 9999px;
+  background: var(--brand);
+}
+@media (prefers-reduced-motion: no-preference) {
+  html[data-navigating] .nav-progress::after {
+    animation: ball-along 1.4s ease-in-out infinite;
+  }
+}
+@keyframes ball-along {
+  from {
+    left: 0;
+  }
+  to {
+    left: calc(100% - 9px);
   }
 }

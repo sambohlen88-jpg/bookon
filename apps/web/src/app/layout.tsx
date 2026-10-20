@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { siteUrl } from "@bookon/email";
 import { Suspense } from "react";
+import { PendingForms } from "@/components/pending-forms";
 import { PhoneTabs } from "@/components/phone-tabs";
 import { ServiceWorker } from "@/components/service-worker";
 import { SiteFooter } from "@/components/site-footer";
@@ -39,6 +40,9 @@ export default function RootLayout({
         <SiteFooter />
         <Suspense>
           <PhoneTabs />
+        </Suspense>
+        <Suspense>
+          <PendingForms />
         </Suspense>
         <ServiceWorker />
       </body>
