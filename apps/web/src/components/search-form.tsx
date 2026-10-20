@@ -31,6 +31,7 @@ export function SearchForm({
   mine = false,
   idPrefix = "",
   near = null,
+  pinButton = false,
 }: {
   values: SearchFormValues;
   courses: SearchableCourse[];
@@ -43,6 +44,8 @@ export function SearchForm({
   idPrefix?: string;
   /** This search's Near me location, to keep it switched on. */
   near?: Near | null;
+  /** Keep the button in view at the bottom of a scrolling side panel (the search page on desktop). */
+  pinButton?: boolean;
 }) {
   const id = (name: string) => `${idPrefix}${name}`;
   const today = perthDate(now);
@@ -243,13 +246,21 @@ export function SearchForm({
         );
       })}
 
-      <button
-        type="submit"
-        className="min-h-12 rounded-lg bg-brand px-4 text-base font-semibold text-brand-foreground"
+      <div
+        className={
+          pinButton
+            ? "sticky -bottom-5 -mx-5 -mb-5 flex flex-col border-t border-border bg-background px-5 pb-5 pt-3"
+            : "flex flex-col"
+        }
       >
-        <span className="play-golf">Find tee times</span>
-        <span className="play-bays">Find a bay</span>
-      </button>
+        <button
+          type="submit"
+          className="min-h-12 rounded-lg bg-brand px-4 text-base font-semibold text-brand-foreground"
+        >
+          <span className="play-golf">Find tee times</span>
+          <span className="play-bays">Find a bay</span>
+        </button>
+      </div>
     </form>
   );
 }
