@@ -1,8 +1,17 @@
 import { and, count, desc, eq, gte, inArray, isNotNull, isNull, sql } from "drizzle-orm";
-import { perthDate, weekDates, type CoachProfile } from "@bookon/core";
+import {
+  addPerthDays,
+  isoWeekday,
+  perthDate,
+  perthToUtc,
+  weekDates,
+  weeklyDates,
+  type CoachProfile,
+} from "@bookon/core";
 import type { Database } from "./client";
 import { logChange, type Actor } from "./admin";
-import { appSettings, coachContacts, coachPhotos, coaches, courses } from "./schema";
+import { GroupSessionClash, createGroupSessions } from "./groups";
+import { appSettings, coachContacts, coachPhotos, coaches, courses, groupSessions } from "./schema";
 
 /**
  * Coaches (Milestone 12). A coach signs in with their email and fills in a
@@ -536,7 +545,14 @@ export const SAMPLE_COACHES: {
       specialities: ["putting", "seniors", "club-fitting", "short-game"],
       rates: [
         { name: "Putting lesson", minutes: 30, priceCents: 6000, people: "1" },
-        { name: "Private lesson", minutes: 60, priceCents: 10500, people: "1" },
+        {
+          name: "Private lesson",
+          minutes: 60,
+          priceCents: 10500,
+          people: "1",
+          weekendCents: 11500,
+          publicHolidayCents: 13000,
+        },
         { name: "Club fitting", minutes: 90, priceCents: 15000, people: "1" },
       ],
       hours: [
@@ -563,6 +579,7 @@ export async function seedSampleCoaches(db: Database, now = new Date()): Promise
   const [existing] = await db.select({ n: count() }).from(coaches).where(eq(coaches.sample, true));
   if ((existing?.n ?? 0) > 0) {
     await samplesTakePracticeBookings(db, now);
+    await sampleGroupSessions(db, now);
     return 0;
   }
   const next = weekDates(perthDate(now), "next");
@@ -589,7 +606,74 @@ export async function seedSampleCoaches(db: Database, now = new Date()): Promise
       .onConflictDoNothing();
   }
   await samplesTakePracticeBookings(db, now);
+  await sampleGroupSessions(db, now);
   return SAMPLE_COACHES.length;
+}
+
+/**
+ * Weekly group sessions for two sample coaches (Milestone 19), so booking a
+ * spot can be tried locally. Added again once the last ones have passed.
+ */
+async function sampleGroupSessions(db: Database, now: Date): Promise<void> {
+  const samples = await db
+    .select({ id: coaches.id, email: coaches.email, profile: coaches.profile })
+    .from(coaches)
+    .where(eq(coaches.sample, true));
+  const today = perthDate(now);
+  const next = (weekday: number) =>
+    addPerthDays(today, ((weekday - isoWeekday(today) + 7) % 7) + 7);
+  const plans = [
+    {
+      email: "mia.hartley@example.com",
+      title: "Beginners' clinic",
+      details: "Grip, stance and your first full swings. Clubs to borrow if you need them.",
+      dates: weeklyDates(next(6), 4),
+      time: "15:00",
+      priceCents: 4000,
+      spots: 6,
+      minSpots: 3,
+    },
+    {
+      email: "daniel.reyes@example.com",
+      title: "Junior squad (8 to 14)",
+      details: "Games-based practice for juniors. Bring a drink and a hat.",
+      dates: weeklyDates(next(7), 4),
+      time: "08:00",
+      priceCents: 3500,
+      spots: 10,
+      minSpots: null,
+    },
+  ];
+  for (const plan of plans) {
+    const coach = samples.find((c) => c.email === plan.email);
+    const place = coach?.profile?.places[0];
+    if (!coach || !place) continue;
+    const [ahead] = await db
+      .select({ n: count() })
+      .from(groupSessions)
+      .where(and(eq(groupSessions.coachId, coach.id), gte(groupSessions.startTime, now)));
+    if ((ahead?.n ?? 0) > 0) continue;
+    try {
+      await createGroupSessions(
+        db,
+        {
+          coachId: coach.id,
+          title: plan.title,
+          details: plan.details,
+          starts: plan.dates.map((d) => perthToUtc(d, plan.time)),
+          minutes: 60,
+          place: place.suburb ? `${place.name}, ${place.suburb}` : place.name,
+          priceCents: plan.priceCents,
+          spots: plan.spots,
+          minSpots: plan.minSpots,
+        },
+        now,
+      );
+    } catch (error) {
+      // Someone booked a lesson then; skip the sample rather than stop.
+      if (!(error instanceof GroupSessionClash)) throw error;
+    }
+  }
 }
 
 /**

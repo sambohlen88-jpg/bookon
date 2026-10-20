@@ -818,6 +818,94 @@ export const lessonBookings = pgTable(
 );
 
 /*
+ * Group sessions (Milestone 19): a clinic or squad a coach runs for several
+ * golfers. Golfers buy spots and are charged straight away. Sessions set up
+ * to repeat weekly share a series id.
+ */
+export const groupSessions = pgTable(
+  "group_sessions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    coachId: uuid("coach_id")
+      .notNull()
+      .references(() => coaches.id, { onDelete: "restrict" }),
+    seriesId: uuid("series_id"),
+    title: text("title").notNull(),
+    details: text("details"),
+    startTime: timestamp("start_time", { withTimezone: true }).notNull(),
+    endTime: timestamp("end_time", { withTimezone: true }).notNull(),
+    place: text("place").notNull(),
+    /** Per spot. */
+    priceCents: integer("price_cents").notNull(),
+    spots: integer("spots").notNull(),
+    /** Called off, and everyone refunded, if fewer are booked by 24 hours before. */
+    minSpots: integer("min_spots"),
+    /** "open" or "cancelled". */
+    status: text("status").notNull().default("open"),
+    /** Set when the minimum was checked and reached, so it isn't checked again. */
+    goingAheadAt: timestamp("going_ahead_at", { withTimezone: true }),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+    /** "coach" or "minimum". */
+    cancelledBy: text("cancelled_by"),
+    coachNote: text("coach_note"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("group_sessions_coach_time_idx").on(t.coachId, t.startTime),
+    index("group_sessions_status_time_idx").on(t.status, t.startTime),
+  ],
+);
+
+export const groupBookingStatusEnum = pgEnum("group_booking_status", [
+  /** On the checkout page. Holds the spots until checkout_expires_at. */
+  "checkout",
+  /** Charged. */
+  "paid",
+  "cancelled",
+  /** Left the checkout without paying. */
+  "abandoned",
+]);
+
+export const groupBookings = pgTable(
+  "group_bookings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sessionId: uuid("session_id")
+      .notNull()
+      .references(() => groupSessions.id, { onDelete: "restrict" }),
+    status: groupBookingStatusEnum("status").notNull().default("checkout"),
+    spots: integer("spots").notNull(),
+    golferName: text("golfer_name").notNull(),
+    /** Lower case. */
+    golferEmail: text("golfer_email").notNull(),
+    golferPhone: text("golfer_phone").notNull(),
+    /** Who's coming, ages for juniors, and so on. */
+    note: text("note"),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    /** All spots, at the session's price when booked. */
+    spotsCents: integer("spots_cents").notNull(),
+    /** BookOn's booking fee, once per booking. */
+    feeCents: integer("fee_cents").notNull(),
+    manageToken: text("manage_token").notNull().unique(),
+    provider: text("provider").notNull(),
+    checkoutId: text("checkout_id"),
+    checkoutExpiresAt: timestamp("checkout_expires_at", { withTimezone: true }).notNull(),
+    paymentId: text("payment_id"),
+    paidAt: timestamp("paid_at", { withTimezone: true }),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+    /** "golfer", "coach" or "minimum". */
+    cancelledBy: text("cancelled_by"),
+    refundCents: integer("refund_cents").notNull().default(0),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("group_bookings_session_idx").on(t.sessionId),
+    index("group_bookings_email_idx").on(t.golferEmail),
+    index("group_bookings_status_idx").on(t.status),
+  ],
+);
+
+/*
  * Times a coach can't be booked, besides their lessons (Milestone 16): times
  * they blocked out on BookOn, and busy times read from their own calendar.
  * Only start and end are kept from their calendar, never what the event is.

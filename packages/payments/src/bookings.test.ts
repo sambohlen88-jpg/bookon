@@ -28,12 +28,12 @@ import {
   coachPaymentsSetupLink,
   coachTakesBookings,
   declineLessonRequest,
-  handlePaymentEvent,
   lessonPaid,
   startLessonCheckout,
   tidyLessons,
   type LessonContext,
 } from "./bookings";
+import { handlePaymentEvent } from "./events";
 import type { CheckoutInput, CheckoutState, PaymentProvider } from "./provider";
 
 // Sunday 18 October 2026, 10 am Perth.
@@ -358,6 +358,35 @@ describe("cancelling", () => {
     expect(mail.take()).toEqual([
       "alex@example.com: Jo Coach cancelled your lesson on Sat 7 Nov, 10:00 am",
     ]);
+  });
+});
+
+describe("special rates", () => {
+  it("charge the coach's weekend price on a Saturday, and say so on the booking", async () => {
+    const { schema } = await import("@bookon/db");
+    const { eq } = await import("drizzle-orm");
+    const before = (await freshCoach()).profile!;
+    const weekend = {
+      ...before,
+      rates: [{ ...before.rates[0]!, weekendCents: 11000 }, ...before.rates.slice(1)],
+    };
+    await handle.db
+      .update(schema.coaches)
+      .set({ profile: weekend })
+      .where(eq(schema.coaches.id, coach.id));
+    await startLessonCheckout(ctx(), {
+      coach: await freshCoach(),
+      ...request("11:00", "2026-11-14"),
+    });
+    const checkout = payments.checkouts.at(-1)!;
+    expect(checkout.lessonCents).toBe(11000);
+    const booking = (await lessonById(handle.db, checkout.bookingId))!;
+    expect(booking.rate).toMatchObject({ priceCents: 11000, charged: "weekend" });
+    await markLessonAbandoned(handle.db, booking.id);
+    await handle.db
+      .update(schema.coaches)
+      .set({ profile: before })
+      .where(eq(schema.coaches.id, coach.id));
   });
 });
 

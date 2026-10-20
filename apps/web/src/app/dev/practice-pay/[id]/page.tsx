@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { formatPerthDay, formatPerthTime, formatPrice, perthDate } from "@bookon/core";
-import { coachById, lessonById, lessonTotalCents } from "@bookon/db";
+import {
+  coachById,
+  groupBookingById,
+  groupBookingTotalCents,
+  groupSessionById,
+  lessonById,
+  lessonTotalCents,
+} from "@bookon/db";
 import { practicePay, practiceLeave } from "@/app/dev/practice-pay/[id]/actions";
 import { SiteHeader } from "@/components/site-header";
 import { Notice, primaryButton, secondaryButton } from "@/components/ui";
@@ -13,15 +20,16 @@ export const metadata: Metadata = { title: "Practice checkout · BookOn", robots
 
 /**
  * Stands in for Stripe's checkout page on a local database with no Stripe
- * keys, so booking a lesson can be tried without moving money.
+ * keys, so booking a lesson or group session can be tried without moving money.
  */
 export default async function PracticePayPage({ params }: { params: Promise<{ id: string }> }) {
   if ((await lessonPayments())?.kind !== "practice") notFound();
   const db = getDb();
-  const booking = await lessonById(db, (await params).id);
-  if (!booking) notFound();
-  const coach = await coachById(db, booking.coachId);
-  const open = booking.status === "checkout" && booking.checkoutExpiresAt > new Date();
+  const { id } = await params;
+  const now = new Date();
+  const checkout = await practiceCheckout(db, id);
+  if (!checkout) notFound();
+  const open = checkout.status === "checkout" && checkout.expiresAt > now;
 
   return (
     <>
@@ -36,31 +44,29 @@ export default async function PracticePayPage({ params }: { params: Promise<{ id
           uses Apple Pay or Google Pay.
         </p>
         <div className="mt-6 rounded-xl border border-border p-4">
-          <p className="font-semibold">
-            {booking.rate.name}, {booking.rate.minutes} min with {coach?.profile?.name}
-          </p>
+          <p className="font-semibold">{checkout.title}</p>
           <p className="mt-1 text-sm">
-            {formatPerthDay(perthDate(booking.startTime))}, {formatPerthTime(booking.startTime)}
+            {formatPerthDay(perthDate(checkout.startTime))}, {formatPerthTime(checkout.startTime)}
           </p>
           <dl className="mt-3 grid grid-cols-[1fr_auto] gap-y-1 text-sm tabular-nums">
-            <dt>Lesson</dt>
-            <dd>{formatPrice(booking.lessonCents)}</dd>
+            <dt>{checkout.item}</dt>
+            <dd>{formatPrice(checkout.itemCents)}</dd>
             <dt>BookOn booking fee</dt>
-            <dd>{formatPrice(booking.feeCents)}</dd>
+            <dd>{formatPrice(checkout.feeCents)}</dd>
             <dt className="font-semibold">Total</dt>
-            <dd className="font-semibold">{formatPrice(lessonTotalCents(booking))}</dd>
+            <dd className="font-semibold">{formatPrice(checkout.totalCents)}</dd>
           </dl>
         </div>
         {open ? (
           <div className="mt-6 flex flex-col gap-3">
             <form action={practicePay}>
-              <input type="hidden" name="id" value={booking.id} />
+              <input type="hidden" name="id" value={id} />
               <button type="submit" className={`${primaryButton} w-full`}>
-                Hold {formatPrice(lessonTotalCents(booking))} (practice)
+                {checkout.group ? "Pay" : "Hold"} {formatPrice(checkout.totalCents)} (practice)
               </button>
             </form>
             <form action={practiceLeave}>
-              <input type="hidden" name="id" value={booking.id} />
+              <input type="hidden" name="id" value={id} />
               <button type="submit" className={`${secondaryButton} w-full`}>
                 Back, without paying
               </button>
@@ -74,4 +80,38 @@ export default async function PracticePayPage({ params }: { params: Promise<{ id
       </main>
     </>
   );
+}
+
+/** A lesson or group booking at checkout, as the practice page shows it. */
+async function practiceCheckout(db: ReturnType<typeof getDb>, id: string) {
+  const lesson = await lessonById(db, id);
+  if (lesson) {
+    const coach = await coachById(db, lesson.coachId);
+    return {
+      group: false,
+      title: `${lesson.rate.name}, ${lesson.rate.minutes} min with ${coach?.profile?.name}`,
+      startTime: lesson.startTime,
+      item: "Lesson",
+      itemCents: lesson.lessonCents,
+      feeCents: lesson.feeCents,
+      totalCents: lessonTotalCents(lesson),
+      status: lesson.status,
+      expiresAt: lesson.checkoutExpiresAt,
+    };
+  }
+  const booking = await groupBookingById(db, id);
+  const session = booking ? await groupSessionById(db, booking.sessionId) : null;
+  if (!booking || !session) return null;
+  const coach = await coachById(db, session.coachId);
+  return {
+    group: true,
+    title: `${session.title} with ${coach?.profile?.name}`,
+    startTime: session.startTime,
+    item: `${booking.spots} ${booking.spots === 1 ? "spot" : "spots"}`,
+    itemCents: booking.spotsCents,
+    feeCents: booking.feeCents,
+    totalCents: groupBookingTotalCents(booking),
+    status: booking.status,
+    expiresAt: booking.checkoutExpiresAt,
+  };
 }

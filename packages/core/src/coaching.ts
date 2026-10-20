@@ -38,6 +38,12 @@ export interface CoachRate {
   priceCents: number;
   /** "1" for one person, "2" for two, "group" for a clinic priced per person. */
   people: "1" | "2" | "group";
+  /** Special rates (Milestone 19), each optional: the normal price applies when left out. */
+  weekendCents?: number;
+  publicHolidayCents?: number;
+  schoolHolidayCents?: number;
+  /** On a booking only: which price was charged, when it wasn't the standard one. */
+  charged?: "weekend" | "public-holiday" | "school-holiday";
 }
 
 /** A block of usual teaching hours. Perth wall-clock times. */
@@ -118,9 +124,11 @@ export function teachingDates(
   });
 }
 
-/** The cheapest lesson, for "from $65". */
+/** The cheapest lesson, for "from $65", counting special rates too. */
 export function fromPriceCents(profile: Pick<CoachProfile, "rates">): number | null {
-  const prices = profile.rates.map((r) => r.priceCents).filter((p) => p > 0);
+  const prices = profile.rates
+    .flatMap((r) => [r.priceCents, r.weekendCents, r.publicHolidayCents, r.schoolHolidayCents])
+    .filter((p): p is number => typeof p === "number" && p > 0);
   return prices.length > 0 ? Math.min(...prices) : null;
 }
 

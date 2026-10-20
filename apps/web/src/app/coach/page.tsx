@@ -6,15 +6,17 @@ import {
   COACH_CONSENT,
   coachContactCounts,
   coachForEmail,
+  groupSessionsForCoach,
   lessonPaymentSettings,
   lessonsForCoach,
   listCoachPhotos,
   listCourseDetails,
 } from "@bookon/db";
-import { refreshCoachPayments } from "@bookon/payments";
+import { coachTakesBookings, placeLabel, refreshCoachPayments } from "@bookon/payments";
 import { saveCoachListing, sendCoachListing } from "@/app/coach/actions";
 import { CoachLessons } from "@/components/coach-lessons";
 import { CoachPhotoUploader } from "@/components/coach-photo-uploader";
+import { CoachSessions } from "@/components/coach-sessions";
 import { Checkbox, Field, Fieldset, Select, TextArea, fieldLabel } from "@/components/form";
 import { SiteHeader } from "@/components/site-header";
 import { Notice, primaryButton, secondaryButton, textInput } from "@/components/ui";
@@ -82,6 +84,8 @@ export default async function CoachPortal({
     }
   }
   const lessons = coach && ctx ? await lessonsForCoach(db, coach.id, ctx.now) : null;
+  const sessions = coach && ctx ? await groupSessionsForCoach(db, coach.id, ctx.now) : null;
+  const canAddSessions = coach && ctx ? await coachTakesBookings(ctx, coach) : false;
   const paymentSettings = await lessonPaymentSettings(db);
   const changesWaiting = Boolean(coach?.profile && coach.draft);
 
@@ -131,6 +135,18 @@ export default async function CoachPortal({
                 : query.done === "declined"
                   ? "Declined. The hold on the golfer's card is released and we've told them."
                   : "Cancelled. The golfer is refunded in full and we've told them."}
+            </Notice>
+          )}
+          {query.sessions && (
+            <Notice tone="info">
+              {query.sessions === "1"
+                ? "Added. It's on your page for golfers to book."
+                : `Added ${query.sessions} weekly sessions. They're on your page for golfers to book.`}
+            </Notice>
+          )}
+          {query.sessionCancelled && (
+            <Notice tone="info">
+              Cancelled. Everyone who booked is being refunded in full, and we&apos;ve emailed them.
             </Notice>
           )}
           {query.bookings === "on" && (
@@ -183,6 +199,14 @@ export default async function CoachPortal({
             provider={ctx?.payments.kind ?? null}
             enabled={paymentSettings.enabled}
             feeCents={paymentSettings.feeCents}
+            now={ctx!.now}
+          />
+        )}
+        {coach?.status === "live" && coach.profile && sessions && (
+          <CoachSessions
+            sessions={sessions}
+            places={coach.profile.places.map(placeLabel)}
+            canAdd={canAddSessions}
             now={ctx!.now}
           />
         )}
@@ -348,6 +372,46 @@ export default async function CoachPortal({
                       ))}
                     </select>
                   </div>
+                  <details
+                    className="sm:col-span-4"
+                    open={Boolean(
+                      rate?.weekendCents || rate?.publicHolidayCents || rate?.schoolHolidayCents,
+                    )}
+                  >
+                    <summary className="cursor-pointer text-sm font-medium text-brand">
+                      Different price on weekends or holidays?
+                    </summary>
+                    <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                      <Field
+                        label="Weekends $"
+                        name={`rate${i}Weekend`}
+                        inputMode="decimal"
+                        defaultValue={rate?.weekendCents ? String(rate.weekendCents / 100) : ""}
+                      />
+                      <Field
+                        label="Public holidays $"
+                        name={`rate${i}PublicHoliday`}
+                        inputMode="decimal"
+                        defaultValue={
+                          rate?.publicHolidayCents ? String(rate.publicHolidayCents / 100) : ""
+                        }
+                      />
+                      <Field
+                        label="School holidays $"
+                        name={`rate${i}SchoolHoliday`}
+                        inputMode="decimal"
+                        defaultValue={
+                          rate?.schoolHolidayCents ? String(rate.schoolHolidayCents / 100) : ""
+                        }
+                      />
+                    </div>
+                    <p className="mt-2 text-sm text-muted">
+                      Leave any empty to use the price above. If a day is more than one (say, a
+                      Saturday in the school holidays), the public holiday price comes first, then
+                      weekend, then school holiday. BookOn uses WA public holidays and public school
+                      holidays.
+                    </p>
+                  </details>
                 </div>
               );
             })}

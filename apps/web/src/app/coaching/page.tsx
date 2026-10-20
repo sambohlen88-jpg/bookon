@@ -66,6 +66,33 @@ export default async function CoachingPage() {
               </p>
             </div>
           </div>
+          <h2 className="mt-12 text-2xl font-bold tracking-tight md:text-3xl">
+            When golfers book and pay on BookOn
+          </h2>
+          <ul className="mt-6 grid gap-4 md:grid-cols-3 md:gap-6">
+            <li className={card}>
+              <h3 className="text-lg font-semibold">Your calendar, in sync</h3>
+              <p className="mt-2 text-muted">
+                See your month on BookOn, block out time, and have lessons appear in Apple, Google
+                or Outlook calendar. Busy times in your own calendar can&apos;t be booked.
+              </p>
+            </li>
+            <li className={card}>
+              <h3 className="text-lg font-semibold">Weekend and holiday prices</h3>
+              <p className="mt-2 text-muted">
+                Set a different price for weekends, WA public holidays or school holidays. Golfers
+                see the right price for the day they pick.
+              </p>
+            </li>
+            <li className={card}>
+              <h3 className="text-lg font-semibold">Group sessions</h3>
+              <p className="mt-2 text-muted">
+                Put on clinics and squads, weekly if you like. Golfers buy spots and pay up front.
+                Set a minimum and it&apos;s called off and refunded for you if it isn&apos;t
+                reached.
+              </p>
+            </li>
+          </ul>
           <Link href={start} className={`${primaryButton} mt-8`}>
             {user ? "Open my listing" : "Sign in to start"}
           </Link>

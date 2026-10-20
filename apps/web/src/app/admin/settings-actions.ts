@@ -1,7 +1,8 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { normaliseEmail, setPitchContact } from "@bookon/db";
+import { parsePublicHolidays, parseSchoolHolidays } from "@bookon/core";
+import { normaliseEmail, setPitchContact, setWaCalendar } from "@bookon/db";
 import { requireAdmin } from "@/lib/access";
 import { getDb } from "@/lib/db";
 
@@ -22,4 +23,29 @@ export async function savePitchContact(formData: FormData) {
     new Date(),
   );
   redirect("/admin/settings?saved=1");
+}
+
+/** WA public and school holiday dates, for coaches' special rates (Milestone 19). */
+export async function saveWaCalendar(formData: FormData) {
+  const { actor } = await requireAdmin();
+  const publicHolidays = parsePublicHolidays(String(formData.get("publicHolidays") ?? ""));
+  const schoolHolidays = parseSchoolHolidays(String(formData.get("schoolHolidays") ?? ""));
+  const bad = [...publicHolidays.bad, ...schoolHolidays.bad];
+  if (bad.length > 0) {
+    const p = new URLSearchParams({
+      error: "holidays",
+      bad: bad
+        .slice(0, 3)
+        .map((line) => line.slice(0, 80))
+        .join("\n"),
+    });
+    redirect(`/admin/settings?${p}#holidays`);
+  }
+  await setWaCalendar(
+    getDb(),
+    { publicHolidays: publicHolidays.list, schoolHolidays: schoolHolidays.list },
+    actor,
+    new Date(),
+  );
+  redirect("/admin/settings?saved=1#holidays");
 }

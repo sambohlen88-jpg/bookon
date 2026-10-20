@@ -3,9 +3,11 @@ import Link from "next/link";
 import { AREAS } from "@bookon/core";
 import { listLiveCoaches } from "@bookon/db";
 import { CoachDirectory } from "@/components/coach-directory";
+import { GroupSessionList } from "@/components/group-session-list";
 import { SiteHeader } from "@/components/site-header";
 import { directoryCoach } from "@/lib/coaches";
 import { getDb } from "@/lib/db";
+import { bookableGroupSessions } from "@/lib/group-sessions";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -17,6 +19,7 @@ export const metadata: Metadata = {
 export default async function CoachesPage() {
   const now = new Date();
   const coaches = (await listLiveCoaches(getDb())).map((c) => directoryCoach(c, now));
+  const sessions = await bookableGroupSessions(getDb(), now, 6);
   const areas = AREAS.filter((a) => coaches.some((c) => c.area === a.id)).map((a) => ({
     id: a.id,
     name: a.name,
@@ -36,6 +39,17 @@ export default async function CoachesPage() {
           </p>
         ) : (
           <CoachDirectory coaches={coaches} areas={areas} />
+        )}
+        {sessions.length > 0 && (
+          <section aria-labelledby="sessions" className="mt-10 max-w-3xl">
+            <h2 id="sessions" className="text-xl font-semibold">
+              Group sessions coming up
+            </h2>
+            <p className="mt-1 text-sm text-muted">
+              Clinics and squads with spots left. Book a spot, or a few for friends or family.
+            </p>
+            <GroupSessionList sessions={sessions} />
+          </section>
         )}
         <div className="mt-12 rounded-xl bg-surface p-5 md:flex md:items-center md:justify-between md:gap-6">
           <div>

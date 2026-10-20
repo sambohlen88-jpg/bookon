@@ -1,14 +1,20 @@
-import { formatPrice } from "@bookon/core";
-import { SOCIAL_NETWORKS, lessonPaymentSettings, pitchContact, socialLinks } from "@bookon/db";
+import { formatPrice, formatPublicHolidays, formatSchoolHolidays } from "@bookon/core";
+import {
+  SOCIAL_NETWORKS,
+  lessonPaymentSettings,
+  pitchContact,
+  socialLinks,
+  waCalendar,
+} from "@bookon/db";
 import { saveSocialLinks } from "@/app/admin/coach-actions";
 import {
   saveBookingFee,
   turnLessonPaymentsOff,
   turnLessonPaymentsOn,
 } from "@/app/admin/lesson-actions";
-import { savePitchContact } from "@/app/admin/settings-actions";
+import { savePitchContact, saveWaCalendar } from "@/app/admin/settings-actions";
 import { PageTitle, panel } from "@/components/admin/ui";
-import { Field } from "@/components/form";
+import { Field, TextArea } from "@/components/form";
 import { Notice, primaryButton, secondaryButton } from "@/components/ui";
 import { requireAdmin } from "@/lib/access";
 import { getDb } from "@/lib/db";
@@ -24,7 +30,10 @@ export default async function AdminSettings({
   const links = await socialLinks(getDb());
   const contact = await pitchContact(getDb());
   const lessons = await lessonPaymentSettings(getDb());
-  const { saved, error } = await searchParams;
+  const holidays = await waCalendar(getDb());
+  const query = await searchParams;
+  const { saved, error } = query;
+  const bad = query.bad?.split("\n") ?? [];
   return (
     <>
       <PageTitle title="Settings" />
@@ -69,6 +78,40 @@ export default async function AdminSettings({
           </button>
         </form>
       </section>
+      <form id="holidays" action={saveWaCalendar} className={`${panel} mb-6 flex flex-col gap-4`}>
+        <h2 className="text-lg font-semibold">WA holiday dates</h2>
+        <p className="text-sm text-muted">
+          Used for coaches&apos; public holiday and school holiday prices. Add new years when WA
+          announces them. One per line, dates as year-month-day.
+        </p>
+        {error === "holidays" && (
+          <Notice tone="warning">
+            Nothing saved. These lines need fixing:{" "}
+            {bad.map((b) => `"${b}"`).join(", ") || "check the dates"}.
+          </Notice>
+        )}
+        <TextArea
+          label="Public holidays"
+          name="publicHolidays"
+          required
+          rows={10}
+          maxLength={6000}
+          defaultValue={formatPublicHolidays(holidays.publicHolidays)}
+          hint="Like: 2028-01-26 Australia Day"
+        />
+        <TextArea
+          label="School holidays"
+          name="schoolHolidays"
+          required
+          rows={8}
+          maxLength={4000}
+          defaultValue={formatSchoolHolidays(holidays.schoolHolidays)}
+          hint="Like: 2028-04-08 to 2028-04-23 Easter school holidays. Include the weekends either side."
+        />
+        <button type="submit" className={primaryButton}>
+          Save holiday dates
+        </button>
+      </form>
       <form action={savePitchContact} className={`${panel} mb-6 flex flex-col gap-4`}>
         <h2 className="text-lg font-semibold">Contact on pitch reports</h2>
         <p className="text-sm text-muted">Printed at the bottom of each club pitch report.</p>

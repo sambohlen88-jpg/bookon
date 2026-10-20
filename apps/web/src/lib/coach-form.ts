@@ -62,6 +62,11 @@ export function parseCoachForm(
   if (places.some((p) => !p.name || !p.suburb))
     problems.push("Give each place you teach a name and suburb.");
 
+  const SPECIAL_NAMES: Record<string, string> = {
+    Weekend: "weekend",
+    PublicHoliday: "public holiday",
+    SchoolHoliday: "school holiday",
+  };
   const rates: CoachRate[] = [];
   for (let i = 0; i < MAX_RATES; i++) {
     const rateName = str(form, `rate${i}Name`, 60);
@@ -77,11 +82,28 @@ export function parseCoachForm(
       problems.push(`Lesson ${i + 1} needs a name, a length in minutes and a price.`);
       continue;
     }
+    // Special rates (Milestone 19): optional, the normal price applies when empty.
+    const special = (field: string): number | undefined => {
+      const text = String(form.get(`rate${i}${field}`) ?? "").replace(/[$,\s]/g, "");
+      if (!text) return undefined;
+      const value = Number(text);
+      if (!(value > 0 && value < 10000)) {
+        problems.push(`Lesson ${i + 1}: check the ${SPECIAL_NAMES[field]} price.`);
+        return undefined;
+      }
+      return Math.round(value * 100);
+    };
+    const weekendCents = special("Weekend");
+    const publicHolidayCents = special("PublicHoliday");
+    const schoolHolidayCents = special("SchoolHoliday");
     rates.push({
       name: rateName,
       minutes,
       priceCents: Math.round(price * 100),
       people: people === "2" || people === "group" ? people : "1",
+      ...(weekendCents ? { weekendCents } : {}),
+      ...(publicHolidayCents ? { publicHolidayCents } : {}),
+      ...(schoolHolidayCents ? { schoolHolidayCents } : {}),
     });
   }
   if (rates.length === 0) problems.push("Add at least one lesson and its price.");

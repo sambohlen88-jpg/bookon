@@ -57,6 +57,12 @@ Data is read from public booking pages with the owner's approval, ahead of forma
 - [ ] Privacy policy: BookOn reads a coach's calendar link for busy times only (start and end), and keeps no event names or details.
 - [ ] Coaches' calendar links are private. If a coach's link leaks, they can make a new BookOn link in My calendar, and reset their own calendar's secret address in Google, iCloud or Outlook.
 
+## Special rates and group sessions (Milestone 19)
+
+- [ ] **WA holiday dates:** 2027 school term dates were preliminary when added. Check them against the Department of Education's final list, and add 2028 public and school holidays in Admin, Settings once WA publishes them. Until then, 2028 days get the standard price (and the 2027-28 summer holidays stop at 31 December 2027).
+- [ ] **Group session terms** reviewed by a lawyer with the lesson terms: charged on booking, full refund up to 24 hours before, called off and refunded if the minimum isn't reached, coach cancellations refunded in full. The coach terms in `LESSON_PAYMENT_TERMS` don't mention group sessions yet; updating them means bumping `LESSON_PAYMENT_TERMS_VERSION`, so every coach agrees again.
+- [ ] Try a group booking and a called-off session in Stripe test mode (refunds use the same Stripe calls as lessons).
+
 ## Business and legal
 
 - [ ] Create the **info@bookon.com.au** mailbox. It is already in the worker's user agent, so clubs may write to it.

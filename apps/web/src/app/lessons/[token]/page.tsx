@@ -6,6 +6,7 @@ import {
   formatAuPhone,
   formatPerthDay,
   formatPerthTime,
+  RATE_KIND_NAME,
   formatPrice,
   googleCalendarEventLink,
   perthDate,
@@ -151,6 +152,11 @@ export default async function LessonPage({
           <dd className="tabular-nums">
             {formatPrice(booking.lessonCents)} + {formatPrice(booking.feeCents)} booking fee ={" "}
             <strong>{formatPrice(total)}</strong>
+            {booking.rate.charged && (
+              <span className="block text-sm text-muted">
+                {RATE_KIND_NAME[booking.rate.charged]}
+              </span>
+            )}
           </dd>
         </dl>
 

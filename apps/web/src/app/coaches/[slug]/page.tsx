@@ -9,15 +9,18 @@ import {
   formatAuPhone,
   formatPerthDay,
   formatPrice,
+  hasSpecialRates,
   perthDate,
+  specialRatesLine,
   specialityName,
   weekDates,
   whatsappLink,
 } from "@bookon/core";
-import { coachById, courseDetails, liveCoachBySlug } from "@bookon/db";
+import { coachById, courseDetails, liveCoachBySlug, upcomingGroupSessions } from "@bookon/db";
 import { coachTakesBookings } from "@bookon/payments";
 import { CoachAvatar, CoachBadges } from "@/components/coach-avatar";
 import { ContactLink } from "@/components/coach-contact";
+import { GroupSessionList } from "@/components/group-session-list";
 import { SiteHeader } from "@/components/site-header";
 import { primaryButton } from "@/components/ui";
 import { clockLabel, coachWeeks, dayLabel } from "@/lib/coaches";
@@ -66,11 +69,15 @@ export default async function CoachPage({ params }: { params: Promise<{ slug: st
       : null;
   const awayAhead = profile.away.filter((a) => a.to >= today);
   const payments = await lessonPayments();
-  const bookable =
+  const takesBookings =
     payments !== null &&
     coach.takesBookings &&
-    bookableRates(profile).length > 0 &&
     (await coachTakesBookings({ db, payments }, (await coachById(db, coach.id))!));
+  const bookable = takesBookings && bookableRates(profile).length > 0;
+  // Group sessions (Milestone 19), only bookable while the coach takes bookings.
+  const sessions = takesBookings
+    ? (await upcomingGroupSessions(db, now, [coach.id])).slice(0, 12)
+    : [];
 
   return (
     <>
@@ -183,6 +190,18 @@ export default async function CoachPage({ params }: { params: Promise<{ slug: st
             </p>
           </section>
 
+          {sessions.length > 0 && (
+            <section aria-labelledby="sessions" className="mt-8">
+              <h2 id="sessions" className="text-xl font-semibold">
+                Group sessions
+              </h2>
+              <p className="mt-1 text-sm text-muted">
+                Book a spot, or a few for friends or family. Price is per spot.
+              </p>
+              <GroupSessionList sessions={sessions.map((s) => ({ ...s, coachSlug: coach.slug }))} />
+            </section>
+          )}
+
           {profile.rates.length > 0 && (
             <section aria-labelledby="rates" className="mt-8">
               <h2 id="rates" className="text-xl font-semibold">
@@ -199,6 +218,9 @@ export default async function CoachPage({ params }: { params: Promise<{ slug: st
                       <span className="block text-sm text-muted">
                         {r.minutes} min · {PEOPLE[r.people]}
                       </span>
+                      {hasSpecialRates(r) && (
+                        <span className="block text-sm text-muted">{specialRatesLine(r)}</span>
+                      )}
                     </span>
                     <span className="shrink-0 font-semibold tabular-nums">
                       {formatPrice(r.priceCents)}

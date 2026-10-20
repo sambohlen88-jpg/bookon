@@ -4,3 +4,4 @@ export * from "./push";
 export * from "./club-emails";
 export * from "./coach-emails";
 export * from "./lesson-emails";
+export * from "./group-emails";

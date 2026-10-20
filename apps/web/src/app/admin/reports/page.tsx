@@ -1,5 +1,5 @@
 import { addPerthDays, formatPrice, perthToUtc } from "@bookon/core";
-import { courseActivity, lessonTotals, unbookedReport } from "@bookon/db";
+import { courseActivity, groupTotals, lessonTotals, unbookedReport } from "@bookon/db";
 import { ReportRange, ReportTable } from "@/components/admin/report";
 import { PageTitle } from "@/components/admin/ui";
 import { UnbookedSection } from "@/components/admin/unbooked";
@@ -18,6 +18,11 @@ export default async function ReportsPage({
   // One after another: the local database takes one query at a time.
   const unbooked = await unbookedReport(getDb(), from, to, now);
   const lessons = await lessonTotals(
+    getDb(),
+    perthToUtc(from, "00:00"),
+    perthToUtc(addPerthDays(to, 1), "00:00"),
+  );
+  const groups = await groupTotals(
     getDb(),
     perthToUtc(from, "00:00"),
     perthToUtc(addPerthDays(to, 1), "00:00"),
@@ -41,6 +46,21 @@ export default async function ReportsPage({
             ["Accepted by coaches", String(lessons.booked)],
             ["Paid to coaches", formatPrice(lessons.coachCents)],
             ["Booking fees", formatPrice(lessons.feeCents)],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-xl border border-border p-4">
+              <dt className="text-sm text-muted">{label}</dt>
+              <dd className="mt-1 text-2xl font-semibold tabular-nums">{value}</dd>
+            </div>
+          ))}
+        </dl>
+        <h3 className="mt-6 font-semibold">Group sessions</h3>
+        <p className="mt-1 text-sm text-muted">Paid in these dates. After refunds.</p>
+        <dl className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
+          {[
+            ["Bookings", String(groups.bookings)],
+            ["Spots", String(groups.spots)],
+            ["Paid to coaches", formatPrice(groups.coachCents)],
+            ["Booking fees", formatPrice(groups.feeCents)],
           ].map(([label, value]) => (
             <div key={label} className="rounded-xl border border-border p-4">
               <dt className="text-sm text-muted">{label}</dt>

@@ -1,4 +1,11 @@
-import { bookableRates, freeToCancel, lessonSlots, perthDate, type CoachRate } from "@bookon/core";
+import {
+  bookableRates,
+  freeToCancel,
+  lessonSlots,
+  perthDate,
+  ratePriceAt,
+  type CoachRate,
+} from "@bookon/core";
 import {
   acceptLesson,
   cancelLesson,
@@ -6,7 +13,6 @@ import {
   createLessonBooking,
   declineLesson,
   lapseLesson,
-  lessonByCheckout,
   lessonPaymentSettings,
   lessonTotalCents,
   markLessonAbandoned,
@@ -17,6 +23,7 @@ import {
   setLessonCheckout,
   staleLessonCheckouts,
   takenLessonTimes,
+  waCalendar,
   type Coach,
   type Database,
   type LessonBooking,
@@ -36,7 +43,7 @@ import {
   type EmailMessage,
   type Mailer,
 } from "@bookon/email";
-import { PaymentError, usableAccount, type PaymentProvider, type WebhookEvent } from "./provider";
+import { PaymentError, usableAccount, type PaymentProvider } from "./provider";
 
 /**
  * The steps of booking a lesson, from checkout to the lesson (Milestone 15).
@@ -126,11 +133,17 @@ export async function startLessonCheckout(
     throw new BookingProblem("Sorry, that time isn't free any more. Please pick another.");
 
   const { feeCents } = await lessonPaymentSettings(ctx.db);
+  // Weekend, public holiday or school holiday price, when the coach set one.
+  const price = ratePriceAt(rate, request.startTime, await waCalendar(ctx.db));
   const booking = await createLessonBooking(
     ctx.db,
     {
       coachId: coach.id,
-      rate,
+      rate: {
+        ...rate,
+        priceCents: price.cents,
+        ...(price.kind === "standard" ? {} : { charged: price.kind }),
+      },
       startTime: request.startTime,
       place: request.place,
       golferName: request.golferName,
@@ -409,27 +422,6 @@ export async function tidyLessons(ctx: LessonContext): Promise<{ closed: number;
     }
   }
   return { closed, lapsed };
-}
-
-/** Act on a webhook from Stripe. */
-export async function handlePaymentEvent(ctx: LessonContext, event: WebhookEvent): Promise<void> {
-  switch (event.type) {
-    case "checkout.complete": {
-      const booking = await lessonByCheckout(ctx.db, event.checkoutId);
-      if (booking) await lessonPaid(ctx, booking.id, event.paymentId);
-      return;
-    }
-    case "checkout.expired": {
-      const booking = await lessonByCheckout(ctx.db, event.checkoutId);
-      if (booking) await markLessonAbandoned(ctx.db, booking.id);
-      return;
-    }
-    case "account.updated":
-      await setCoachPaymentsReady(ctx.db, event.accountId, event.ready, ctx.now);
-      return;
-    case "ignored":
-      return;
-  }
 }
 
 /** Where to send a coach to set up (or finish setting up) their payment account. */

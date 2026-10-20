@@ -9,6 +9,7 @@ import {
 } from "@bookon/core";
 import type { Database } from "./client";
 import { logChange, type Actor } from "./admin";
+import { groupSessionTimes } from "./groups";
 import { appSettings, coachBusy, coaches, lessonBookings } from "./schema";
 
 /**
@@ -127,7 +128,8 @@ export function acceptedLessonPaymentTerms(consents: Record<string, unknown>): b
 
 /**
  * Times a coach can't be booked: lessons held or booked, checkouts still
- * open, times they blocked out, and busy times from their own calendar.
+ * open, times they blocked out, busy times from their own calendar, and
+ * their group sessions.
  */
 export async function takenLessonTimes(
   db: Database,
@@ -152,7 +154,8 @@ export async function takenLessonTimes(
     .select({ start: coachBusy.startTime, end: coachBusy.endTime })
     .from(coachBusy)
     .where(and(eq(coachBusy.coachId, coachId), gt(coachBusy.endTime, now)));
-  return [...lessons, ...busy];
+  const sessions = await groupSessionTimes(db, coachId, now);
+  return [...lessons, ...busy, ...sessions];
 }
 
 export class LessonTimeTaken extends Error {

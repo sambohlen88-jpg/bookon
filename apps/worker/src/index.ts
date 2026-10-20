@@ -28,7 +28,7 @@ import {
   type PollableCourse,
 } from "@bookon/db";
 import { WebPushSender, createMailer, siteUrl, vapidKeys } from "@bookon/email";
-import { paymentProvider, tidyLessons } from "@bookon/payments";
+import { paymentProvider, tidyGroups, tidyLessons } from "@bookon/payments";
 import { sendAlertNotifications } from "./alerts";
 import { refreshCoachCalendars } from "./calendars";
 import { loadConfig } from "./config";
@@ -127,7 +127,9 @@ async function alertsOnce() {
 
 /**
  * Lesson bookings (Milestone 15): release holds the coach didn't answer in time,
- * and free times left at checkout. Never stops the worker either.
+ * and free times left at checkout. Group sessions (Milestone 19): call off
+ * sessions short of their minimum 24 hours before, and refund anyone on a
+ * cancelled session. Never stops the worker either.
  */
 async function lessonsOnce() {
   const payments = paymentProvider(process.env, {
@@ -136,15 +138,21 @@ async function lessonsOnce() {
   });
   if (!payments) return;
   try {
-    const result = await tidyLessons({
+    const ctx = {
       db: handle.db,
       payments,
       mailer: createMailer(handle.db),
       site: siteUrl(),
       now: new Date(),
-    });
+    };
+    const result = await tidyLessons(ctx);
     if (result.closed || result.lapsed)
       console.log(`[lessons] ${result.closed} checkouts closed, ${result.lapsed} requests lapsed`);
+    const groups = await tidyGroups(ctx);
+    if (groups.closed || groups.calledOff || groups.goingAhead || groups.refunded)
+      console.log(
+        `[groups] ${groups.closed} checkouts closed, ${groups.calledOff} called off, ${groups.goingAhead} going ahead, ${groups.refunded} refunded`,
+      );
   } catch (error) {
     console.error("[lessons] could not tidy lesson bookings", error);
   }

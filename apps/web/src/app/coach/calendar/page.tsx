@@ -19,7 +19,9 @@ import {
   coachCalendar,
   coachCalendarToken,
   coachForEmail,
+  groupSessionsForCoach,
   type CoachBusy,
+  type CoachSession,
   type LessonBooking,
 } from "@bookon/db";
 import {
@@ -58,6 +60,8 @@ const DONE: Record<string, string> = {
 interface DayInfo {
   date: string;
   lessons: LessonBooking[];
+  /** Group sessions going ahead (Milestone 19). */
+  sessions: CoachSession[];
   busy: CoachBusy[];
   away: boolean;
   teaching: { from: string; to: string }[];
@@ -117,12 +121,19 @@ export default async function CoachCalendarPage({
     perthToUtc(gridStart, "00:00"),
     new Date(perthToUtc(gridEnd, "00:00").getTime() + DAY_MS),
   );
+  const sessions = (
+    await groupSessionsForCoach(db, coach!.id, now, {
+      from: perthToUtc(gridStart, "00:00"),
+      to: new Date(perthToUtc(gridEnd, "00:00").getTime() + DAY_MS),
+    })
+  ).filter((s) => s.status === "open");
   const info = (date: string): DayInfo => {
     const start = perthToUtc(date, "00:00");
     const end = new Date(start.getTime() + DAY_MS);
     return {
       date,
       lessons: calendar.lessons.filter((l) => perthDate(l.startTime) === date),
+      sessions: sessions.filter((g) => perthDate(g.startTime) === date),
       busy: calendar.busy.filter((b) => b.startTime < end && b.endTime > start),
       away: profile?.away.some((a) => a.from <= date && date <= a.to) ?? false,
       teaching: profile?.hours.filter((h) => h.day === isoWeekday(date)) ?? [],
@@ -151,8 +162,8 @@ export default async function CoachCalendarPage({
         </Link>
         <h1 className="mt-3 text-3xl font-bold tracking-tight">My calendar</h1>
         <p className="mt-1 text-muted">
-          Lessons booked through BookOn, requests waiting for you, and times you&apos;ve blocked
-          out.
+          Lessons and group sessions booked through BookOn, requests waiting for you, and times
+          you&apos;ve blocked out.
         </p>
 
         <div className="mt-4 flex flex-col gap-3">
@@ -196,13 +207,14 @@ export default async function CoachCalendarPage({
               const booked = d.lessons.filter((l) => l.status === "confirmed").length;
               const waiting = d.lessons.filter((l) => l.status === "requested").length;
               const busy = d.busy.length > 0;
+              const groups = d.sessions.length;
               const isDay = d.date === day;
               return (
                 <li key={d.date}>
                   <Link
                     href={dayLink(d.date)}
                     aria-current={isDay ? "date" : undefined}
-                    aria-label={`${formatPerthDay(d.date)}: ${booked} booked, ${waiting} waiting${busy ? ", busy times" : ""}${d.away ? ", away" : ""}`}
+                    aria-label={`${formatPerthDay(d.date)}: ${booked} booked, ${waiting} waiting${groups ? `, ${groups} group ${groups === 1 ? "session" : "sessions"}` : ""}${busy ? ", busy times" : ""}${d.away ? ", away" : ""}`}
                     className={`flex min-h-14 flex-col rounded-lg border p-1 text-left md:min-h-24 md:p-2 ${
                       isDay ? "border-brand ring-2 ring-brand" : "border-border"
                     } ${inMonth ? "" : "opacity-50"} ${
@@ -216,6 +228,7 @@ export default async function CoachCalendarPage({
                     </span>
                     <span className="mt-auto flex flex-wrap gap-1 md:hidden" aria-hidden>
                       {booked > 0 && <span className="size-2 rounded-full bg-brand" />}
+                      {groups > 0 && <span className="size-2 rounded-full border-2 border-brand" />}
                       {waiting > 0 && (
                         <span className="size-2 rounded-full border border-warning-border bg-warning-bg" />
                       )}
@@ -225,6 +238,11 @@ export default async function CoachCalendarPage({
                       {booked > 0 && (
                         <span className="rounded bg-brand px-1 text-brand-foreground">
                           {booked} {booked === 1 ? "lesson" : "lessons"}
+                        </span>
+                      )}
+                      {groups > 0 && (
+                        <span className="rounded border border-brand px-1 text-brand">
+                          {groups} group
                         </span>
                       )}
                       {waiting > 0 && (
@@ -243,6 +261,9 @@ export default async function CoachCalendarPage({
           <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
             <span className="flex items-center gap-1">
               <span className="size-2 rounded-full bg-brand" /> Booked
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="size-2 rounded-full border-2 border-brand" /> Group session
             </span>
             <span className="flex items-center gap-1">
               <span className="size-2 rounded-full border border-warning-border bg-warning-bg" />{" "}
@@ -446,6 +467,7 @@ export default async function CoachCalendarPage({
 function DaySchedule({ info, now, token }: { info: DayInfo; now: Date; token: string }) {
   const items = [
     ...info.lessons.map((l) => ({ at: l.startTime, kind: "lesson" as const, lesson: l })),
+    ...info.sessions.map((g) => ({ at: g.startTime, kind: "group" as const, session: g })),
     ...info.busy.map((b) => ({ at: b.startTime, kind: "busy" as const, busy: b })),
   ].sort((a, b) => a.at.getTime() - b.at.getTime());
   if (items.length === 0)
@@ -479,6 +501,46 @@ function DaySchedule({ info, now, token }: { info: DayInfo; now: Date; token: st
                   </button>
                 </form>
               )}
+            </li>
+          );
+        }
+        if (item.kind === "group") {
+          const g = item.session;
+          const paid = g.bookings.reduce((n, b) => n + b.spots, 0);
+          return (
+            <li key={g.id} className="rounded-xl border-2 border-brand p-3">
+              <p className="font-semibold">
+                {range(g.startTime, g.endTime)} · {g.title}
+                <span className="ml-2 text-sm font-normal text-muted">
+                  {paid} of {g.spots} booked
+                </span>
+              </p>
+              <p className="text-sm text-muted">
+                Group session · {g.place} · {formatPrice(g.priceCents)} a spot
+                {g.minSpots && !g.goingAheadAt ? ` · needs ${g.minSpots}` : ""}
+              </p>
+              {g.bookings.length > 0 ? (
+                <ul className="mt-1 text-sm">
+                  {g.bookings.map((b) => (
+                    <li key={b.id}>
+                      {b.golferName}
+                      {b.spots > 1 && ` (${b.spots} spots)`} ·{" "}
+                      <a href={`tel:${b.golferPhone}`} className="text-brand">
+                        {formatAuPhone(b.golferPhone)}
+                      </a>
+                      {b.note && <span className="text-muted"> · &ldquo;{b.note}&rdquo;</span>}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-1 text-sm text-muted">Nobody booked yet.</p>
+              )}
+              <Link
+                href="/coach#sessions"
+                className="mt-2 inline-flex min-h-11 items-center text-sm font-medium text-brand"
+              >
+                Manage in My coaching
+              </Link>
             </li>
           );
         }

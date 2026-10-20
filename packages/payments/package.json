@@ -18,6 +18,7 @@
     "stripe": "23.0.0"
   },
   "devDependencies": {
+    "drizzle-orm": "^0.45.4",
     "@types/node": "^22.0.0",
     "typescript": "^5.6.0",
     "vitest": "^3.2.0"

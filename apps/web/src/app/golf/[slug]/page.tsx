@@ -21,11 +21,13 @@ import {
 } from "@bookon/db";
 import { siteUrl } from "@bookon/email";
 import { CoachAvatar } from "@/components/coach-avatar";
+import { GroupSessionList, type ListedSession } from "@/components/group-session-list";
 import { SiteHeader } from "@/components/site-header";
 import { primaryButton } from "@/components/ui";
 import { bookLink } from "@/lib/click-token";
 import { directoryCoach } from "@/lib/coaches";
 import { getDb } from "@/lib/db";
+import { bookableGroupSessions } from "@/lib/group-sessions";
 import { LATEST_BAY_TIME, defaultForm, searchHref } from "@/lib/search-form";
 import { SEO_PAGES, seoPage } from "@/lib/seo-pages";
 
@@ -93,6 +95,7 @@ export default async function SeoLandingPage({ params }: { params: Promise<{ slu
   let listings: Listing[] = [];
   let venues: Listing[] = [];
   let coaches: ReturnType<typeof directoryCoach>[] = [];
+  let sessions: ListedSession[] = [];
   let quiet: CourseDetails[] = [];
   let searchLink = searchHref({ ...defaultForm(now), date: today });
 
@@ -189,6 +192,7 @@ export default async function SeoLandingPage({ params }: { params: Promise<{ slu
     }
     case "lessons": {
       coaches = (await listLiveCoaches(db)).map((c) => directoryCoach(c, now));
+      sessions = await bookableGroupSessions(db, now, 6);
       searchLink = "/coaches";
       break;
     }
@@ -367,6 +371,18 @@ export default async function SeoLandingPage({ params }: { params: Promise<{ slu
                 </li>
               ))}
             </ul>
+          </section>
+        )}
+
+        {sessions.length > 0 && (
+          <section aria-labelledby="sessions" className="mt-10">
+            <h2 id="sessions" className="text-xl font-semibold">
+              Group clinics and squads
+            </h2>
+            <p className="mt-1 text-sm text-muted">
+              Coming up, with spots left. A good-value way to start or brush up.
+            </p>
+            <GroupSessionList sessions={sessions} />
           </section>
         )}
 

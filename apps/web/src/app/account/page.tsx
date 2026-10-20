@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { formatAgo, formatPerthDay, formatPerthTime, perthDate } from "@bookon/core";
 import {
   coachById,
+  groupBookingsForGolfer,
   lessonsForGolfer,
   listAlerts,
   listFavourites,
@@ -80,9 +81,10 @@ export default async function AccountPage({
     await pushPublicKey(),
     tab === "lessons" ? await lessonsForGolfer(db, user.email, user.id) : [],
   ];
+  const groups = tab === "lessons" ? await groupBookingsForGolfer(db, user.email, user.id) : [];
   const lessonCoaches = new Map<string, Coach | null>();
-  for (const l of lessons)
-    if (!lessonCoaches.has(l.coachId)) lessonCoaches.set(l.coachId, await coachById(db, l.coachId));
+  for (const id of [...lessons.map((l) => l.coachId), ...groups.map((g) => g.session.coachId)])
+    if (!lessonCoaches.has(id)) lessonCoaches.set(id, await coachById(db, id));
   const courseNames = new Map(courses.map((c) => [c.slug, c.name]));
 
   return (
@@ -228,9 +230,9 @@ export default async function AccountPage({
             <h2 id="lessons" className={heading}>
               Lessons
             </h2>
-            {lessons.length === 0 ? (
+            {lessons.length === 0 && groups.length === 0 ? (
               <p className="mt-2 text-sm text-muted">
-                Lessons you book and pay for on BookOn show up here.{" "}
+                Lessons and group sessions you book and pay for on BookOn show up here.{" "}
                 <Link href="/coaches" className="text-brand">
                   Find a coach
                 </Link>
@@ -249,6 +251,25 @@ export default async function AccountPage({
                       </span>
                     </span>
                     <Link href={`/lessons/${l.manageToken}`} className={secondaryButton}>
+                      Open
+                    </Link>
+                  </li>
+                ))}
+                {groups.map(({ booking: b, session: s }) => (
+                  <li key={b.id} className={row}>
+                    <span>
+                      <span className="block font-medium">
+                        {lessonCoaches.get(s.coachId)?.profile?.name ?? "Coach"} · {s.title}
+                        {b.spots > 1 ? ` (${b.spots} spots)` : ""}
+                      </span>
+                      <span className="block text-sm text-muted">
+                        {formatPerthDay(perthDate(s.startTime))} {formatPerthTime(s.startTime)} ·{" "}
+                        {b.status === "cancelled" || s.status === "cancelled"
+                          ? "Cancelled"
+                          : "Booked"}
+                      </span>
+                    </span>
+                    <Link href={`/sessions/${b.manageToken}`} className={secondaryButton}>
                       Open
                     </Link>
                   </li>

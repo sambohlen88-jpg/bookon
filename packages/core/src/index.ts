@@ -8,3 +8,5 @@ export * from "./weather";
 export * from "./coaching";
 export * from "./lessons";
 export * from "./ics";
+export * from "./wa-calendar";
+export * from "./groups";

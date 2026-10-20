@@ -20,7 +20,7 @@ export interface PaymentProvider {
   accountReady(accountId: string): Promise<boolean>;
   /** The coach's own payments dashboard. */
   dashboardLink(accountId: string): Promise<string>;
-  /** A checkout page that holds the golfer's card, without charging it. */
+  /** A checkout page that holds the golfer's card (lessons) or charges it (group sessions). */
   createCheckout(input: CheckoutInput): Promise<{ id: string; url: string }>;
   checkout(id: string): Promise<CheckoutState>;
   /** Close a checkout page so it can't be paid any more. */
@@ -39,6 +39,7 @@ export interface CheckoutInput {
   bookingId: string;
   /** e.g. "Private lesson (60 min) with Mia Hartley, Sat 24 Oct 9:00 am". */
   description: string;
+  /** What the coach gets: the lesson, or all the spots at a group session. */
   lessonCents: number;
   feeCents: number;
   /** The coach's account, which gets the lesson price. */
@@ -47,6 +48,11 @@ export interface CheckoutInput {
   successUrl: string;
   cancelUrl: string;
   expiresAt: Date;
+  /**
+   * "manual" (the default) holds the card until the coach accepts, for
+   * lessons. "automatic" charges straight away, for group sessions.
+   */
+  capture?: "manual" | "automatic";
 }
 
 export interface CheckoutState {
@@ -177,8 +183,8 @@ export class StripePayments implements PaymentProvider {
               : []),
           ],
           payment_intent_data: {
-            // Held, not charged, until the coach accepts.
-            capture_method: "manual",
+            // Lessons: held, not charged, until the coach accepts.
+            capture_method: input.capture ?? "manual",
             ...(input.feeCents > 0 ? { application_fee_amount: input.feeCents } : {}),
             transfer_data: { destination: input.accountId },
             description: input.description,

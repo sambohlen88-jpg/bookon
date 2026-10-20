@@ -3,14 +3,18 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   FREE_CANCEL_HOURS,
+  RATE_KIND_NAME,
   bookableRates,
   bookingDates,
   formatPerthDay,
   formatPerthTime,
   formatPrice,
+  hasSpecialRates,
   lessonSlots,
   perthDate,
   perthToUtc,
+  ratePriceOn,
+  specialRatesLine,
 } from "@bookon/core";
 import {
   coachById,
@@ -18,6 +22,7 @@ import {
   lessonPaymentSettings,
   liveCoachBySlug,
   takenLessonTimes,
+  waCalendar,
 } from "@bookon/db";
 import { abandonLessonCheckout, coachTakesBookings, placeLabel } from "@bookon/payments";
 import { bookLesson } from "@/app/coaches/[slug]/book/actions";
@@ -80,9 +85,16 @@ export default async function BookLessonPage({
   const rateIndex = query.rate !== undefined ? Number(query.rate) : rates.length === 1 ? 0 : NaN;
   const rate = Number.isInteger(rateIndex) ? rates[rateIndex] : undefined;
   const taken = open ? await takenLessonTimes(db, coach.id, now) : [];
+  const calendar = rate && hasSpecialRates(rate) ? await waCalendar(db) : null;
   const days = rate
     ? bookingDates(now)
-        .map((date) => ({ date, slots: lessonSlots(live.profile, rate.minutes, date, now, taken) }))
+        .map((date) => ({
+          date,
+          slots: lessonSlots(live.profile, rate.minutes, date, now, taken),
+          price: calendar
+            ? ratePriceOn(rate, date, calendar)
+            : { cents: rate.priceCents, kind: "standard" as const },
+        }))
         .filter((d) => d.slots.length > 0)
     : [];
   const day = days.find((d) => d.date === query.date);
@@ -147,6 +159,11 @@ export default async function BookLessonPage({
                         <span className="block text-sm font-normal text-muted">
                           {r.minutes} min · {r.people === "2" ? "for 2 people" : "just you"}
                         </span>
+                        {hasSpecialRates(r) && (
+                          <span className="block text-sm font-normal text-muted">
+                            {specialRatesLine(r)}
+                          </span>
+                        )}
                       </span>
                       <span className="tabular-nums">{formatPrice(r.priceCents)}</span>
                     </Link>
@@ -169,7 +186,7 @@ export default async function BookLessonPage({
                         <Link
                           href={link({ rate: rateIndex, date: d.date })}
                           aria-current={d.date === day?.date ? "true" : undefined}
-                          className={`flex flex-col items-center rounded-lg border py-2 text-sm ${
+                          className={`flex h-full flex-col items-center rounded-lg border py-2 text-sm ${
                             d.date === day?.date ? chipOn : "border-border"
                           }`}
                         >
@@ -178,6 +195,11 @@ export default async function BookLessonPage({
                           <span className="text-xs">
                             {formatPerthDay(d.date).split(" ").at(-1)}
                           </span>
+                          {d.price.kind !== "standard" && (
+                            <span className="text-xs font-semibold tabular-nums">
+                              {formatPrice(d.price.cents)}
+                            </span>
+                          )}
                         </Link>
                       </li>
                     ))}
@@ -189,6 +211,11 @@ export default async function BookLessonPage({
             {rate && day && (
               <li>
                 <h2 className="text-lg font-semibold">3. Time on {formatPerthDay(day.date)}</h2>
+                {day.price.kind !== "standard" && (
+                  <p className="mt-1 text-sm text-muted">
+                    {RATE_KIND_NAME[day.price.kind]}: {formatPrice(day.price.cents)}
+                  </p>
+                )}
                 <ul className="mt-3 flex flex-wrap gap-2">
                   {day.slots.map((s) => (
                     <li key={s.getTime()}>
@@ -271,12 +298,16 @@ export default async function BookLessonPage({
                       {places.length === 1 ? ` · ${places[0]}` : ""}
                     </p>
                     <dl className="mt-3 grid grid-cols-[1fr_auto] gap-y-1 tabular-nums">
-                      <dt>Lesson</dt>
-                      <dd>{formatPrice(rate.priceCents)}</dd>
+                      <dt>
+                        Lesson
+                        {day.price.kind !== "standard" &&
+                          ` (${RATE_KIND_NAME[day.price.kind].toLowerCase()})`}
+                      </dt>
+                      <dd>{formatPrice(day.price.cents)}</dd>
                       <dt>Booking fee</dt>
                       <dd>{formatPrice(feeCents)}</dd>
                       <dt className="font-semibold">Total</dt>
-                      <dd className="font-semibold">{formatPrice(rate.priceCents + feeCents)}</dd>
+                      <dd className="font-semibold">{formatPrice(day.price.cents + feeCents)}</dd>
                     </dl>
                     <ul className="mt-3 list-disc pl-5 text-muted">
                       <li>

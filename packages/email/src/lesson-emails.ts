@@ -6,6 +6,7 @@ import {
   formatPrice,
   googleCalendarEventLink,
   perthDate,
+  RATE_KIND_NAME,
   type CalendarEvent,
 } from "@bookon/core";
 import type { LessonBooking } from "@bookon/db";
@@ -144,7 +145,12 @@ function lessonDetails(lesson: Lesson, coachName: string): [string, string][] {
 
 function money(lesson: Lesson): [string, string][] {
   return [
-    ["Lesson", formatPrice(lesson.lessonCents)],
+    [
+      lesson.rate.charged
+        ? `Lesson (${RATE_KIND_NAME[lesson.rate.charged].toLowerCase()})`
+        : "Lesson",
+      formatPrice(lesson.lessonCents),
+    ],
     ["Booking fee", formatPrice(lesson.feeCents)],
     ["Total", formatPrice(lesson.lessonCents + lesson.feeCents)],
   ];
@@ -370,3 +376,6 @@ export function lessonCancelledByCoachEmail(input: {
     link: { href: input.coachPage, label: "Book another time" },
   });
 }
+
+/** The same email layout, for group sessions. */
+export { message as detailMessage };
