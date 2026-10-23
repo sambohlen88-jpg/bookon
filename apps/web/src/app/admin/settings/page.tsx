@@ -1,6 +1,7 @@
 import { formatPrice, formatPublicHolidays, formatSchoolHolidays } from "@bookon/core";
 import {
   SOCIAL_NETWORKS,
+  eventPaymentSettings,
   lessonPaymentSettings,
   pitchContact,
   socialLinks,
@@ -12,6 +13,11 @@ import {
   turnLessonPaymentsOff,
   turnLessonPaymentsOn,
 } from "@/app/admin/lesson-actions";
+import {
+  saveEventBookingFee,
+  turnEventPaymentsOff,
+  turnEventPaymentsOn,
+} from "@/app/admin/event-actions";
 import { savePitchContact, saveWaCalendar } from "@/app/admin/settings-actions";
 import { PageTitle, panel } from "@/components/admin/ui";
 import { Field, TextArea } from "@/components/form";
@@ -31,6 +37,7 @@ export default async function AdminSettings({
   const contact = await pitchContact(getDb());
   const lessons = await lessonPaymentSettings(getDb());
   const holidays = await waCalendar(getDb());
+  const events = await eventPaymentSettings(getDb());
   const query = await searchParams;
   const { saved, error } = query;
   const bad = query.bad?.split("\n") ?? [];
@@ -72,6 +79,32 @@ export default async function AdminSettings({
             inputMode="decimal"
             defaultValue={(lessons.feeCents / 100).toFixed(2)}
             hint={`Now ${formatPrice(lessons.feeCents)}. Stripe's card fee (roughly 1.7% + 30c of the total) comes out of this, so on a $90 lesson about $1.87 goes to Stripe. New bookings only.`}
+          />
+          <button type="submit" className={primaryButton}>
+            Save fee
+          </button>
+        </form>
+      </section>
+      <section id="event-payments" className={`${panel} mb-6 flex flex-col gap-4`}>
+        <h2 className="text-lg font-semibold">Club event payments</h2>
+        <p className="text-sm text-muted">
+          {events.enabled
+            ? "On: golfers can enter and pay for events at clubs that have set up Stripe."
+            : "Off: nobody can enter events through BookOn. Entries already paid carry on."}
+        </p>
+        <form action={events.enabled ? turnEventPaymentsOff : turnEventPaymentsOn}>
+          <button type="submit" className={events.enabled ? secondaryButton : primaryButton}>
+            {events.enabled ? "Turn event payments off" : "Turn event payments on"}
+          </button>
+        </form>
+        <form action={saveEventBookingFee} className="flex flex-col gap-4">
+          <Field
+            label="Booking fee golfers pay per entry"
+            name="fee"
+            required
+            inputMode="decimal"
+            defaultValue={(events.feeCents / 100).toFixed(2)}
+            hint={`Now ${formatPrice(events.feeCents)}, once per entry (a team pays it once). Stripe's card fee comes out of this. New entries only.`}
           />
           <button type="submit" className={primaryButton}>
             Save fee

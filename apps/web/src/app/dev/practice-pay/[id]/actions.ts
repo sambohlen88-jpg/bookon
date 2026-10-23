@@ -1,9 +1,11 @@
 "use server";
 
 import { notFound, redirect } from "next/navigation";
-import { coachById, groupBookingById, groupSessionById, lessonById } from "@bookon/db";
+import { coachById, entryById, groupBookingById, groupSessionById, lessonById } from "@bookon/db";
 import {
   PRACTICE_PREFIX,
+  entryManageLink,
+  entryPaid,
   groupManageLink,
   groupPaid,
   lessonPaid,
@@ -18,7 +20,7 @@ async function practiceContext() {
   return ctx!;
 }
 
-/** Practice only: pretend the card was held (lessons) or charged (group sessions), as Stripe would. */
+/** Practice only: pretend the card was held (lessons) or charged (group sessions, events), as Stripe would. */
 export async function practicePay(formData: FormData) {
   const ctx = await practiceContext();
   const id = String(formData.get("id") ?? "");
@@ -27,6 +29,12 @@ export async function practicePay(formData: FormData) {
     if (lesson.status === "checkout" && lesson.checkoutExpiresAt > ctx.now)
       await lessonPaid(ctx, lesson.id, `${PRACTICE_PREFIX}pi_${lesson.id}`);
     redirect(`${manageLink(ctx.site, lesson)}?paid=1`);
+  }
+  const entry = await entryById(getDb(), id);
+  if (entry?.provider === "practice") {
+    if (entry.status === "checkout" && entry.checkoutExpiresAt > ctx.now)
+      await entryPaid(ctx, entry.id, `${PRACTICE_PREFIX}pi_${entry.id}`);
+    redirect(`${entryManageLink(ctx.site, entry)}?paid=1`);
   }
   const group = await groupBookingById(getDb(), id);
   if (group?.provider !== "practice") notFound();
@@ -45,6 +53,9 @@ export async function practiceLeave(formData: FormData) {
     const coach = await coachById(db, lesson.coachId);
     redirect(`/coaches/${coach?.slug}/book?cancelled=${lesson.id}`);
   }
+  const entry = await entryById(db, id);
+  if (entry?.provider === "practice")
+    redirect(`/competitions/${entry.eventId}?cancelled=${entry.id}`);
   const group = await groupBookingById(db, id);
   const session = group ? await groupSessionById(db, group.sessionId) : null;
   if (group?.provider !== "practice" || !session) notFound();

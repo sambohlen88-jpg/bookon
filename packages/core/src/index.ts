@@ -12,3 +12,4 @@ export * from "./wa-calendar";
 export * from "./groups";
 export * from "./ratings";
 export * from "./sorting";
+export * from "./events";

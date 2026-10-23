@@ -33,6 +33,11 @@ export function SiteFooter() {
               </Link>
             </li>
             <li>
+              <Link href="/competitions" className={link}>
+                Competitions
+              </Link>
+            </li>
+            <li>
               <Link href="/coaches" className={link}>
                 Find a coach
               </Link>

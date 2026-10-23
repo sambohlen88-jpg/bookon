@@ -23,6 +23,7 @@ export default function robots(): MetadataRoute.Robots {
         "/club/",
         "/lessons/",
         "/sessions/",
+        "/entries/",
         "/calendar/",
       ],
     },

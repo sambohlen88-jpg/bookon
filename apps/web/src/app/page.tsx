@@ -6,17 +6,20 @@ import {
   listFavourites,
   nextTeeTimes,
   socialLinks,
+  upcomingOpenEvents,
   type CourseDetails,
   type CourseResult,
 } from "@bookon/db";
 import { CourseArt } from "@/components/course-art";
 import { CourseCard } from "@/components/course-card";
+import { CompetitionsStrip } from "@/components/competitions-strip";
 import { FreeSoon, firstTimes } from "@/components/free-soon";
 import { RecentSearches } from "@/components/recent-searches";
 import { SearchForm } from "@/components/search-form";
 import { SiteHeader } from "@/components/site-header";
 import { currentUser } from "@/lib/auth";
 import { bookLink } from "@/lib/click-token";
+import { listedCompetition } from "@/lib/competitions";
 import { getDb } from "@/lib/db";
 import { shortCourseName } from "@/lib/course-info";
 import { LATEST_BAY_TIME, defaultForm, searchHref } from "@/lib/search-form";
@@ -59,6 +62,11 @@ export default async function Home() {
   const seeAll = searchHref({ ...defaultForm(now), date: today });
   const baysSearch = searchHref({ ...defaultForm(now), play: "bays", to: LATEST_BAY_TIME });
   const social = await socialLinks(getDb()).catch(() => ({}));
+  // Club events still taking entries (Milestone 21).
+  const competitions = (await upcomingOpenEvents(getDb(), now).catch(() => []))
+    .filter((e) => e.entriesClose > now)
+    .slice(0, 3)
+    .map((e) => listedCompetition(e, now));
 
   return (
     <>
@@ -85,6 +93,7 @@ export default async function Home() {
         <div className="mt-10">
           <FreeSoon results={upcomingGolf} now={now} players={2} seeAll={seeAll} />
         </div>
+        <CompetitionsStrip events={competitions} />
         <Shortcuts baysSearch={baysSearch} venues={venues} tone="page" />
         <Follow links={social} tone="page" />
         <section aria-labelledby="how" className="mt-10">
@@ -198,6 +207,12 @@ export default async function Home() {
               </div>
             </div>
           </section>
+        )}
+
+        {competitions.length > 0 && (
+          <div className="mx-auto max-w-6xl px-6 pt-20">
+            <CompetitionsStrip events={competitions} wide />
+          </div>
         )}
 
         <section className="mx-auto grid max-w-6xl grid-cols-2 items-center gap-16 px-6 py-20">

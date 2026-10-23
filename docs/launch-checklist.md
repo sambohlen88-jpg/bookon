@@ -70,6 +70,15 @@ Data is read from public booking pages with the owner's approval, ahead of forma
 - [ ] Terms of use: a line on fair ratings (no ratings for courses you haven't played, no rating your own club), and that BookOn can remove ratings.
 - [ ] At launch every course says "Not rated yet". Consider asking friendly golfers to rate their home course early, so averages appear.
 
+## Club events (Milestone 21)
+
+- [ ] **Event payment terms** (`EVENT_TERMS` in `packages/db/src/events.ts`) and the golfer's refund rule on the event page reviewed by a lawyer, including who's responsible for the event itself, and chargebacks. Changing the club terms means bumping `EVENT_TERMS_VERSION`.
+- [ ] Try a club setting up Stripe in test mode (Stripe asks for the club's ABN and a contact's ID), then an entry, a withdrawal before and after entries close, and a cancelled event.
+- [ ] **Privacy policy:** entrants' names, email and mobile go to the club; players' names show on the public start sheet once it's published; member numbers go to the club only.
+- [ ] Decide what to tell clubs about Stripe's fees: BookOn's booking fee covers Stripe's card fee, and clubs get their full entry fees.
+- [ ] Ask each club to set a **contact email** in their details, which gets new-entry emails. Without one, they go to the club's owners on BookOn.
+- [ ] GST on the event booking fee, with the lesson fee (ask your accountant).
+
 ## Business and legal
 
 - [ ] Create the **info@bookon.com.au** mailbox. It is already in the worker's user agent, so clubs may write to it.

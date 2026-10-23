@@ -28,7 +28,7 @@ import {
   type PollableCourse,
 } from "@bookon/db";
 import { WebPushSender, createMailer, siteUrl, vapidKeys } from "@bookon/email";
-import { paymentProvider, tidyGroups, tidyLessons } from "@bookon/payments";
+import { paymentProvider, tidyEvents, tidyGroups, tidyLessons } from "@bookon/payments";
 import { sendAlertNotifications } from "./alerts";
 import { refreshCoachCalendars } from "./calendars";
 import { loadConfig } from "./config";
@@ -129,7 +129,9 @@ async function alertsOnce() {
  * Lesson bookings (Milestone 15): release holds the coach didn't answer in time,
  * and free times left at checkout. Group sessions (Milestone 19): call off
  * sessions short of their minimum 24 hours before, and refund anyone on a
- * cancelled session. Never stops the worker either.
+ * cancelled session. Club events (Milestone 21): tell clubs when entries
+ * close, remind entrants the day before, and refund anyone on a cancelled
+ * event. Never stops the worker either.
  */
 async function lessonsOnce() {
   const payments = paymentProvider(process.env, {
@@ -152,6 +154,11 @@ async function lessonsOnce() {
     if (groups.closed || groups.calledOff || groups.goingAhead || groups.refunded)
       console.log(
         `[groups] ${groups.closed} checkouts closed, ${groups.calledOff} called off, ${groups.goingAhead} going ahead, ${groups.refunded} refunded`,
+      );
+    const events = await tidyEvents(ctx);
+    if (events.closed || events.notices || events.reminders || events.refunded)
+      console.log(
+        `[events] ${events.closed} checkouts closed, ${events.notices} clubs told entries closed, ${events.reminders} reminders, ${events.refunded} refunded`,
       );
   } catch (error) {
     console.error("[lessons] could not tidy lesson bookings", error);

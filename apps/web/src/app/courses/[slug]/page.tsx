@@ -6,8 +6,11 @@ import {
   areaName,
   distanceKm,
   formatDistance,
+  formatPerthDay,
   formatPrice,
   perthDate,
+  TEAM_NAME,
+  type TeamSize,
 } from "@bookon/core";
 import {
   FACILITIES,
@@ -19,6 +22,7 @@ import {
   listFavourites,
   ratingSummary,
   searchTeeTimes,
+  upcomingOpenEvents,
   userCourseRating,
   type ClubRate,
   type CourseDetails,
@@ -114,6 +118,8 @@ export default async function CoursePage({
   // Ratings (Milestone 20).
   const rating = await ratingSummary(db, course.id);
   const myRating = user ? await userCourseRating(db, user.id, course.id) : null;
+  // The club's open events on this course (Milestone 21).
+  const competitions = await upcomingOpenEvents(db, now, { courseId: course.id });
 
   const form = (date: string, extra: { days?: number } = {}) => ({
     play,
@@ -228,6 +234,38 @@ export default async function CoursePage({
             />
 
             {rates.length > 0 && <PriceList rates={rates} />}
+
+            {competitions.length > 0 && (
+              <section aria-labelledby="competitions" className="mt-8">
+                <h2 id="competitions" className="text-xl font-semibold">
+                  Competitions here
+                </h2>
+                <ul className="mt-3 rounded-xl border border-border">
+                  {competitions.slice(0, 5).map((e) => (
+                    <li key={e.id} className="border-t border-border first:border-t-0">
+                      <Link
+                        href={`/competitions/${e.id}`}
+                        className="flex items-center justify-between gap-3 px-4 py-3"
+                      >
+                        <span className="min-w-0">
+                          <span className="font-medium">{e.title}</span>
+                          <span className="block text-sm text-muted">
+                            {formatPerthDay(e.date)} · {TEAM_NAME[e.teamSize as TeamSize]}
+                          </span>
+                        </span>
+                        <span className="shrink-0 text-sm font-semibold text-brand">
+                          {e.entriesClose <= now
+                            ? "Entries closed"
+                            : e.left === 0
+                              ? "Full"
+                              : `${e.left} left`}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
 
             {query.rated && (
               <p role="status" className="mt-8 text-sm font-medium text-brand">

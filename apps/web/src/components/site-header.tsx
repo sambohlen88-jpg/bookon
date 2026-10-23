@@ -28,12 +28,15 @@ export async function SiteHeader() {
             />
             BookOn
           </Link>
-          <nav aria-label="Main" className="hidden items-center gap-8 md:flex">
+          <nav aria-label="Main" className="hidden items-center gap-6 md:flex lg:gap-8">
             <Link href="/" className={navLink}>
               Find a tee time
             </Link>
             <Link href="/courses" className={navLink}>
               Courses
+            </Link>
+            <Link href="/competitions" className={navLink}>
+              Competitions
             </Link>
             <Link href="/coaches" className={navLink}>
               Find a coach

@@ -71,6 +71,44 @@ export default function ClubsPage() {
           </div>
         </section>
 
+        <section className="mx-auto max-w-md px-4 pb-12 md:max-w-6xl md:px-6 md:pb-16">
+          <h2 className="text-2xl font-bold tracking-tight md:text-3xl">
+            Run your events on BookOn
+          </h2>
+          <p className="mt-2 max-w-3xl text-muted">
+            Competitions and social days, without the spreadsheet. Nothing here touches handicaps.
+          </p>
+          <div className="mt-6 grid gap-4 md:grid-cols-3 md:gap-6">
+            <div className={card}>
+              <h3 className="text-lg font-semibold">Entries paid up front</h3>
+              <p className="mt-2 text-muted">
+                Golfers enter on their own or as a team and pay online. Entry fees go straight to
+                the club&apos;s bank account through Stripe, with members&apos; prices if you like.
+                Full events get a waiting list.
+              </p>
+            </div>
+            <div className={card}>
+              <h3 className="text-lg font-semibold">Start sheet in a few taps</h3>
+              <p className="mt-2 text-muted">
+                BookOn sets out groups of four, keeping teams together, for tee times or a shotgun.
+                Move anyone you need to, publish, and everyone gets their time by email. Print it or
+                download it.
+              </p>
+            </div>
+            <div className={card}>
+              <h3 className="text-lg font-semibold">Golfers find your open days</h3>
+              <p className="mt-2 text-muted">
+                Open events are listed on BookOn&apos;s Competitions page, your course page and the
+                home page. Members-only events stay unlisted and are shared by link.
+              </p>
+            </div>
+          </div>
+          <p className="mt-4 text-sm text-muted">
+            The club keeps its full entry fees. Golfers pay BookOn a small booking fee per entry.
+            Withdrawals before entries close are refunded automatically.
+          </p>
+        </section>
+
         <section className="bg-surface">
           <div className="mx-auto grid max-w-md gap-8 px-4 py-12 md:max-w-6xl md:grid-cols-2 md:gap-16 md:px-6 md:py-16">
             <div>

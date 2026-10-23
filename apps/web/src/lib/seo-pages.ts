@@ -15,7 +15,8 @@ export type SeoPage =
       suburbs: string;
     }
   | {
-      kind: "today" | "weekend" | "twilight" | "nine" | "cheap" | "sims" | "lessons";
+      kind:
+        "today" | "weekend" | "twilight" | "nine" | "cheap" | "sims" | "lessons" | "competitions";
       slug: string;
     };
 
@@ -162,6 +163,16 @@ export const SEO_PAGES: (SeoPage & Words)[] = [
     description:
       "Golf coaches around Perth: who's teaching this week, what they charge and where. Message a coach to book a lesson.",
     intro: "Golf coaches around Perth, with when they teach and what a lesson costs.",
+  },
+  {
+    kind: "competitions",
+    slug: "golf-competitions-perth",
+    h1: "Golf competitions in Perth",
+    title: "Open Golf Competitions Perth | BookOn",
+    description:
+      "Open golf competitions and social days at Perth and WA clubs: format, entry fee and places left. Enter and pay online.",
+    intro:
+      "Open competitions and social days at clubs around Perth and WA, with the format, fee and places left.",
   },
 ];
 

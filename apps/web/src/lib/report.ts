@@ -18,7 +18,7 @@ export function reportRange(
   return { from, to };
 }
 
-function cell(value: string | number): string {
+export function csvCell(value: string | number): string {
   const text = String(value);
   // Quote anything with commas, quotes or line breaks, and stop spreadsheets running formulas.
   const safe = /^[=+\-@]/.test(text) ? `'${text}` : text;
@@ -40,7 +40,7 @@ export function activityCsv(rows: CourseActivity[], from: string, to: string): s
   ];
   const lines = rows.map((r) =>
     [r.name, from, to, r.searches, r.impressions, r.clicks, r.golfers, r.alertClicks, r.shareClicks]
-      .map(cell)
+      .map(csvCell)
       .join(","),
   );
   return [header.join(","), ...lines].join("\r\n") + "\r\n";
@@ -73,7 +73,7 @@ export function unbookedCsv(rows: UnbookedRow[], from: string, to: string): stri
       ...r.byWeekday,
       ...DAY_PARTS.map((p) => r.byPart[p.id]),
     ]
-      .map(cell)
+      .map(csvCell)
       .join(","),
   );
   return [header.join(","), ...lines].join("\r\n") + "\r\n";

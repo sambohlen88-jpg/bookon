@@ -9,8 +9,8 @@ import Stripe from "stripe";
  */
 export interface PaymentProvider {
   readonly kind: "stripe" | "practice";
-  /** Start a coach's payment account. */
-  createAccount(input: { email: string; name: string }): Promise<string>;
+  /** Start a coach's or club's payment account. */
+  createAccount(input: AccountInput): Promise<string>;
   /** Where the coach fills in their details. */
   onboardingLink(
     accountId: string,
@@ -33,6 +33,13 @@ export interface PaymentProvider {
   refund(paymentId: string): Promise<void>;
   /** Check a webhook really came from the provider and read it. Throws if it didn't. */
   readWebhook(body: string, signature: string | null): WebhookEvent;
+}
+
+export interface AccountInput {
+  email: string;
+  name: string;
+  /** "coach" (lessons) or "club" (event entries, Milestone 21). */
+  kind?: "coach" | "club";
 }
 
 export interface CheckoutInput {
@@ -107,7 +114,8 @@ export class StripePayments implements PaymentProvider {
     }
   }
 
-  async createAccount(input: { email: string; name: string }): Promise<string> {
+  async createAccount(input: AccountInput): Promise<string> {
+    const club = input.kind === "club";
     const account = await this.call("start the payment account", () =>
       this.stripe.accounts.create({
         type: "express",
@@ -116,9 +124,11 @@ export class StripePayments implements PaymentProvider {
         capabilities: { card_payments: { requested: true }, transfers: { requested: true } },
         // Stripe's own setup asks the coach for their industry and the rest.
         business_profile: {
-          product_description: `Golf lessons with ${input.name}, booked through BookOn`,
+          product_description: club
+            ? `Golf event entries at ${input.name}, through BookOn`
+            : `Golf lessons with ${input.name}, booked through BookOn`,
         },
-        metadata: { bookon: "coach" },
+        metadata: { bookon: club ? "club" : "coach" },
       }),
     );
     return account.id;
@@ -308,8 +318,9 @@ export class PracticePayments implements PaymentProvider {
 
   constructor(private readonly site: string) {}
 
-  async createAccount(input: { email: string }): Promise<string> {
-    return `${PRACTICE_PREFIX}acct_${input.email.replace(/[^a-z0-9]+/gi, "_").slice(0, 40)}`;
+  async createAccount(input: AccountInput): Promise<string> {
+    const who = input.kind === "club" ? `club_${input.name}` : input.email;
+    return `${PRACTICE_PREFIX}acct_${who.replace(/[^a-z0-9]+/gi, "_").slice(0, 40)}`;
   }
 
   async onboardingLink(_accountId: string, urls: { returnUrl: string }): Promise<string> {

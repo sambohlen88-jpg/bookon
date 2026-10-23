@@ -65,6 +65,11 @@ export const clubs = pgTable("clubs", {
    * (ClubApplicationDetails); the club edits it from its login.
    */
   profile: jsonb("profile").$type<Record<string, unknown>>().notNull().default({}),
+  /** The club's own Stripe account, for event entry fees (Milestone 21). */
+  paymentAccountId: text("payment_account_id"),
+  paymentsReady: boolean("payments_ready").notNull().default(false),
+  /** The club owner's agreement to the event payment terms: { by, at, version, text }. */
+  eventTerms: jsonb("event_terms").$type<Record<string, unknown>>(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -323,6 +328,141 @@ export const favourites = pgTable(
     createdAt: createdAt(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.courseId] })],
+);
+
+/*
+ * Club events (Milestone 21): competitions and social days a club runs,
+ * which golfers enter and pay for on BookOn. No handicaps are collected or
+ * worked out. Times are UTC; `date` is the Perth date.
+ */
+export const events = pgTable(
+  "events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    clubId: uuid("club_id")
+      .notNull()
+      .references(() => clubs.id, { onDelete: "restrict" }),
+    courseId: uuid("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "restrict" }),
+    title: text("title").notNull(),
+    description: text("description"),
+    date: date("date", { mode: "string" }).notNull(),
+    holes: smallint("holes").notNull(),
+    /** "tees" (tee times at an interval) or "shotgun" (everyone at once, from different holes). */
+    startType: text("start_type").notNull(),
+    firstStart: timestamp("first_start", { withTimezone: true }).notNull(),
+    /** Minutes between tee times. */
+    intervalMinutes: smallint("interval_minutes").notNull().default(10),
+    /** Tee times go off the 1st and 10th at once. */
+    twoTees: boolean("two_tees").notNull().default(false),
+    /** 1 individual, 2 pairs, 3 or 4 teams. */
+    teamSize: smallint("team_size").notNull(),
+    /** Per player. */
+    feeCents: integer("fee_cents").notNull(),
+    /** Per player for members, who give a member number the club checks. Null: one price. */
+    memberFeeCents: integer("member_fee_cents"),
+    maxPlayers: smallint("max_players").notNull(),
+    entriesClose: timestamp("entries_close", { withTimezone: true }).notNull(),
+    /** Open events are listed on BookOn; members-only events are reached by link. */
+    open: boolean("open").notNull().default(true),
+    /** "open" or "cancelled". */
+    status: text("status").notNull().default("open"),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+    cancelNote: text("cancel_note"),
+    startSheetPublishedAt: timestamp("start_sheet_published_at", { withTimezone: true }),
+    results: text("results"),
+    resultsAt: timestamp("results_at", { withTimezone: true }),
+    /** When the club was told entries closed, and when entrants got their reminder. */
+    closedNoticeAt: timestamp("closed_notice_at", { withTimezone: true }),
+    reminderSentAt: timestamp("reminder_sent_at", { withTimezone: true }),
+    createdBy: text("created_by").notNull(),
+    createdAt: createdAt(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("events_club_idx").on(t.clubId, t.date),
+    index("events_status_date_idx").on(t.status, t.date),
+  ],
+);
+
+export const eventEntryStatusEnum = pgEnum("event_entry_status", [
+  /** On the checkout page. Holds the places until checkout_expires_at. */
+  "checkout",
+  "paid",
+  /** Withdrawn by the golfer or the club, with or without a refund. */
+  "withdrawn",
+  /** The club cancelled the event; refunded. */
+  "cancelled",
+  /** Left the checkout without paying. */
+  "abandoned",
+]);
+
+export interface EventPlayer {
+  name: string;
+  /** Says they're a member, for the members' fee. The club checks the number. */
+  memberNumber?: string;
+}
+
+export const eventEntries = pgTable(
+  "event_entries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    eventId: uuid("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "restrict" }),
+    status: eventEntryStatusEnum("status").notNull().default("checkout"),
+    /** The whole team, the person entering first. */
+    players: jsonb("players").$type<EventPlayer[]>().notNull(),
+    playerCount: smallint("player_count").notNull(),
+    contactName: text("contact_name").notNull(),
+    /** Lower case. */
+    contactEmail: text("contact_email").notNull(),
+    contactPhone: text("contact_phone").notNull(),
+    note: text("note"),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    /** Entry fees for every player, at the event's prices when entered. Goes to the club. */
+    feesCents: integer("fees_cents").notNull(),
+    /** BookOn's booking fee, once per entry. */
+    bookingFeeCents: integer("booking_fee_cents").notNull(),
+    manageToken: text("manage_token").notNull().unique(),
+    provider: text("provider").notNull(),
+    checkoutId: text("checkout_id"),
+    checkoutExpiresAt: timestamp("checkout_expires_at", { withTimezone: true }).notNull(),
+    paymentId: text("payment_id"),
+    paidAt: timestamp("paid_at", { withTimezone: true }),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+    /** "golfer", "club" or "event" (the club cancelled the event). */
+    cancelledBy: text("cancelled_by"),
+    refundCents: integer("refund_cents").notNull().default(0),
+    /** On the start sheet: which group, from 1. Null until the club makes the start sheet. */
+    startGroup: smallint("start_group"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("event_entries_event_idx").on(t.eventId),
+    index("event_entries_email_idx").on(t.contactEmail),
+    index("event_entries_status_idx").on(t.status),
+  ],
+);
+
+/** Golfers waiting for a place at a full event. Emailed when one frees up. */
+export const eventWaitlist = pgTable(
+  "event_waitlist",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    eventId: uuid("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    /** Lower case. */
+    email: text("email").notNull(),
+    players: smallint("players").notNull(),
+    /** When they were last told a place freed up. */
+    notifiedAt: timestamp("notified_at", { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("event_waitlist_event_email_idx").on(t.eventId, t.email)],
 );
 
 /** A signed-in golfer's rating of a course, 1 to 5 stars (Milestone 20). One per golfer per course. */

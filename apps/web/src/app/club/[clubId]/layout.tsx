@@ -19,9 +19,11 @@ export default async function ClubLayout({
   const base = `/club/${club.id}`;
   return (
     <>
-      <SiteHeader />
+      <div className="print:hidden">
+        <SiteHeader />
+      </div>
       <div className="mx-auto max-w-md px-4 pb-12 pt-6 md:grid md:max-w-6xl md:grid-cols-[200px_minmax(0,1fr)] md:gap-10 md:px-6 md:pt-10">
-        <div className="mb-6 md:mb-0">
+        <div className="mb-6 md:mb-0 print:hidden">
           <p className="mb-2 px-3 font-semibold">{club.name}</p>
           {admin && (
             <p className="mb-2 px-3 text-xs text-muted">You&apos;re seeing this as an admin.</p>
@@ -32,6 +34,8 @@ export default async function ClubLayout({
               { href: base, label: "Overview", exact: true },
               { href: `${base}/details`, label: "Details" },
               { href: `${base}/prices`, label: "Prices" },
+              { href: `${base}/events`, label: "Events" },
+              { href: `${base}/payments`, label: "Payments" },
               { href: `${base}/photos`, label: "Photos" },
               { href: `${base}/reports`, label: "Reports" },
               { href: `${base}/team`, label: "Team" },

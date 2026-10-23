@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { formatAgo, formatPerthDay, formatPerthTime, perthDate } from "@bookon/core";
 import {
   coachById,
+  entriesForGolfer,
   groupBookingsForGolfer,
   lessonsForGolfer,
   listAlerts,
@@ -82,6 +83,8 @@ export default async function AccountPage({
     tab === "lessons" ? await lessonsForGolfer(db, user.email, user.id) : [],
   ];
   const groups = tab === "lessons" ? await groupBookingsForGolfer(db, user.email, user.id) : [];
+  // Club event entries (Milestone 21).
+  const entries = tab === "lessons" ? await entriesForGolfer(db, user.email, user.id) : [];
   const lessonCoaches = new Map<string, Coach | null>();
   for (const id of [...lessons.map((l) => l.coachId), ...groups.map((g) => g.session.coachId)])
     if (!lessonCoaches.has(id)) lessonCoaches.set(id, await coachById(db, id));
@@ -230,9 +233,10 @@ export default async function AccountPage({
             <h2 id="lessons" className={heading}>
               Lessons
             </h2>
-            {lessons.length === 0 && groups.length === 0 ? (
+            {lessons.length === 0 && groups.length === 0 && entries.length === 0 ? (
               <p className="mt-2 text-sm text-muted">
-                Lessons and group sessions you book and pay for on BookOn show up here.{" "}
+                Lessons, group sessions and competitions you book and pay for on BookOn show up
+                here.{" "}
                 <Link href="/coaches" className="text-brand">
                   Find a coach
                 </Link>
@@ -270,6 +274,24 @@ export default async function AccountPage({
                       </span>
                     </span>
                     <Link href={`/sessions/${b.manageToken}`} className={secondaryButton}>
+                      Open
+                    </Link>
+                  </li>
+                ))}
+                {entries.map(({ entry: e, event, clubName }) => (
+                  <li key={e.id} className={row}>
+                    <span>
+                      <span className="block font-medium">
+                        {clubName} · {event.title}
+                      </span>
+                      <span className="block text-sm text-muted">
+                        {formatPerthDay(event.date)} ·{" "}
+                        {e.status === "paid" && event.status === "open"
+                          ? "Entered"
+                          : "Withdrawn or cancelled"}
+                      </span>
+                    </span>
+                    <Link href={`/entries/${e.manageToken}`} className={secondaryButton}>
                       Open
                     </Link>
                   </li>

@@ -1,5 +1,5 @@
 import { addPerthDays, formatPrice, perthToUtc } from "@bookon/core";
-import { courseActivity, groupTotals, lessonTotals, unbookedReport } from "@bookon/db";
+import { courseActivity, eventTotals, groupTotals, lessonTotals, unbookedReport } from "@bookon/db";
 import { ReportRange, ReportTable } from "@/components/admin/report";
 import { PageTitle } from "@/components/admin/ui";
 import { UnbookedSection } from "@/components/admin/unbooked";
@@ -23,6 +23,11 @@ export default async function ReportsPage({
     perthToUtc(addPerthDays(to, 1), "00:00"),
   );
   const groups = await groupTotals(
+    getDb(),
+    perthToUtc(from, "00:00"),
+    perthToUtc(addPerthDays(to, 1), "00:00"),
+  );
+  const events = await eventTotals(
     getDb(),
     perthToUtc(from, "00:00"),
     perthToUtc(addPerthDays(to, 1), "00:00"),
@@ -61,6 +66,25 @@ export default async function ReportsPage({
             ["Spots", String(groups.spots)],
             ["Paid to coaches", formatPrice(groups.coachCents)],
             ["Booking fees", formatPrice(groups.feeCents)],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-xl border border-border p-4">
+              <dt className="text-sm text-muted">{label}</dt>
+              <dd className="mt-1 text-2xl font-semibold tabular-nums">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+      <section aria-labelledby="event-totals" className="mt-10">
+        <h2 id="event-totals" className="text-xl font-semibold">
+          Club event entries
+        </h2>
+        <p className="mt-1 text-sm text-muted">Paid in these dates. After refunds.</p>
+        <dl className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
+          {[
+            ["Entries", String(events.entries)],
+            ["Players", String(events.players)],
+            ["Paid to clubs", formatPrice(events.clubCents)],
+            ["Booking fees", formatPrice(events.feeCents)],
           ].map(([label, value]) => (
             <div key={label} className="rounded-xl border border-border p-4">
               <dt className="text-sm text-muted">{label}</dt>

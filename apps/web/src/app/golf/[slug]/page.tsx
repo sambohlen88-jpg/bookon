@@ -14,6 +14,7 @@ import {
   listCourseDetails,
   listLiveCoaches,
   nextTeeTimes,
+  upcomingOpenEvents,
   searchTeeTimes,
   type CourseDetails,
   type CourseResult,
@@ -27,6 +28,7 @@ import { primaryButton } from "@/components/ui";
 import { bookLink } from "@/lib/click-token";
 import { directoryCoach } from "@/lib/coaches";
 import { getDb } from "@/lib/db";
+import { listedCompetition } from "@/lib/competitions";
 import { bookableGroupSessions } from "@/lib/group-sessions";
 import { LATEST_BAY_TIME, defaultForm, searchHref } from "@/lib/search-form";
 import { SEO_PAGES, seoPage } from "@/lib/seo-pages";
@@ -96,6 +98,7 @@ export default async function SeoLandingPage({ params }: { params: Promise<{ slu
   let venues: Listing[] = [];
   let coaches: ReturnType<typeof directoryCoach>[] = [];
   let sessions: ListedSession[] = [];
+  let competitions: ReturnType<typeof listedCompetition>[] = [];
   let quiet: CourseDetails[] = [];
   let searchLink = searchHref({ ...defaultForm(now), date: today });
 
@@ -190,6 +193,11 @@ export default async function SeoLandingPage({ params }: { params: Promise<{ slu
       });
       break;
     }
+    case "competitions": {
+      competitions = (await upcomingOpenEvents(db, now)).map((e) => listedCompetition(e, now));
+      searchLink = "/competitions";
+      break;
+    }
     case "lessons": {
       coaches = (await listLiveCoaches(db)).map((c) => directoryCoach(c, now));
       sessions = await bookableGroupSessions(db, now, 6);
@@ -278,12 +286,47 @@ export default async function SeoLandingPage({ params }: { params: Promise<{ slu
         <Link href={searchLink} className={`${primaryButton} mt-6`}>
           {page!.kind === "lessons"
             ? "Find a coach"
-            : page!.kind === "sims"
-              ? "Find a bay"
-              : "Search every time"}
+            : page!.kind === "competitions"
+              ? "See every competition"
+              : page!.kind === "sims"
+                ? "Find a bay"
+                : "Search every time"}
         </Link>
 
-        {page!.kind !== "sims" && page!.kind !== "lessons" && (
+        {competitions.length > 0 && (
+          <section aria-labelledby="competitions" className="mt-10">
+            <h2 id="competitions" className="text-xl font-semibold">
+              Coming up
+            </h2>
+            <ul className="mt-3 overflow-hidden rounded-xl border border-border">
+              {competitions.slice(0, 12).map((e) => (
+                <li key={e.id} className="border-t border-border first:border-t-0">
+                  <Link
+                    href={`/competitions/${e.id}`}
+                    className="flex items-center justify-between gap-3 px-4 py-3"
+                  >
+                    <span className="min-w-0">
+                      <span className="font-medium">{e.title}</span>
+                      <span className="block text-sm text-muted">
+                        {e.when} · {e.clubName} · {e.format}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-sm font-semibold text-brand">
+                      {e.closed ? "Closed" : e.left === 0 ? "Full" : `${e.left} left`}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+        {page!.kind === "competitions" && competitions.length === 0 && (
+          <p className="mt-10 rounded-xl border border-border px-4 py-3 text-sm text-muted">
+            No open competitions listed right now. Check back soon.
+          </p>
+        )}
+
+        {page!.kind !== "sims" && page!.kind !== "lessons" && page!.kind !== "competitions" && (
           <section aria-labelledby="courses" className="mt-10">
             <h2 id="courses" className="text-xl font-semibold">
               {page!.kind === "weekend"

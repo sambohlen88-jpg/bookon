@@ -3,6 +3,9 @@ import { notFound } from "next/navigation";
 import { formatPerthDay, formatPerthTime, formatPrice, perthDate } from "@bookon/core";
 import {
   coachById,
+  entryById,
+  entryTotalCents,
+  eventById,
   groupBookingById,
   groupBookingTotalCents,
   groupSessionById,
@@ -82,7 +85,7 @@ export default async function PracticePayPage({ params }: { params: Promise<{ id
   );
 }
 
-/** A lesson or group booking at checkout, as the practice page shows it. */
+/** A lesson, group booking or event entry at checkout, as the practice page shows it. */
 async function practiceCheckout(db: ReturnType<typeof getDb>, id: string) {
   const lesson = await lessonById(db, id);
   if (lesson) {
@@ -97,6 +100,22 @@ async function practiceCheckout(db: ReturnType<typeof getDb>, id: string) {
       totalCents: lessonTotalCents(lesson),
       status: lesson.status,
       expiresAt: lesson.checkoutExpiresAt,
+    };
+  }
+  const entry = await entryById(db, id);
+  if (entry) {
+    const event = await eventById(db, entry.eventId);
+    if (!event) return null;
+    return {
+      group: true,
+      title: event.title,
+      startTime: event.firstStart,
+      item: `Entry fees, ${entry.playerCount} ${entry.playerCount === 1 ? "player" : "players"}`,
+      itemCents: entry.feesCents,
+      feeCents: entry.bookingFeeCents,
+      totalCents: entryTotalCents(entry),
+      status: entry.status,
+      expiresAt: entry.checkoutExpiresAt,
     };
   }
   const booking = await groupBookingById(db, id);

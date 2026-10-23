@@ -127,6 +127,13 @@
       "when": 1792724850074,
       "tag": "0017_course_ratings",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792736557721,
+      "tag": "0018_club_events",
+      "breakpoints": true
     }
   ]
 }
