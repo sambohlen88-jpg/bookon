@@ -9,11 +9,13 @@ import {
   weatherLine,
   weatherWords,
   type WeatherSummary,
+  type RatingSummary,
 } from "@bookon/core";
 import type { CheckProblem, CourseResult, DayNotice, ResultTeeTime } from "@bookon/db";
 import { PROBLEM_LABEL, PROBLEM_SENTENCE } from "@/lib/check-problems";
 import { toggleFavourite } from "@/app/actions";
 import { CourseArt } from "@/components/course-art";
+import { RatingBadge } from "@/components/rating";
 import { ShareButton } from "@/components/share-button";
 
 /**
@@ -44,6 +46,8 @@ export function CourseResults({
   photoId = null,
   shareQuery,
   distanceKm = null,
+  rating = null,
+  sortNote = null,
   weather = new Map(),
 }: {
   result: CourseResult;
@@ -66,6 +70,10 @@ export function CourseResults({
   shareQuery?: string;
   /** How far the golfer is from the course, on a Near me search. */
   distanceKm?: number | null;
+  /** Golfers' ratings of the course (Milestone 20). */
+  rating?: RatingSummary | null;
+  /** Why it's in this place when sorted, like "Cheapest $25 at 3:00 pm" (Milestone 20). */
+  sortNote?: string | null;
   /** The forecast for the search's time window, by Perth date. */
   weather?: Map<string, WeatherSummary>;
 }) {
@@ -93,10 +101,14 @@ export function CourseResults({
               {course.name}
             </Link>
           </h2>
-          <p className="text-sm text-muted">
-            {course.suburb}
-            {distanceKm !== null && ` · ${formatDistance(distanceKm)} away`}
+          <p className="flex flex-wrap items-center gap-x-1 text-sm text-muted">
+            <span>
+              {course.suburb}
+              {distanceKm !== null && ` · ${formatDistance(distanceKm)} away`} ·
+            </span>
+            <RatingBadge summary={rating} />
           </p>
+          {sortNote && <p className="mt-1 text-sm font-semibold text-brand">{sortNote}</p>}
           {!multiDay && weather.size > 0 && <WeatherNote weather={[...weather.values()][0]!} />}
           {checkedAt && (
             <p className="mt-1 text-xs text-muted">

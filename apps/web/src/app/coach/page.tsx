@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { AREAS, SPECIALITIES, WEEKDAYS, formatAuPhone, type CoachProfile } from "@bookon/core";
 import {
   COACH_CONSENT,
+  acceptedLessonPaymentTerms,
   coachContactCounts,
   coachForEmail,
   groupSessionsForCoach,
@@ -85,7 +86,10 @@ export default async function CoachPortal({
   }
   const lessons = coach && ctx ? await lessonsForCoach(db, coach.id, ctx.now) : null;
   const sessions = coach && ctx ? await groupSessionsForCoach(db, coach.id, ctx.now) : null;
-  const canAddSessions = coach && ctx ? await coachTakesBookings(ctx, coach) : false;
+  const canAddSessions =
+    coach && ctx
+      ? (await coachTakesBookings(ctx, coach)) && acceptedLessonPaymentTerms(coach.consents)
+      : false;
   const paymentSettings = await lessonPaymentSettings(db);
   const changesWaiting = Boolean(coach?.profile && coach.draft);
 
@@ -148,6 +152,9 @@ export default async function CoachPortal({
             <Notice tone="info">
               Cancelled. Everyone who booked is being refunded in full, and we&apos;ve emailed them.
             </Notice>
+          )}
+          {query.terms === "agreed" && (
+            <Notice tone="info">Thanks, you&apos;ve agreed to the updated payment terms.</Notice>
           )}
           {query.bookings === "on" && (
             <Notice tone="info">Bookings are on. Golfers can now book and pay on your page.</Notice>

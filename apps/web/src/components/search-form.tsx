@@ -31,6 +31,7 @@ export function SearchForm({
   mine = false,
   idPrefix = "",
   near = null,
+  sort,
   pinButton = false,
 }: {
   values: SearchFormValues;
@@ -46,6 +47,8 @@ export function SearchForm({
   near?: Near | null;
   /** Keep the button in view at the bottom of a scrolling side panel (the search page on desktop). */
   pinButton?: boolean;
+  /** The results' sort, to keep when the search changes. Left out for the usual order. */
+  sort?: string;
 }) {
   const id = (name: string) => `${idPrefix}${name}`;
   const today = perthDate(now);
@@ -55,6 +58,7 @@ export function SearchForm({
   const bays = courses.filter((c) => kindPlays(c.kind, "bays"));
   return (
     <form action="/search" method="get" className="search-form flex flex-col gap-5">
+      {sort && <input type="hidden" name="sort" value={sort} />}
       {bays.length > 0 && (
         <PlaySwitch
           initial={values.play}

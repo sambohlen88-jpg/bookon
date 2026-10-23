@@ -109,9 +109,24 @@ export async function openStripeDashboard() {
   redirect(link!);
 }
 
+/** Agree to updated payment terms, for coaches already set up with Stripe (Milestone 20). */
+export async function agreeToPaymentTerms(formData: FormData) {
+  const coach = await signedInCoach();
+  const by = String(formData.get("termsBy") ?? "")
+    .trim()
+    .slice(0, 80);
+  if (formData.get("terms") !== "yes" || !by)
+    back({ problem: "Tick the box and add your name to agree to the payment terms." }, "payments");
+  await acceptLessonPaymentTerms(getDb(), coach.id, by, new Date());
+  revalidatePath("/coach");
+  back({ terms: "agreed" }, "payments");
+}
+
 export async function turnBookingsOn() {
   const coach = await signedInCoach();
   const ctx = await context();
+  if (!acceptedLessonPaymentTerms(coach.consents))
+    back({ problem: "Agree to the payment terms first." }, "payments");
   // Ask Stripe first, in case the account has only just been finished.
   await refreshCoachPayments(ctx, coach);
   const on = await setCoachTakesBookings(ctx.db, coach.id, true, ctx.now);

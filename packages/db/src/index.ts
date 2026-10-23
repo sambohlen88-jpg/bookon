@@ -20,3 +20,4 @@ export * from "./settings";
 export * from "./lessons";
 export * from "./coach-calendar";
 export * from "./groups";
+export * from "./ratings";

@@ -263,7 +263,8 @@ export function CoachSessions({
         </details>
       ) : (
         <p className="mt-4 text-sm text-muted">
-          Turn on bookings through BookOn (above) to put on group sessions golfers can pay for.
+          To put on group sessions golfers can pay for, turn on bookings through BookOn and agree to
+          the payment terms (above).
         </p>
       )}
     </section>

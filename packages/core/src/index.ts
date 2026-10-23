@@ -10,3 +10,5 @@ export * from "./lessons";
 export * from "./ics";
 export * from "./wa-calendar";
 export * from "./groups";
+export * from "./ratings";
+export * from "./sorting";

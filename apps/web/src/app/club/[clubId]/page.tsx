@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { addPerthDays, perthDate } from "@bookon/core";
-import { courseActivity, coursesForClub, listChangeRequests } from "@bookon/db";
+import { RATING_MIN_COUNT, addPerthDays, formatRating, perthDate, ratingCount } from "@bookon/core";
+import { courseActivity, coursesForClub, listChangeRequests, ratingSummaries } from "@bookon/db";
 import { PageTitle, Pill, panel } from "@/components/admin/ui";
 import { Notice } from "@/components/ui";
 import { requireClub } from "@/lib/access";
@@ -18,6 +18,7 @@ export default async function ClubOverview({ params }: { params: Promise<{ clubI
   const sum = (key: "impressions" | "clicks" | "alertClicks" | "shareClicks") =>
     activity.reduce((n, r) => n + r[key], 0);
   const pending = await listChangeRequests(db, { status: "pending", clubId: club.id });
+  const ratings = await ratingSummaries(db);
 
   return (
     <>
@@ -53,7 +54,20 @@ export default async function ClubOverview({ params }: { params: Promise<{ clubI
               key={c.id}
               className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3 first:border-t-0"
             >
-              <span className="font-medium">{c.name}</span>
+              <span>
+                <span className="block font-medium">{c.name}</span>
+                {c.enabled && (
+                  <span className="block text-sm text-muted">
+                    {(() => {
+                      const r = ratings.get(c.id);
+                      if (!r) return "No ratings from golfers yet";
+                      if (r.count < RATING_MIN_COUNT)
+                        return `${ratingCount(r.count)} so far: the average shows to golfers from ${RATING_MIN_COUNT}`;
+                      return `Rated ${formatRating(r.average)} out of 5 by golfers, from ${ratingCount(r.count)}`;
+                    })()}
+                  </span>
+                )}
+              </span>
               {c.enabled ? (
                 <span className="flex items-center gap-3 text-sm">
                   <Pill tone="good">Live</Pill>

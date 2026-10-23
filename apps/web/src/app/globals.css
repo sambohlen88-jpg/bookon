@@ -317,3 +317,21 @@ html[data-navigating] .nav-progress {
     left: calc(100% - 9px);
   }
 }
+
+/* Course rating (Milestone 20): the golfer's stars are lit, and hovering a star lights it and those before it. */
+.rate-star {
+  color: var(--border);
+}
+.rate-star[data-on] {
+  color: var(--star);
+}
+.rate-stars:has(.rate-star:hover) .rate-star {
+  color: var(--border);
+}
+.rate-stars:has(.rate-star:nth-child(1):hover) .rate-star:nth-child(-n + 1),
+.rate-stars:has(.rate-star:nth-child(2):hover) .rate-star:nth-child(-n + 2),
+.rate-stars:has(.rate-star:nth-child(3):hover) .rate-star:nth-child(-n + 3),
+.rate-stars:has(.rate-star:nth-child(4):hover) .rate-star:nth-child(-n + 4),
+.rate-stars:has(.rate-star:nth-child(5):hover) .rate-star:nth-child(-n + 5) {
+  color: var(--star);
+}

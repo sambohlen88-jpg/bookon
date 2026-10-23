@@ -3,6 +3,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { validStars } from "@bookon/core";
 import {
   alertByManageToken,
   clearVisits,
@@ -18,6 +19,8 @@ import {
   safeNextPath,
   setAlertChannels,
   setAlertStatus,
+  removeCourseRating,
+  setCourseRating,
   setFavourite,
 } from "@bookon/db";
 import { createMailer, signInEmail } from "@bookon/email";
@@ -77,6 +80,30 @@ export async function toggleFavourite(formData: FormData) {
   );
   revalidatePath("/search");
   revalidatePath("/account");
+}
+
+/** Rate a course 1 to 5 stars, or change the rating (Milestone 20). */
+export async function rateCourse(formData: FormData) {
+  const slug = String(formData.get("slug") ?? "");
+  const back = `/courses/${encodeURIComponent(slug)}`;
+  const user = await requireUser(`${back}#rating`);
+  const stars = Number(formData.get("stars"));
+  const course = (await listSearchableCourses(getDb())).find(
+    (c) => c.id === String(formData.get("courseId")) && c.slug === slug,
+  );
+  if (!course || !validStars(stars)) redirect(back);
+  await setCourseRating(getDb(), user.id, course!.id, stars, new Date());
+  revalidatePath(back);
+  redirect(`${back}?rated=${stars}#rating`);
+}
+
+export async function removeMyRating(formData: FormData) {
+  const slug = String(formData.get("slug") ?? "");
+  const back = `/courses/${encodeURIComponent(slug)}`;
+  const user = await requireUser(`${back}#rating`);
+  await removeCourseRating(getDb(), user.id, String(formData.get("courseId")));
+  revalidatePath(back);
+  redirect(`${back}?rated=removed#rating`);
 }
 
 /** Save the search in `query` (a /search query string) as an alert. */

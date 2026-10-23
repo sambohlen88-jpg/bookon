@@ -14,6 +14,7 @@ import {
 } from "@bookon/db";
 import {
   acceptLessonFromPortal,
+  agreeToPaymentTerms,
   cancelLessonFromPortal,
   declineLessonFromPortal,
   openStripeDashboard,
@@ -213,6 +214,29 @@ export function CoachLessons({
           </p>
         ) : coach.paymentsReady && coach.paymentAccountId ? (
           <>
+            {!terms && (
+              <form
+                action={agreeToPaymentTerms}
+                className="mt-3 rounded-lg border border-warning-border bg-warning-bg/40 p-3 text-sm"
+              >
+                <p className="font-semibold">We&apos;ve updated the payment terms</p>
+                <p className="mt-1">
+                  They now cover group sessions. Your lessons carry on as they are; agree to put on
+                  group sessions or turn bookings back on.
+                </p>
+                <p className="mt-2">{LESSON_PAYMENT_TERMS}</p>
+                <Checkbox name="terms" value="yes">
+                  I agree
+                </Checkbox>
+                <label htmlFor="terms-again-by" className="mb-1.5 block font-medium">
+                  Your name
+                </label>
+                <input id="terms-again-by" name="termsBy" maxLength={80} className={textInput} />
+                <button type="submit" className={`${primaryButton} mt-3`}>
+                  Agree
+                </button>
+              </form>
+            )}
             <p className="mt-2">
               {coach.takesBookings ? (
                 <>

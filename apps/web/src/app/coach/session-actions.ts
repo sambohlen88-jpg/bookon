@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { formatPerthDay, formatPerthTime, perthDate } from "@bookon/core";
 import {
   GroupSessionClash,
+  acceptedLessonPaymentTerms,
   coachForEmail,
   createGroupSessions,
   groupSessionById,
@@ -49,6 +50,8 @@ export async function addGroupSession(formData: FormData) {
   const ctx = await context();
   if (!(await coachTakesBookings(ctx, coach)))
     back({ problem: "Turn on bookings through BookOn first, so golfers can pay for spots." });
+  if (!acceptedLessonPaymentTerms(coach.consents))
+    back({ problem: "Agree to the updated payment terms (under Bookings and payments) first." });
   const { input, problems } = parseGroupSessionForm(
     formData,
     coach.profile!.places.map(placeLabel),

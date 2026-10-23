@@ -17,13 +17,16 @@ import {
   forecastFor,
   listCourseDetails,
   listFavourites,
+  ratingSummary,
   searchTeeTimes,
+  userCourseRating,
   type ClubRate,
   type CourseDetails,
 } from "@bookon/db";
 import { describeRate } from "@bookon/email";
 import { createAlertFromSearch } from "@/app/actions";
 import { CourseArt } from "@/components/course-art";
+import { RateCourse, RatingBadge } from "@/components/rating";
 import { FavouriteStar } from "@/components/results";
 import { ShareButton } from "@/components/share-button";
 import { TeeSheet } from "@/components/tee-sheet";
@@ -82,7 +85,8 @@ export default async function CoursePage({
   const play: PlayChoice = venue ? "bays" : "golf";
   // One after another: the local database takes one query at a time.
   // The tee sheet: free times for the next two weeks, for the golfer's choices.
-  const chosen = sheetOptions(await searchParams, venue, today);
+  const query = await searchParams;
+  const chosen = sheetOptions(query, venue, today);
   const sheetResult = (
     await searchTeeTimes(
       db,
@@ -107,6 +111,9 @@ export default async function CoursePage({
   const nearby = nearbyCourses(course, await listCourseDetails(db));
   const user = await currentUser();
   const starred = user ? (await listFavourites(db, user.id)).some((f) => f.id === course.id) : null;
+  // Ratings (Milestone 20).
+  const rating = await ratingSummary(db, course.id);
+  const myRating = user ? await userCourseRating(db, user.id, course.id) : null;
 
   const form = (date: string, extra: { days?: number } = {}) => ({
     play,
@@ -186,6 +193,9 @@ export default async function CoursePage({
                   {course.suburb} · {areaName(course.area)} ·{" "}
                   {venue ? KIND_NAME[course.kind] : `${course.holes} holes`}
                 </p>
+                <a href="#rating" className="mt-1 inline-flex min-h-8 items-center">
+                  <RatingBadge summary={rating} />
+                </a>
               </div>
               <div className="mt-1 flex items-center gap-1">
                 {!venue && (
@@ -218,6 +228,22 @@ export default async function CoursePage({
             />
 
             {rates.length > 0 && <PriceList rates={rates} />}
+
+            {query.rated && (
+              <p role="status" className="mt-8 text-sm font-medium text-brand">
+                {query.rated === "removed"
+                  ? "Your rating is removed."
+                  : "Thanks, your rating is saved."}
+              </p>
+            )}
+            <RateCourse
+              courseId={course.id}
+              slug={course.slug}
+              name={course.name}
+              summary={rating}
+              mine={myRating}
+              signedIn={Boolean(user)}
+            />
 
             {facilities.length > 0 && (
               <section aria-labelledby="facilities" className="mt-8">

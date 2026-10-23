@@ -23,9 +23,10 @@ export type LessonBooking = typeof lessonBookings.$inferSelect;
 export type LessonStatus = LessonBooking["status"];
 
 /** What coaches agree to before taking payments through BookOn. Bump the version when it changes. */
-export const LESSON_PAYMENT_TERMS_VERSION = 1;
+export const LESSON_PAYMENT_TERMS_VERSION = 2;
+/* Version 2 (Milestone 20) adds group sessions. */
 export const LESSON_PAYMENT_TERMS =
-  "I'll take lesson bookings and payments through BookOn. Golfers pay my full lesson price plus BookOn's booking fee; Stripe pays my price to my bank. I'll accept or decline each request within 48 hours, and refund in full any lesson I cancel. A golfer who cancels 24 hours or more before gets a full refund. The lesson is between me and the golfer.";
+  "I'll take lesson and group session bookings and payments through BookOn. Golfers pay my full price plus BookOn's booking fee; Stripe pays my price to my bank. I'll accept or decline each lesson request within 48 hours, and refund in full any lesson I cancel. Group sessions are charged when booked; if I call one off, or it doesn't reach the minimum I set, everyone who booked is refunded in full. A golfer who cancels 24 hours or more before a lesson or session gets a full refund. The lesson or session is between me and the golfer.";
 
 export interface LessonPaymentSettings {
   /** Golfers can book and pay for lessons. */

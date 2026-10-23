@@ -1,6 +1,6 @@
 # Launch checklist
 
-Things that must be done before BookOn launches publicly (SPEC section 11, Milestone 22). Claude Code is asked, in `CLAUDE.md`, to raise these with the owner before any launch work.
+Things that must be done before BookOn launches publicly (SPEC section 11, Milestone 23). Claude Code is asked, in `CLAUDE.md`, to raise these with the owner before any launch work.
 
 ## Platform access (owner asked to be reminded)
 
@@ -60,8 +60,15 @@ Data is read from public booking pages with the owner's approval, ahead of forma
 ## Special rates and group sessions (Milestone 19)
 
 - [ ] **WA holiday dates:** 2027 school term dates were preliminary when added. Check them against the Department of Education's final list, and add 2028 public and school holidays in Admin, Settings once WA publishes them. Until then, 2028 days get the standard price (and the 2027-28 summer holidays stop at 31 December 2027).
-- [ ] **Group session terms** reviewed by a lawyer with the lesson terms: charged on booking, full refund up to 24 hours before, called off and refunded if the minimum isn't reached, coach cancellations refunded in full. The coach terms in `LESSON_PAYMENT_TERMS` don't mention group sessions yet; updating them means bumping `LESSON_PAYMENT_TERMS_VERSION`, so every coach agrees again.
+- [ ] **Group session terms** reviewed by a lawyer with the lesson terms: charged on booking, full refund up to 24 hours before, called off and refunded if the minimum isn't reached, coach cancellations refunded in full. The coach terms (`LESSON_PAYMENT_TERMS`, version 2 since Milestone 20) now cover group sessions, and coaches agree again in My coaching.
 - [ ] Try a group booking and a called-off session in Stripe test mode (refunds use the same Stripe calls as lessons).
+
+## Course ratings (Milestone 20)
+
+- [ ] Privacy policy: each account's star ratings are kept with the account (deleted with it). Golfers see only averages, never names.
+- [ ] Decide who checks ratings, and how often (Admin, Ratings). Clubs may ask for a rating to be taken down; removing one is logged in the change log.
+- [ ] Terms of use: a line on fair ratings (no ratings for courses you haven't played, no rating your own club), and that BookOn can remove ratings.
+- [ ] At launch every course says "Not rated yet". Consider asking friendly golfers to rate their home course early, so averages appear.
 
 ## Business and legal
 

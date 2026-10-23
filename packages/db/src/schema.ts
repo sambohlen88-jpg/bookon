@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   bigserial,
   boolean,
+  check,
   customType,
   date,
   doublePrecision,
@@ -322,6 +323,27 @@ export const favourites = pgTable(
     createdAt: createdAt(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.courseId] })],
+);
+
+/** A signed-in golfer's rating of a course, 1 to 5 stars (Milestone 20). One per golfer per course. */
+export const courseRatings = pgTable(
+  "course_ratings",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    courseId: uuid("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    stars: smallint("stars").notNull(),
+    createdAt: createdAt(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.courseId] }),
+    index("course_ratings_course_idx").on(t.courseId),
+    check("course_ratings_stars_check", sql`${t.stars} between 1 and 5`),
+  ],
 );
 
 /** Emails "sent" in development, shown at /dev/outbox instead of going out. */

@@ -2,9 +2,13 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-// Only the areas module: the rest of @bookon/core is server code.
+// Only these modules: the rest of @bookon/core is server code.
 import { distanceKm, formatDistance } from "@bookon/core/areas";
+import { formatPrice } from "@bookon/core/money";
+import type { RatingSummary } from "@bookon/core/ratings";
+import { SORT_LABEL, sortCourses, type SortChoice } from "@bookon/core/sorting";
 import { CourseArt } from "@/components/course-art";
+import { RatingBadge } from "@/components/rating-badge";
 
 export interface DirectoryCourse {
   slug: string;
@@ -19,16 +23,26 @@ export interface DirectoryCourse {
   latitude: number | null;
   longitude: number | null;
   photoId: string | null;
-  /** "Next 7:20 am" or "Next tomorrow 6:00 am", or null when nothing's free. */
+  /** "Next free 7:20 am" or "Next free Sat 6:00 am", or null when nothing's free this week. */
   next: string | null;
+  /** The next free time, as milliseconds, for sorting. */
+  firstStart: number | null;
+  /** The cheapest free time this week, when the club shows prices. */
+  cheapestCents: number | null;
+  /** Free times this week. */
+  freeTimes: number;
+  rating: RatingSummary | null;
 }
+
+const SORTS: SortChoice[] = ["name", "price", "available", "rating"];
 
 const chip =
   "flex min-h-11 shrink-0 items-center rounded-full border px-4 text-sm font-medium whitespace-nowrap";
 
 /**
- * Every course, with a search box, area buttons and Near me. Near me uses
- * the phone's location in the browser only: it never leaves the phone.
+ * Every course, with a search box, area buttons, Near me and sorting
+ * (Milestone 20). Near me uses the phone's location in the browser only: it
+ * never leaves the phone.
  */
 export function CourseDirectory({
   courses,
@@ -41,6 +55,7 @@ export function CourseDirectory({
   const [area, setArea] = useState<string | null>(null);
   const [here, setHere] = useState<{ latitude: number; longitude: number } | null>(null);
   const [finding, setFinding] = useState<"idle" | "finding" | "failed">("idle");
+  const [sort, setSort] = useState<SortChoice>("name");
   const located = courses.some((c) => c.latitude !== null);
 
   const shown = useMemo(() => {
@@ -55,16 +70,20 @@ export function CourseDirectory({
             ? distanceKm(here, { latitude: c.latitude, longitude: c.longitude })
             : null,
       }));
-    if (here) list.sort((a, b) => (a.km ?? Infinity) - (b.km ?? Infinity));
-    return list;
-  }, [courses, query, area, here]);
+    return sortCourses(list, sort, (c) => c);
+  }, [courses, query, area, here, sort]);
 
   function nearMe() {
-    if (here) return setHere(null);
+    if (here) {
+      setHere(null);
+      if (sort === "near") setSort("name");
+      return;
+    }
     setFinding("finding");
     navigator.geolocation.getCurrentPosition(
       (p) => {
         setHere({ latitude: p.coords.latitude, longitude: p.coords.longitude });
+        setSort("near");
         setFinding("idle");
       },
       () => setFinding("failed"),
@@ -72,8 +91,8 @@ export function CourseDirectory({
     );
   }
 
-  // Grouped by area unless searching or sorting by distance. Sims and ranges come last.
-  const grouped = !here && !query.trim();
+  // Grouped by area for A to Z, unless searching. Sims and ranges come last.
+  const grouped = sort === "name" && !query.trim();
   const groups = grouped
     ? [
         ...[...areas, { id: null, name: "Other" }].map((a) => ({
@@ -126,6 +145,24 @@ export function CourseDirectory({
           </button>
         ))}
       </div>
+      <div
+        role="group"
+        aria-label="Sort"
+        className="relative -mx-4 mt-2 flex items-center gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:px-0"
+      >
+        <span className="shrink-0 text-sm text-muted">Sort</span>
+        {[...SORTS, ...(here ? (["near"] as const) : [])].map((s) => (
+          <button
+            key={s}
+            type="button"
+            aria-pressed={sort === s}
+            onClick={() => setSort(s)}
+            className={`${chip} ${sort === s ? "border-brand bg-brand text-brand-foreground" : "border-border"}`}
+          >
+            {SORT_LABEL[s]}
+          </button>
+        ))}
+      </div>
       {finding === "failed" && (
         <p role="alert" className="mt-2 text-sm text-warning-fg">
           We couldn&apos;t get your location. Check location is allowed for BookOn in your
@@ -136,7 +173,15 @@ export function CourseDirectory({
         {shown.length === courses.length
           ? `${courses.length} ${noun}`
           : `${shown.length} of ${courses.length} ${noun}`}
-        {here ? ", closest first" : ""}
+        {sort === "near"
+          ? ", closest first"
+          : sort === "price"
+            ? ", cheapest this week first"
+            : sort === "available"
+              ? ", most free times this week first"
+              : sort === "rating"
+                ? ", top rated first"
+                : ""}
       </p>
 
       {shown.length === 0 && (
@@ -167,8 +212,15 @@ export function CourseDirectory({
                     <p
                       className={`mt-0.5 text-sm ${c.next ? "font-medium text-brand" : "text-muted"}`}
                     >
-                      {c.next ?? "Nothing free today or tomorrow"}
+                      {sort === "price" && c.next
+                        ? c.cheapestCents !== null
+                          ? `From ${formatPrice(c.cheapestCents)}${c.venue ? " an hour" : ""} this week`
+                          : "Price at club"
+                        : sort === "available" && c.next
+                          ? `${c.freeTimes} free ${c.freeTimes === 1 ? "time" : "times"} this week`
+                          : (c.next ?? "Nothing free this week")}
                     </p>
+                    <RatingBadge summary={c.rating} className="mt-0.5" />
                   </div>
                 </Link>
               </li>

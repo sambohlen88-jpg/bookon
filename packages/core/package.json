@@ -7,7 +7,10 @@
     ".": "./src/index.ts",
     "./areas": "./src/areas.ts",
     "./coaching": "./src/coaching.ts",
-    "./lessons": "./src/lessons.ts"
+    "./lessons": "./src/lessons.ts",
+    "./money": "./src/money.ts",
+    "./ratings": "./src/ratings.ts",
+    "./sorting": "./src/sorting.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

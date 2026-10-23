@@ -6,14 +6,22 @@ import {
   distanceKm,
   formatAgo,
   formatPerthDay,
+  formatPerthTime,
+  formatPrice,
+  perthDate,
   perthToUtc,
+  cheapestCents,
+  isSortChoice,
+  sortCourses,
   summariseWeather,
+  type SortChoice,
   type WeatherSummary,
 } from "@bookon/core";
 import { cookies, headers } from "next/headers";
 import {
   approvedCoursePhotos,
   courseIdsForSlugs,
+  ratingSummaries,
   forecastsFor,
   listFavourites,
   listPushSubscriptions,
@@ -30,6 +38,7 @@ import { RefreshBar } from "@/components/refresh-bar";
 import { CourseResults, NoMatchList } from "@/components/results";
 import { SearchForm } from "@/components/search-form";
 import { SiteHeader } from "@/components/site-header";
+import { SortBar } from "@/components/sort-bar";
 import { PushToggle } from "@/components/push-toggle";
 import { ShareButton } from "@/components/share-button";
 import { Notice, primaryButton } from "@/components/ui";
@@ -107,15 +116,58 @@ export default async function SearchPage({
     params.courseSlugs?.length === 0
       ? { courses: [], totalTeeTimes: 0 }
       : await searchTeeTimes(db, params, now);
-  if (near) {
-    // Closest first, keeping courses with times ahead of those without.
-    const far = (id: string) => distances.get(id) ?? Infinity;
-    result.courses.sort(
-      (a, b) =>
-        Number(b.teeTimes.length > 0) - Number(a.teeTimes.length > 0) ||
-        far(a.course.id) - far(b.course.id),
-    );
-  }
+  // Sorting (Milestone 20). Courses with nothing free stay at the bottom whatever the sort.
+  const sortChoices: SortChoice[] = [
+    "soonest",
+    "price",
+    "available",
+    "rating",
+    ...(near ? (["near"] as const) : []),
+  ];
+  const defaultSort: SortChoice = near ? "near" : "soonest";
+  const asked = Array.isArray(query.sort) ? query.sort[0] : query.sort;
+  const sort = isSortChoice(asked) && sortChoices.includes(asked) ? asked : defaultSort;
+  const ratings = await ratingSummaries(db);
+  result.courses = sortCourses(
+    result.courses,
+    sort,
+    (r) => ({
+      name: r.course.name,
+      firstStart: r.teeTimes.length
+        ? Math.min(...r.teeTimes.map((t) => t.startTime.getTime()))
+        : null,
+      cheapestCents: cheapestCents(r.teeTimes),
+      freeTimes: r.teeTimes.length,
+      rating: ratings.get(r.course.id),
+      km: distances.get(r.course.id) ?? null,
+    }),
+    { freeFirst: true },
+  );
+  /** This page with another sort, keeping everything else in the address. */
+  const sortHref = (choice: SortChoice) => {
+    const p = new URLSearchParams();
+    for (const [key, value] of Object.entries(query)) {
+      if (key === "sort" || key === "alert") continue;
+      for (const v of [value].flat()) if (v !== undefined) p.append(key, v);
+    }
+    if (choice !== defaultSort) p.set("sort", choice);
+    return `/search?${p}`;
+  };
+  const multiDayNote = (start: Date) =>
+    params.dateFrom !== params.dateTo ? ` ${formatPerthDay(perthDate(start))}` : "";
+  const keptSort = sort !== defaultSort ? sort : undefined;
+  /** On the card, why a course is where it is, for sorts the first times shown don't explain. */
+  const sortNote = (r: (typeof result.courses)[number]): string | null => {
+    if (r.teeTimes.length === 0) return null;
+    if (sort === "available")
+      return `${r.teeTimes.length} ${bays ? "start" : "tee"} ${r.teeTimes.length === 1 ? "time" : "times"} free`;
+    if (sort !== "price") return null;
+    const cents = cheapestCents(r.teeTimes);
+    if (cents === null) return "Price at club";
+    const first = r.teeTimes.find((t) => t.priceCents === cents)!;
+    const when = multiDayNote(first.startTime);
+    return `Cheapest ${formatPrice(cents)}${bays ? " an hour" : ""} at ${formatPerthTime(first.startTime)}${when}`;
+  };
   const photos = await approvedCoursePhotos(db);
   const forecasts = await forecastsFor(
     db,
@@ -188,6 +240,7 @@ export default async function SearchPage({
               mine={mine}
               idPrefix="d-"
               near={near}
+              sort={keptSort}
               pinButton
             />
           </div>
@@ -209,6 +262,7 @@ export default async function SearchPage({
                 favourites={favourites.length}
                 mine={mine}
                 near={near}
+                sort={keptSort}
               />
             </div>
           </details>
@@ -227,6 +281,8 @@ export default async function SearchPage({
             </h1>
             {result.totalTeeTimes > 0 && !bays && <ShareButton query={here} />}
           </div>
+
+          {withTimes > 1 && <SortBar choices={sortChoices} current={sort} href={sortHref} />}
 
           {alertStatus === "created" && (
             <div className="mt-4">
@@ -297,6 +353,8 @@ export default async function SearchPage({
                 photoId={photos.get(r.course.id)}
                 shareQuery={bays ? undefined : here}
                 distanceKm={distances.get(r.course.id) ?? null}
+                rating={ratings.get(r.course.id) ?? null}
+                sortNote={sortNote(r)}
                 weather={weatherFor(r.course.id)}
                 bookHref={(t) =>
                   bookLink({

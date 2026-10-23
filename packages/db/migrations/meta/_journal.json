@@ -120,6 +120,13 @@
       "when": 1792479852518,
       "tag": "0016_group_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792724850074,
+      "tag": "0017_course_ratings",
+      "breakpoints": true
     }
   ]
 }
