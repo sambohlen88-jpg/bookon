@@ -5,15 +5,18 @@ import {
   markEntryAbandoned,
   markGroupAbandoned,
   markLessonAbandoned,
+  markMpEntryAbandoned,
+  mpEntryByCheckout,
   setClubPaymentsReady,
   setCoachPaymentsReady,
 } from "@bookon/db";
 import { lessonPaid, type LessonContext } from "./bookings";
 import { entryPaid } from "./club-events";
 import { groupPaid } from "./groups";
+import { mpEntryPaid } from "./matchplay";
 import type { WebhookEvent } from "./provider";
 
-/** Act on a webhook from Stripe, for a lesson, a group session booking or an event entry. */
+/** Act on a webhook from Stripe, for a lesson, a group session booking, an event entry or a match play entry. */
 export async function handlePaymentEvent(ctx: LessonContext, event: WebhookEvent): Promise<void> {
   switch (event.type) {
     case "checkout.complete": {
@@ -28,7 +31,12 @@ export async function handlePaymentEvent(ctx: LessonContext, event: WebhookEvent
         return;
       }
       const entry = await entryByCheckout(ctx.db, event.checkoutId);
-      if (entry) await entryPaid(ctx, entry.id, event.paymentId);
+      if (entry) {
+        await entryPaid(ctx, entry.id, event.paymentId);
+        return;
+      }
+      const mp = await mpEntryByCheckout(ctx.db, event.checkoutId);
+      if (mp) await mpEntryPaid(ctx, mp.id, event.paymentId);
       return;
     }
     case "checkout.expired": {
@@ -43,7 +51,12 @@ export async function handlePaymentEvent(ctx: LessonContext, event: WebhookEvent
         return;
       }
       const entry = await entryByCheckout(ctx.db, event.checkoutId);
-      if (entry) await markEntryAbandoned(ctx.db, entry.id);
+      if (entry) {
+        await markEntryAbandoned(ctx.db, entry.id);
+        return;
+      }
+      const mp = await mpEntryByCheckout(ctx.db, event.checkoutId);
+      if (mp) await markMpEntryAbandoned(ctx.db, mp.id);
       return;
     }
     case "account.updated":

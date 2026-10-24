@@ -6,3 +6,4 @@ export * from "./coach-emails";
 export * from "./lesson-emails";
 export * from "./group-emails";
 export * from "./event-emails";
+export * from "./matchplay-emails";

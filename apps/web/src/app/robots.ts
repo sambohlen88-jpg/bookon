@@ -24,6 +24,7 @@ export default function robots(): MetadataRoute.Robots {
         "/lessons/",
         "/sessions/",
         "/entries/",
+        "/matchplay/entry/",
         "/calendar/",
       ],
     },

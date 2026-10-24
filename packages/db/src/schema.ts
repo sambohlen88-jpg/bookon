@@ -465,6 +465,135 @@ export const eventWaitlist = pgTable(
   (t) => [uniqueIndex("event_waitlist_event_email_idx").on(t.eventId, t.email)],
 );
 
+/*
+ * Match play (Milestone 22): knockout competitions a club runs over several
+ * weeks. Results are as the players report them; no handicaps are kept.
+ */
+export interface MatchplayRound {
+  /** Perth date the round's matches should be played by. */
+  playBy: string | null;
+}
+
+export const matchplayComps = pgTable(
+  "matchplay_comps",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    clubId: uuid("club_id")
+      .notNull()
+      .references(() => clubs.id, { onDelete: "restrict" }),
+    courseId: uuid("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "restrict" }),
+    title: text("title").notNull(),
+    description: text("description"),
+    /** 1 singles, 2 pairs. */
+    teamSize: smallint("team_size").notNull(),
+    /** Golfers can enter on BookOn; otherwise only the club adds entries. */
+    onlineEntry: boolean("online_entry").notNull().default(true),
+    /** Per player; 0 for free online entry. */
+    feeCents: integer("fee_cents").notNull().default(0),
+    maxEntries: smallint("max_entries").notNull(),
+    entriesClose: timestamp("entries_close", { withTimezone: true }),
+    /** Open competitions are listed on BookOn; members-only ones are reached by link. */
+    open: boolean("open").notNull().default(true),
+    /** "entries" (taking entries), "drawn" (draw made, not published), "playing", "finished", "cancelled". */
+    status: text("status").notNull().default("entries"),
+    rounds: jsonb("rounds").$type<MatchplayRound[]>().notNull().default([]),
+    drawSize: smallint("draw_size"),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    winnerEntryId: uuid("winner_entry_id"),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+    cancelNote: text("cancel_note"),
+    createdBy: text("created_by").notNull(),
+    createdAt: createdAt(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("matchplay_comps_club_idx").on(t.clubId)],
+);
+
+export const matchplayEntryStatusEnum = pgEnum("matchplay_entry_status", [
+  /** On the checkout page, for a paid entry. */
+  "checkout",
+  /** In the competition (paid, free, or added by the club). */
+  "entered",
+  "withdrawn",
+  /** The club cancelled the competition. */
+  "cancelled",
+  "abandoned",
+]);
+
+export interface MatchplayPlayer {
+  name: string;
+}
+
+export const matchplayEntries = pgTable(
+  "matchplay_entries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    compId: uuid("comp_id")
+      .notNull()
+      .references(() => matchplayComps.id, { onDelete: "restrict" }),
+    status: matchplayEntryStatusEnum("status").notNull().default("entered"),
+    players: jsonb("players").$type<MatchplayPlayer[]>().notNull(),
+    /** Who opponents contact to arrange the match. */
+    contactName: text("contact_name").notNull(),
+    /** Lower case. At least one of email and phone. */
+    contactEmail: text("contact_email"),
+    contactPhone: text("contact_phone"),
+    /** "online" or "club" (typed in by the club). */
+    source: text("source").notNull(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    /** Optional, set by the club before the draw: 1 is the top seed. */
+    seed: smallint("seed"),
+    feesCents: integer("fees_cents").notNull().default(0),
+    bookingFeeCents: integer("booking_fee_cents").notNull().default(0),
+    manageToken: text("manage_token").notNull().unique(),
+    provider: text("provider"),
+    checkoutId: text("checkout_id"),
+    checkoutExpiresAt: timestamp("checkout_expires_at", { withTimezone: true }),
+    paymentId: text("payment_id"),
+    enteredAt: timestamp("entered_at", { withTimezone: true }),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+    cancelledBy: text("cancelled_by"),
+    refundCents: integer("refund_cents").notNull().default(0),
+    createdAt: createdAt(),
+  },
+  (t) => [index("matchplay_entries_comp_idx").on(t.compId)],
+);
+
+export const matchplayMatches = pgTable(
+  "matchplay_matches",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    compId: uuid("comp_id")
+      .notNull()
+      .references(() => matchplayComps.id, { onDelete: "cascade" }),
+    /** From 1. */
+    round: smallint("round").notNull(),
+    /** Position in the round, from 0. */
+    slot: smallint("slot").notNull(),
+    entryA: uuid("entry_a").references(() => matchplayEntries.id),
+    entryB: uuid("entry_b").references(() => matchplayEntries.id),
+    /**
+     * "waiting" (a side isn't known yet), "to-play", "reported" (by one side,
+     * the other can dispute until dispute_by), "disputed" (the club decides),
+     * "done".
+     */
+    status: text("status").notNull().default("waiting"),
+    winnerEntryId: uuid("winner_entry_id").references(() => matchplayEntries.id),
+    /** As reported: "3&2", "1 up", "19th". Or "Bye" or "Walkover". */
+    score: text("score"),
+    reportedBy: uuid("reported_by").references(() => matchplayEntries.id),
+    reportedAt: timestamp("reported_at", { withTimezone: true }),
+    disputeBy: timestamp("dispute_by", { withTimezone: true }),
+    disputeNote: text("dispute_note"),
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+    reminderSentAt: timestamp("reminder_sent_at", { withTimezone: true }),
+    overdueNoticeAt: timestamp("overdue_notice_at", { withTimezone: true }),
+  },
+  (t) => [uniqueIndex("matchplay_matches_slot_idx").on(t.compId, t.round, t.slot)],
+);
+
 /** A signed-in golfer's rating of a course, 1 to 5 stars (Milestone 20). One per golfer per course. */
 export const courseRatings = pgTable(
   "course_ratings",

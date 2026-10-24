@@ -11,6 +11,8 @@ import {
   groupSessionById,
   lessonById,
   lessonTotalCents,
+  compById,
+  mpEntryById,
 } from "@bookon/db";
 import { practicePay, practiceLeave } from "@/app/dev/practice-pay/[id]/actions";
 import { SiteHeader } from "@/components/site-header";
@@ -32,7 +34,8 @@ export default async function PracticePayPage({ params }: { params: Promise<{ id
   const now = new Date();
   const checkout = await practiceCheckout(db, id);
   if (!checkout) notFound();
-  const open = checkout.status === "checkout" && checkout.expiresAt > now;
+  const open =
+    checkout.status === "checkout" && checkout.expiresAt !== null && checkout.expiresAt > now;
 
   return (
     <>
@@ -48,9 +51,11 @@ export default async function PracticePayPage({ params }: { params: Promise<{ id
         </p>
         <div className="mt-6 rounded-xl border border-border p-4">
           <p className="font-semibold">{checkout.title}</p>
-          <p className="mt-1 text-sm">
-            {formatPerthDay(perthDate(checkout.startTime))}, {formatPerthTime(checkout.startTime)}
-          </p>
+          {checkout.startTime && (
+            <p className="mt-1 text-sm">
+              {formatPerthDay(perthDate(checkout.startTime))}, {formatPerthTime(checkout.startTime)}
+            </p>
+          )}
           <dl className="mt-3 grid grid-cols-[1fr_auto] gap-y-1 text-sm tabular-nums">
             <dt>{checkout.item}</dt>
             <dd>{formatPrice(checkout.itemCents)}</dd>
@@ -85,8 +90,21 @@ export default async function PracticePayPage({ params }: { params: Promise<{ id
   );
 }
 
-/** A lesson, group booking or event entry at checkout, as the practice page shows it. */
-async function practiceCheckout(db: ReturnType<typeof getDb>, id: string) {
+/** A lesson, group booking, event or match play entry at checkout, as the practice page shows it. */
+async function practiceCheckout(
+  db: ReturnType<typeof getDb>,
+  id: string,
+): Promise<{
+  group: boolean;
+  title: string;
+  startTime: Date | null;
+  item: string;
+  itemCents: number;
+  feeCents: number;
+  totalCents: number;
+  status: string;
+  expiresAt: Date | null;
+} | null> {
   const lesson = await lessonById(db, id);
   if (lesson) {
     const coach = await coachById(db, lesson.coachId);
@@ -116,6 +134,22 @@ async function practiceCheckout(db: ReturnType<typeof getDb>, id: string) {
       totalCents: entryTotalCents(entry),
       status: entry.status,
       expiresAt: entry.checkoutExpiresAt,
+    };
+  }
+  const mp = await mpEntryById(db, id);
+  if (mp) {
+    const comp = await compById(db, mp.compId);
+    if (!comp) return null;
+    return {
+      group: true,
+      title: comp.title,
+      startTime: null,
+      item: `Entry fees, ${mp.players.length} ${mp.players.length === 1 ? "player" : "players"}`,
+      itemCents: mp.feesCents,
+      feeCents: mp.bookingFeeCents,
+      totalCents: mp.feesCents + mp.bookingFeeCents,
+      status: mp.status,
+      expiresAt: mp.checkoutExpiresAt,
     };
   }
   const booking = await groupBookingById(db, id);

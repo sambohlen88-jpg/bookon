@@ -28,7 +28,13 @@ import {
   type PollableCourse,
 } from "@bookon/db";
 import { WebPushSender, createMailer, siteUrl, vapidKeys } from "@bookon/email";
-import { paymentProvider, tidyEvents, tidyGroups, tidyLessons } from "@bookon/payments";
+import {
+  paymentProvider,
+  tidyEvents,
+  tidyGroups,
+  tidyLessons,
+  tidyMatchplay,
+} from "@bookon/payments";
 import { sendAlertNotifications } from "./alerts";
 import { refreshCoachCalendars } from "./calendars";
 import { loadConfig } from "./config";
@@ -131,7 +137,9 @@ async function alertsOnce() {
  * sessions short of their minimum 24 hours before, and refund anyone on a
  * cancelled session. Club events (Milestone 21): tell clubs when entries
  * close, remind entrants the day before, and refund anyone on a cancelled
- * event. Never stops the worker either.
+ * event. Match play (Milestone 22): let undisputed results stand, remind
+ * players before play-by dates and tell clubs about overdue matches. Never
+ * stops the worker either.
  */
 async function lessonsOnce() {
   const payments = paymentProvider(process.env, {
@@ -159,6 +167,11 @@ async function lessonsOnce() {
     if (events.closed || events.notices || events.reminders || events.refunded)
       console.log(
         `[events] ${events.closed} checkouts closed, ${events.notices} clubs told entries closed, ${events.reminders} reminders, ${events.refunded} refunded`,
+      );
+    const mp = await tidyMatchplay(ctx);
+    if (mp.closed || mp.decided || mp.reminders || mp.overdue || mp.refunded)
+      console.log(
+        `[matchplay] ${mp.decided} results stood, ${mp.reminders} reminders, ${mp.overdue} overdue, ${mp.closed} checkouts closed, ${mp.refunded} refunded`,
       );
   } catch (error) {
     console.error("[lessons] could not tidy lesson bookings", error);

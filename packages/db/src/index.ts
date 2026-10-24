@@ -22,3 +22,4 @@ export * from "./coach-calendar";
 export * from "./groups";
 export * from "./ratings";
 export * from "./events";
+export * from "./matchplay";

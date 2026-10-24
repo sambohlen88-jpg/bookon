@@ -80,7 +80,7 @@ async function send(ctx: LessonContext, message: EmailMessage): Promise<void> {
 }
 
 /** Who at the club hears about entries: its contact email, or else its owners. */
-async function clubInbox(ctx: LessonContext, club: Club): Promise<string[]> {
+export async function clubInbox(ctx: LessonContext, club: Club): Promise<string[]> {
   if (club.contactEmail) return [club.contactEmail];
   return (await listClubMembers(ctx.db, club.id))
     .filter((m) => m.role === "owner")

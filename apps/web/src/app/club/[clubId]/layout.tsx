@@ -35,6 +35,7 @@ export default async function ClubLayout({
               { href: `${base}/details`, label: "Details" },
               { href: `${base}/prices`, label: "Prices" },
               { href: `${base}/events`, label: "Events" },
+              { href: `${base}/matchplay`, label: "Match play" },
               { href: `${base}/payments`, label: "Payments" },
               { href: `${base}/photos`, label: "Photos" },
               { href: `${base}/reports`, label: "Reports" },

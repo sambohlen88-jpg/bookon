@@ -13,3 +13,4 @@ export * from "./groups";
 export * from "./ratings";
 export * from "./sorting";
 export * from "./events";
+export * from "./matchplay";

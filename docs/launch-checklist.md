@@ -79,6 +79,14 @@ Data is read from public booking pages with the owner's approval, ahead of forma
 - [ ] Ask each club to set a **contact email** in their details, which gets new-entry emails. Without one, they go to the club's owners on BookOn.
 - [ ] GST on the event booking fee, with the lesson fee (ask your accountant).
 
+## Match play (Milestone 22)
+
+- [ ] **Privacy policy:** when the draw is out, each player's name, mobile and email are emailed to their opponents, and the entry form asks them to agree to that. Names and results show on the public draw sheet. Club-added players are entered by the club, so the club should tell them their details will be shared with opponents.
+- [ ] Terms of use: the club has the final say on results; BookOn only passes reports and disputes on.
+- [ ] Refund rule for paid match play entries (a full refund until the draw is made, then it's up to the club) reviewed with the event payment terms.
+- [ ] Try a paid match play entry and a club cancelling a competition with Stripe in test mode.
+- [ ] Show a club captain the draw and results flow before launch. Clubs run match play differently (strokes given, extra holes, deadlines) and may want more.
+
 ## Business and legal
 
 - [ ] Create the **info@bookon.com.au** mailbox. It is already in the worker's user agent, so clubs may write to it.

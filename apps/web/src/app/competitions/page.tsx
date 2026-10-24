@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AREAS, addPerthDays, isoWeekday, perthDate } from "@bookon/core";
-import { upcomingOpenEvents } from "@bookon/db";
+import { openComps, upcomingOpenEvents } from "@bookon/db";
 import { CompetitionList } from "@/components/competition-list";
+import { CompCards } from "@/components/matchplay/comp-cards";
 import { SiteHeader } from "@/components/site-header";
 import { listedCompetition } from "@/lib/competitions";
 import { getDb } from "@/lib/db";
@@ -19,6 +20,8 @@ export default async function CompetitionsPage() {
   const now = new Date();
   const today = perthDate(now);
   const events = (await upcomingOpenEvents(getDb(), now)).map((e) => listedCompetition(e, now));
+  // Match play (Milestone 22): paid ones only once the club can take payments.
+  const comps = (await openComps(getDb(), now)).filter((c) => !c.feeCents || c.clubPaymentsReady);
   const areas = AREAS.filter((a) => events.some((e) => e.area === a.id)).map((a) => ({
     id: a.id,
     name: a.name,
@@ -33,9 +36,11 @@ export default async function CompetitionsPage() {
           your own or with your team.
         </p>
         {events.length === 0 ? (
-          <p className="mt-8 rounded-xl border border-border p-4 text-muted">
-            No open competitions listed right now. Check back soon.
-          </p>
+          comps.length === 0 && (
+            <p className="mt-8 rounded-xl border border-border p-4 text-muted">
+              No open competitions listed right now. Check back soon.
+            </p>
+          )
         ) : (
           <CompetitionList
             events={events}
@@ -44,11 +49,24 @@ export default async function CompetitionsPage() {
             monthEnd={addPerthDays(today, 27)}
           />
         )}
+        {comps.length > 0 && (
+          <section aria-labelledby="matchplay" className="mt-12">
+            <h2 id="matchplay" className="text-2xl font-semibold">
+              Match play
+            </h2>
+            <p className="mb-4 mt-1 text-muted">
+              Knockout competitions: you arrange each match with your opponent and play it by the
+              date set.
+            </p>
+            <CompCards comps={comps} now={now} />
+          </section>
+        )}
         <div className="mt-12 rounded-xl bg-surface p-5 md:flex md:items-center md:justify-between md:gap-6">
           <div>
             <h2 className="font-semibold">Run a club?</h2>
             <p className="mt-1 text-sm text-muted">
-              Take entries and payments for your events, and make the start sheet in a few taps.
+              Take entries and payments for your events, make start sheets, and run match play
+              draws.
             </p>
           </div>
           <Link

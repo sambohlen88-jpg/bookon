@@ -109,6 +109,40 @@ export default function ClubsPage() {
           </p>
         </section>
 
+        <section className="mx-auto max-w-md px-4 pb-12 md:max-w-6xl md:px-6 md:pb-16">
+          <h2 className="text-2xl font-bold tracking-tight md:text-3xl">
+            Run your match play on BookOn
+          </h2>
+          <p className="mt-2 max-w-3xl text-muted">
+            Club championships and knockouts, singles or pairs, without chasing players for results.
+          </p>
+          <div className="mt-6 grid gap-4 md:grid-cols-3 md:gap-6">
+            <div className={card}>
+              <h3 className="text-lg font-semibold">Entries and the draw</h3>
+              <p className="mt-2 text-muted">
+                Golfers enter online, free or paid, or you add them yourself. Set seeds, and BookOn
+                draws the rest at random, with byes to the top seeds. Swap anyone before it goes
+                out.
+              </p>
+            </div>
+            <div className={card}>
+              <h3 className="text-lg font-semibold">Players sort out their matches</h3>
+              <p className="mt-2 text-muted">
+                Each side gets their opponent&apos;s contact details and a play-by date by email,
+                with a reminder before it&apos;s due. Either side reports the result, and the winner
+                goes through.
+              </p>
+            </div>
+            <div className={card}>
+              <h3 className="text-lg font-semibold">You have the final say</h3>
+              <p className="mt-2 text-muted">
+                You&apos;re told about disputed and overdue matches. Record or correct any result,
+                or award a walkover. The draw sheet is online for everyone to follow.
+              </p>
+            </div>
+          </div>
+        </section>
+
         <section className="bg-surface">
           <div className="mx-auto grid max-w-md gap-8 px-4 py-12 md:max-w-6xl md:grid-cols-2 md:gap-16 md:px-6 md:py-16">
             <div>
