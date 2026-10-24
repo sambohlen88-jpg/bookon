@@ -1,6 +1,6 @@
 # Launch checklist
 
-Things that must be done before BookOn launches publicly (SPEC section 11, Milestone 24). Claude Code is asked, in `CLAUDE.md`, to raise these with the owner before any launch work.
+Things that must be done before BookOn launches publicly (SPEC section 11, Milestone 25). Claude Code is asked, in `CLAUDE.md`, to raise these with the owner before any launch work.
 
 ## Platform access (owner asked to be reminded)
 
@@ -96,13 +96,22 @@ Data is read from public booking pages with the owner's approval, ahead of forma
 - [ ] Before launch, delete the test-mode visits so the numbers start clean (ask Claude for a one-off clear-out), or note the launch date when comparing.
 - [ ] Sign in on your own phone too, so your phone visits aren't counted.
 
+## News, privacy policy and terms (Milestone 24)
+
+- [ ] **Have a lawyer review `/privacy` and `/terms`** (drafts in `apps/web/src/app/privacy/page.tsx` and `apps/web/src/app/terms/page.tsx`). They cover everything up to Milestone 24. Change the "Last updated" dates in `apps/web/src/components/legal.tsx` when they change.
+- [ ] Decide how long search and click records are kept (the privacy policy says they're linked only to the anonymous visitor number; there's no deletion date yet).
+- [ ] Add the **business name and ABN** in Admin, Settings once the ABN arrives. The privacy policy and terms show them straight away.
+- [ ] **Remove the example news articles** (Admin, News, "Remove all examples") once you've written a few, or keep them only if you're happy they read as BookOn's own.
+- [ ] Add BookOn's Instagram, Facebook and TikTok in Admin, Settings, so articles show "Follow BookOn".
+- [ ] Authors: tell them pictures must be their own or used with permission (the editor asks them to confirm each upload, with their name).
+
 ## Business and legal
 
 - [ ] Create the **info@bookon.com.au** mailbox. It is already in the worker's user agent, so clubs may write to it.
 - [ ] Domain and brand.
 - [ ] **Club listing terms and approvals** (the wording on the onboarding Approvals step, in `packages/db/src/clubs.ts`), reviewed by a lawyer. Changing the wording means bumping `CONSENTS_VERSION`.
 - [ ] Decide who reviews new club listings and how fast. The pages promise clubs "usually within a week".
-- [ ] Privacy policy and terms pages, reviewed by a lawyer (Spam Act 2003 and Australian Privacy Principles; SPEC section 10). They must cover accounts (email address, favourites, alerts, the list of tee times looked at) and how to delete an account.
+- [ ] Privacy policy and terms pages, reviewed by a lawyer (Spam Act 2003 and Australian Privacy Principles; SPEC section 10). Drafts are live at /privacy and /terms (Milestone 24); they cover accounts (email address, favourites, alerts, the list of tee times looked at) and how to delete an account. The privacy items in the sections above are covered in the draft; tick them once the lawyer has reviewed it.
 
 ## Hosting and operations
 

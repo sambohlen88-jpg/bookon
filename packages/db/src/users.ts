@@ -2,12 +2,13 @@ import { count, desc, eq, inArray } from "drizzle-orm";
 import type { Database } from "./client";
 import { deleteUser } from "./accounts";
 import { logChange, type Actor } from "./admin";
-import { alerts, clubMembers, clubs, coaches, favourites, users } from "./schema";
+import { alerts, authors, clubMembers, clubs, coaches, favourites, users } from "./schema";
 
 /**
  * Admin → Users. Groups come from what each person can actually do, so
  * they always match: everyone who signs in is a customer; club owners and
- * staff are the people added to a club; coaches have a coach listing; the
+ * staff are the people added to a club; coaches have a coach listing; authors
+ * were given writing by the admin (Milestone 24); the
  * admin is the one email in BOOKON_ADMIN_EMAIL.
  */
 export const USER_GROUPS = [
@@ -15,6 +16,7 @@ export const USER_GROUPS = [
   { id: "club-owner", name: "Club Owner" },
   { id: "club-staff", name: "Club Staff" },
   { id: "coach", name: "Coach" },
+  { id: "author", name: "Author" },
   { id: "admin", name: "Admin" },
 ] as const;
 export type UserGroup = (typeof USER_GROUPS)[number]["id"];
@@ -70,6 +72,10 @@ export async function listUsersForAdmin(
     .from(alerts)
     .where(inArray(alerts.userId, ids))
     .groupBy(alerts.userId);
+  const authorRows = await db
+    .select({ userId: authors.userId })
+    .from(authors)
+    .where(inArray(authors.userId, ids));
   const favouriteCounts = await db
     .select({ userId: favourites.userId, n: count() })
     .from(favourites)
@@ -85,6 +91,7 @@ export async function listUsersForAdmin(
     if (memberOf.some((m) => m.role === "owner")) groups.push("club-owner");
     if (memberOf.some((m) => m.role === "staff")) groups.push("club-staff");
     if (coach) groups.push("coach");
+    if (authorRows.some((a) => a.userId === u.id)) groups.push("author");
     if (adminEmail && u.email === adminEmail) groups.push("admin");
     return {
       id: u.id,

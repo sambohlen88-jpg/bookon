@@ -11,7 +11,8 @@
     "./money": "./src/money.ts",
     "./ratings": "./src/ratings.ts",
     "./sorting": "./src/sorting.ts",
-    "./analytics": "./src/analytics.ts"
+    "./analytics": "./src/analytics.ts",
+    "./news": "./src/news.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

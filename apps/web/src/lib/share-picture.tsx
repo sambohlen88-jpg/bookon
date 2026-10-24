@@ -429,3 +429,58 @@ export async function shareCard(share: Share | null) {
     </div>
   );
 }
+
+/** The link preview for a news article (Milestone 24): its headline on the brand green. */
+export async function newsCard(
+  article: { title: string; summary: string; authorName: string } | null,
+) {
+  return (
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        padding: "56px 64px",
+        background: C.heroBg,
+        color: C.heroFg,
+        fontFamily: "Inter",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+        {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text */}
+        <img src={await logoSrc()} width={72} height={72} style={{ borderRadius: 18 }} />
+        <div style={{ fontSize: 34, fontWeight: 700, color: C.heroMuted }}>BookOn News</div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <div
+          style={{
+            fontSize: article && article.title.length > 60 ? 58 : 70,
+            fontWeight: 800,
+            letterSpacing: -1.5,
+            lineHeight: 1.05,
+          }}
+        >
+          {article?.title ?? "Golf news from around Perth"}
+        </div>
+        {article && (
+          <div
+            style={{
+              fontSize: 30,
+              color: C.heroMuted,
+              lineHeight: 1.3,
+              maxHeight: 82,
+              overflow: "hidden",
+            }}
+          >
+            {article.summary}
+          </div>
+        )}
+      </div>
+      <div style={{ fontSize: 26, color: C.heroMuted }}>
+        {article ? `By ${article.authorName}` : "bookon.com.au/news"}
+      </div>
+    </div>
+  );
+}

@@ -25,6 +25,7 @@ import { Notice, primaryButton, secondaryButton } from "@/components/ui";
 import { currentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { lessonContext } from "@/lib/lessons";
+import { PrivacyNote } from "@/components/legal";
 
 export const dynamic = "force-dynamic";
 
@@ -319,6 +320,7 @@ export default async function EventPage({
                   I agree to the refund rule above, and to BookOn sharing our names, my email and
                   mobile with {event.clubName} for this event.
                 </Checkbox>
+                <PrivacyNote />
                 <button type="submit" className={primaryButton}>
                   Continue to payment
                 </button>

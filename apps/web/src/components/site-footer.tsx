@@ -43,6 +43,11 @@ export function SiteFooter() {
               </Link>
             </li>
             <li>
+              <Link href="/news" className={link}>
+                News
+              </Link>
+            </li>
+            <li>
               <Link href="/golf" className={link}>
                 Golf in Perth
               </Link>
@@ -84,6 +89,16 @@ export function SiteFooter() {
               </a>
             </li>
             <li className="text-sm text-muted">Perth, Western Australia</li>
+            <li>
+              <Link href="/privacy" className={link}>
+                Privacy policy
+              </Link>
+            </li>
+            <li>
+              <Link href="/terms" className={link}>
+                Terms of use
+              </Link>
+            </li>
           </ul>
         </div>
       </div>

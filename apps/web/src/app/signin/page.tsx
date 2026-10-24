@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { safeNextPath } from "@bookon/db";
 import { requestSignIn } from "@/app/actions";
@@ -53,7 +54,11 @@ export default async function SignInPage({
             </p>
             <p className="mt-2 text-sm text-muted">
               An account lets you save favourite courses, get alerts when tee times open up, and see
-              times you&apos;ve looked at.
+              times you&apos;ve looked at. See our{" "}
+              <Link href="/privacy" className="text-brand underline">
+                privacy policy
+              </Link>
+              .
             </p>
             {reason === "admin" && (
               <div className="mt-4">

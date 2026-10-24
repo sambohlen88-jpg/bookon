@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { adminCounts } from "@bookon/db";
+import { adminCounts, articlesWaiting } from "@bookon/db";
 import { AreaNav } from "@/components/admin/nav";
 import { SiteHeader } from "@/components/site-header";
 import { requireAdmin } from "@/lib/access";
@@ -12,6 +12,7 @@ export const metadata: Metadata = { title: "Admin · BookOn", robots: { index: f
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   await requireAdmin();
   const counts = await adminCounts(getDb());
+  const waiting = await articlesWaiting(getDb());
   return (
     <>
       <SiteHeader />
@@ -25,6 +26,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             links={[
               { href: "/admin", label: "Overview", exact: true },
               { href: "/admin/analytics", label: "Analytics" },
+              { href: "/admin/news", label: "News", badge: waiting },
               { href: "/admin/listings", label: "Join requests", badge: counts.listings },
               { href: "/admin/photos", label: "Photos", badge: counts.photos },
               { href: "/admin/courses", label: "Courses" },

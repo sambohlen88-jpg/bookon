@@ -5,6 +5,7 @@ import {
   listCourseDetails,
   listFavourites,
   nextTeeTimes,
+  publishedArticles,
   socialLinks,
   upcomingOpenEvents,
   type CourseDetails,
@@ -13,6 +14,8 @@ import {
 import { CourseArt } from "@/components/course-art";
 import { CourseCard } from "@/components/course-card";
 import { CompetitionsStrip } from "@/components/competitions-strip";
+import { Follow } from "@/components/follow";
+import { NewsStrip } from "@/components/news/news-strip";
 import { FreeSoon, firstTimes } from "@/components/free-soon";
 import { RecentSearches } from "@/components/recent-searches";
 import { SearchForm } from "@/components/search-form";
@@ -62,6 +65,9 @@ export default async function Home() {
   const seeAll = searchHref({ ...defaultForm(now), date: today });
   const baysSearch = searchHref({ ...defaultForm(now), play: "bays", to: LATEST_BAY_TIME });
   const social = await socialLinks(getDb()).catch(() => ({}));
+  // The latest news (Milestone 24).
+  const news = (await publishedArticles(getDb(), now, { limit: 3 }).catch(() => ({ articles: [] })))
+    .articles;
   // Club events still taking entries (Milestone 21).
   const competitions = (await upcomingOpenEvents(getDb(), now).catch(() => []))
     .filter((e) => e.entriesClose > now)
@@ -94,6 +100,7 @@ export default async function Home() {
           <FreeSoon results={upcomingGolf} now={now} players={2} seeAll={seeAll} />
         </div>
         <CompetitionsStrip events={competitions} />
+        <NewsStrip articles={news.slice(0, 2)} />
         <Shortcuts baysSearch={baysSearch} venues={venues} tone="page" />
         <Follow links={social} tone="page" />
         <section aria-labelledby="how" className="mt-10">
@@ -212,6 +219,12 @@ export default async function Home() {
         {competitions.length > 0 && (
           <div className="mx-auto max-w-6xl px-6 pt-20">
             <CompetitionsStrip events={competitions} wide />
+          </div>
+        )}
+
+        {news.length > 0 && (
+          <div className="mx-auto max-w-6xl px-6 pt-20">
+            <NewsStrip articles={news} wide />
           </div>
         )}
 
@@ -463,43 +476,5 @@ function Shortcuts({
         ))}
       </ul>
     </nav>
-  );
-}
-
-const NETWORK_NAMES = { instagram: "Instagram", facebook: "Facebook", tiktok: "TikTok" } as const;
-
-/** BookOn's social accounts, once an admin has added them (Admin, Settings). */
-function Follow({
-  links,
-  tone,
-}: {
-  links: Partial<Record<keyof typeof NETWORK_NAMES, string>>;
-  tone: "hero" | "page";
-}) {
-  const entries = (Object.keys(NETWORK_NAMES) as (keyof typeof NETWORK_NAMES)[]).filter(
-    (n) => links[n],
-  );
-  if (entries.length === 0) return null;
-  const pill =
-    tone === "hero"
-      ? "flex min-h-10 items-center rounded-full border border-hero-fg/30 px-4 text-sm font-medium hover:border-hero-fg"
-      : "flex min-h-11 items-center rounded-full border border-border px-4 text-sm font-medium hover:border-brand";
-  return (
-    <div
-      className={
-        tone === "hero"
-          ? "mt-6 flex flex-wrap items-center gap-2"
-          : "mt-6 flex flex-wrap items-center gap-2"
-      }
-    >
-      <span className={`mr-1 text-sm ${tone === "hero" ? "text-hero-muted" : "text-muted"}`}>
-        Follow BookOn
-      </span>
-      {entries.map((n) => (
-        <a key={n} href={links[n]} target="_blank" rel="noopener" className={pill}>
-          {NETWORK_NAMES[n]}
-        </a>
-      ))}
-    </div>
   );
 }

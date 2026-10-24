@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { USER_GROUPS, userForAdmin } from "@bookon/db";
+import { USER_GROUPS, authorFor, userForAdmin } from "@bookon/db";
+import { makeAuthor, stopAuthor } from "@/app/admin/news/actions";
 import { deleteUserAccount } from "@/app/admin/user-actions";
 import { PageTitle, Pill, panel } from "@/components/admin/ui";
 import { fieldLabel } from "@/components/form";
-import { Notice, secondaryButton, textInput } from "@/components/ui";
+import { Notice, primaryButton, secondaryButton, textInput } from "@/components/ui";
 import { adminEmail, requireAdmin } from "@/lib/access";
 import { getDb } from "@/lib/db";
 
@@ -20,7 +21,8 @@ export default async function AdminUser({
   await requireAdmin();
   const user = await userForAdmin(getDb(), (await params).id, adminEmail());
   if (!user) notFound();
-  const { error } = await searchParams;
+  const { error, done, problem } = await searchParams;
+  const author = await authorFor(getDb(), user!.id);
   const isAdmin = user!.groups.includes("admin");
   return (
     <>
@@ -46,6 +48,58 @@ export default async function AdminUser({
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
+        <section id="author" className={`${panel} scroll-mt-4 lg:col-span-2`}>
+          <h2 className="text-lg font-semibold">News author</h2>
+          {done === "author" && (
+            <div className="mt-2">
+              <Notice tone="info">
+                They can write news now, at /write. You approve everything before it&apos;s
+                published.
+              </Notice>
+            </div>
+          )}
+          {done === "not-author" && (
+            <div className="mt-2">
+              <Notice tone="info">
+                They can&apos;t write news any more. Their published articles stay up.
+              </Notice>
+            </div>
+          )}
+          {problem && (
+            <div className="mt-2">
+              <Notice tone="warning">{problem}</Notice>
+            </div>
+          )}
+          {author ? (
+            <form action={stopAuthor} className="mt-2 flex flex-col gap-3">
+              <input type="hidden" name="userId" value={user!.id} />
+              <p className="text-sm text-muted">
+                Writes news as <strong>{author.name}</strong>. Their articles come to you for
+                approval in News.
+              </p>
+              <button type="submit" className={`${secondaryButton} self-start`}>
+                Stop them writing news
+              </button>
+            </form>
+          ) : (
+            <form action={makeAuthor} className="mt-2 flex flex-col gap-3">
+              <input type="hidden" name="userId" value={user!.id} />
+              <p className="text-sm text-muted">
+                Let them write news articles at /write. They can&apos;t publish: every article comes
+                to you first.
+              </p>
+              <div>
+                <label htmlFor="author-name" className={fieldLabel}>
+                  Their name, as shown on articles
+                </label>
+                <input id="author-name" name="name" required maxLength={80} className={textInput} />
+              </div>
+              <button type="submit" className={`${primaryButton} self-start`}>
+                Let them write news
+              </button>
+            </form>
+          )}
+        </section>
         <section className={panel}>
           <h2 className="text-lg font-semibold">On BookOn</h2>
           <ul className="mt-3 flex flex-col gap-2 text-sm">

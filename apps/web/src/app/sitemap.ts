@@ -1,5 +1,11 @@
 import type { MetadataRoute } from "next";
-import { listCourseDetails, listLiveCoaches, openComps, upcomingOpenEvents } from "@bookon/db";
+import {
+  listCourseDetails,
+  listLiveCoaches,
+  openComps,
+  publishedArticles,
+  upcomingOpenEvents,
+} from "@bookon/db";
 import { siteUrl } from "@bookon/email";
 import { getDb } from "@/lib/db";
 import { SEO_PAGES } from "@/lib/seo-pages";
@@ -16,6 +22,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const events = await upcomingOpenEvents(getDb(), new Date()).catch(() => []);
   // Open match play competitions (Milestone 22).
   const comps = await openComps(getDb(), new Date()).catch(() => []);
+  // News (Milestone 24).
+  const news = (
+    await publishedArticles(getDb(), new Date(), { limit: 1000 }).catch(() => ({ articles: [] }))
+  ).articles;
   return [
     { url: `${site}/`, changeFrequency: "hourly", priority: 1 },
     { url: `${site}/courses`, changeFrequency: "weekly", priority: 0.8 },
@@ -37,6 +47,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily" as const,
       priority: 0.4,
     })),
+    { url: `${site}/news`, changeFrequency: "daily", priority: 0.7 },
+    ...news.map((a) => ({
+      url: `${site}/news/${a.slug}`,
+      lastModified: a.updatedAt,
+      changeFrequency: "monthly" as const,
+      priority: 0.5,
+    })),
+    { url: `${site}/privacy`, changeFrequency: "monthly", priority: 0.2 },
+    { url: `${site}/terms`, changeFrequency: "monthly", priority: 0.2 },
     { url: `${site}/coaches`, changeFrequency: "daily", priority: 0.7 },
     { url: `${site}/coaching`, changeFrequency: "monthly", priority: 0.4 },
     ...coaches.map((c) => ({

@@ -2,6 +2,7 @@ import { formatPrice, formatPublicHolidays, formatSchoolHolidays } from "@bookon
 import {
   SOCIAL_NETWORKS,
   analyticsSettings,
+  businessDetails,
   eventPaymentSettings,
   lessonPaymentSettings,
   pitchContact,
@@ -20,6 +21,7 @@ import {
   turnEventPaymentsOn,
 } from "@/app/admin/event-actions";
 import {
+  saveBusinessDetails,
   savePitchContact,
   saveWaCalendar,
   turnWeeklySummaryOff,
@@ -45,6 +47,7 @@ export default async function AdminSettings({
   const holidays = await waCalendar(getDb());
   const events = await eventPaymentSettings(getDb());
   const analytics = await analyticsSettings(getDb());
+  const business = await businessDetails(getDb());
   const query = await searchParams;
   const { saved, error } = query;
   const bad = query.bad?.split("\n") ?? [];
@@ -59,6 +62,11 @@ export default async function AdminSettings({
       {error === "fee" && (
         <div className="mb-4">
           <Notice tone="warning">Enter a fee between $0 and $50, like 2.50.</Notice>
+        </div>
+      )}
+      {error === "abn" && (
+        <div className="mb-4">
+          <Notice tone="warning">That ABN doesn&apos;t look right. Check the 11 digits.</Notice>
         </div>
       )}
       {error === "email" && (
@@ -118,6 +126,42 @@ export default async function AdminSettings({
           </button>
         </form>
       </section>
+      <form
+        id="business"
+        action={saveBusinessDetails}
+        className={`${panel} mb-6 flex flex-col gap-4 scroll-mt-4`}
+      >
+        <h2 className="text-lg font-semibold">Business details</h2>
+        <p className="text-sm text-muted">
+          Shown in the{" "}
+          <a href="/privacy" className="text-brand underline">
+            privacy policy
+          </a>{" "}
+          and{" "}
+          <a href="/terms" className="text-brand underline">
+            terms of use
+          </a>{" "}
+          as who runs BookOn. Until they&apos;re set, those pages just say &ldquo;BookOn&rdquo;.
+        </p>
+        <Field
+          label="Business or company name"
+          name="name"
+          maxLength={120}
+          defaultValue={business.name}
+          placeholder="BookOn Pty Ltd"
+        />
+        <Field
+          label="ABN"
+          name="abn"
+          inputMode="numeric"
+          maxLength={14}
+          defaultValue={business.abn}
+          placeholder="51 824 753 556"
+        />
+        <button type="submit" className={`${primaryButton} self-start`}>
+          Save
+        </button>
+      </form>
       <section id="analytics" className={`${panel} mb-6 flex flex-col gap-4 scroll-mt-4`}>
         <h2 className="text-lg font-semibold">Analytics summary email</h2>
         <p className="text-sm text-muted">

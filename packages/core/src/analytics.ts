@@ -9,9 +9,9 @@ export const VISIT_MINUTES = 30;
 /** Raw page views and events are deleted after this many months. */
 export const ANALYTICS_KEEP_MONTHS = 13;
 
-/** Pages that aren't counted: the admin, club and coach portals, sign-in and dev pages. */
+/** Pages that aren't counted: the admin, club, coach and author portals, sign-in and dev pages. */
 export function analyticsExcluded(pathname: string): boolean {
-  return /^\/(admin|club|coach|dev|auth|api|go|calendar)(\/|$)/.test(pathname);
+  return /^\/(admin|club|coach|dev|auth|api|go|calendar|write)(\/|$)/.test(pathname);
 }
 
 /** Private pages reached by a link with a token in it. The token is never stored. */
@@ -41,6 +41,9 @@ const SECTIONS: [RegExp, string][] = [
   [/^\/golf(\/[^/]+)?$/, "Golf in Perth"],
   [/^\/clubs(\/join)?$/, "For golf clubs"],
   [/^\/s\/[^/]+$/, "Shared search"],
+  [/^\/news$/, "News"],
+  [/^\/news\/[^/]+$/, "News article"],
+  [/^\/(privacy|terms)$/, "Privacy and terms"],
   [/^\/account$/, "My account"],
   [/^\/signin$/, "Sign in"],
 ];

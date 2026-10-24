@@ -148,6 +148,13 @@
       "when": 1792816686613,
       "tag": "0020_analytics",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1792821686624,
+      "tag": "0021_news",
+      "breakpoints": true
     }
   ]
 }

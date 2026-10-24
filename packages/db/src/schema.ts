@@ -1292,3 +1292,75 @@ export const webVitals = pgTable(
   },
   (t) => [index("web_vitals_at_idx").on(t.at)],
 );
+
+/*
+ * BookOn News (Milestone 24): articles written by the admin, or by authors
+ * and approved by the admin. Article text is in BookOn's small formatting
+ * language (packages/core/src/news.ts), never HTML.
+ */
+
+export const articleStatusEnum = pgEnum("article_status", [
+  "draft",
+  /** Sent in by an author, waiting for the admin. */
+  "review",
+  /** Live from publish_at (scheduled if that's still to come). */
+  "published",
+]);
+
+/** People the admin lets write news. They can't publish; the admin approves. */
+export const authors = pgTable("authors", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  /** As shown on their articles. */
+  name: text("name").notNull(),
+  bio: text("bio"),
+  createdAt: createdAt(),
+  grantedBy: text("granted_by").notNull(),
+});
+
+export const articles = pgTable(
+  "articles",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    slug: text("slug").notNull().unique(),
+    title: text("title").notNull(),
+    summary: text("summary").notNull(),
+    body: text("body").notNull(),
+    category: text("category"),
+    /** An uploaded picture, or a course's drawn art (its slug), for the top of the article. */
+    coverPhotoId: uuid("cover_photo_id"),
+    coverArt: text("cover_art"),
+    coverAlt: text("cover_alt"),
+    status: articleStatusEnum("status").notNull().default("draft"),
+    publishAt: timestamp("publish_at", { withTimezone: true }),
+    /** Who wrote it. The name stays if the account is deleted. */
+    authorId: uuid("author_id").references(() => users.id, { onDelete: "set null" }),
+    authorName: text("author_name").notNull(),
+    /** The admin's note when sending an author's article back. */
+    reviewNote: text("review_note"),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }),
+    approvedBy: text("approved_by"),
+    /** An example article, removed with "Remove all samples". */
+    sample: boolean("sample").notNull().default(false),
+    createdAt: createdAt(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("articles_status_idx").on(t.status, t.publishAt),
+    index("articles_author_idx").on(t.authorId),
+  ],
+);
+
+/** Pictures for articles, resized and stripped of hidden details (like where they were taken). */
+export const articlePhotos = pgTable("article_photos", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  uploadedBy: uuid("uploaded_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: createdAt(),
+  contentType: text("content_type").notNull(),
+  width: integer("width").notNull(),
+  height: integer("height").notNull(),
+  data: bytea("data").notNull(),
+  /** Who confirmed BookOn may use it. */
+  rightsConfirmedBy: text("rights_confirmed_by").notNull(),
+});

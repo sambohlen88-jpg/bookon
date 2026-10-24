@@ -24,6 +24,7 @@ import {
   listEnabledCourses,
   isLocalDatabaseUrl,
   seedIfEmpty,
+  seedSampleArticles,
   seedSampleCoaches,
   type Database,
   type PollableCourse,
@@ -72,6 +73,9 @@ if (await seedIfEmpty(handle.db)) console.log("[worker] New database: added the 
 // Made-up coaches to show the Coaches pages, on local databases only (never a hosted one).
 if (isLocalDatabaseUrl(config.databaseUrl) && (await seedSampleCoaches(handle.db)) > 0)
   console.log("[worker] Added 3 sample coaches (local database only).");
+// Example news articles (Milestone 24) on local databases; hosted ones add them from Admin, News.
+if (isLocalDatabaseUrl(config.databaseUrl) && (await seedSampleArticles(handle.db, new Date())) > 0)
+  console.log("[worker] Added the example news articles (local database only).");
 
 /** Nothing listening at the database's address, anywhere in the error's causes. */
 function refusedConnection(error: unknown): boolean {

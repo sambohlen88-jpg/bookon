@@ -2,12 +2,14 @@ import "server-only";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import {
+  authorFor,
   clubById,
   clubRole,
   clubsForEmail,
   coachForEmail,
   sessionForToken,
   type Actor,
+  type Author,
   type Club,
   type ClubRole,
   type User,
@@ -75,6 +77,21 @@ export async function isAdminRequest(): Promise<boolean> {
 }
 
 /**
+ * A news author (Milestone 24), or the admin writing as themselves. Anyone
+ * else signed in gets "not found".
+ */
+export async function requireAuthor(
+  next = "/write",
+): Promise<{ user: User; author: Author | null; admin: boolean }> {
+  const current = await session();
+  if (!current) signIn(next);
+  const admin = isAdminEmail(current!.user.email);
+  const author = await authorFor(getDb(), current!.user.id);
+  if (!author && !admin) notFound();
+  return { user: current!.user, author, admin };
+}
+
+/**
  * For analytics (Milestone 23): whether this visitor is signed in, and
  * whether it's the admin, whose own visits aren't counted.
  */
@@ -130,15 +147,19 @@ export async function currentAccess(): Promise<{
   clubs: number;
   /** Has a coach listing. */
   coach: boolean;
+  /** Writes news (Milestone 24). */
+  author: boolean;
 }> {
   const current = await session().catch(() => null);
-  if (!current) return { user: null, admin: false, clubs: 0, coach: false };
+  if (!current) return { user: null, admin: false, clubs: 0, coach: false, author: false };
   const clubs = await clubsForEmail(getDb(), current.user.email).catch(() => []);
   const coach = await coachForEmail(getDb(), current.user.email).catch(() => null);
+  const author = await authorFor(getDb(), current.user.id).catch(() => null);
   return {
     user: current.user,
     admin: isAdminEmail(current.user.email),
     clubs: clubs.length,
     coach: Boolean(coach),
+    author: Boolean(author),
   };
 }

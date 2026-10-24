@@ -34,6 +34,7 @@ describe("page names", () => {
     });
     expect(pageName("/coaches/sam-pro/book")?.section).toBe("Lesson booking");
     expect(pageName("/something-new")?.section).toBe("Other");
+    expect(pageName("/news/summer-golf")?.section).toBe("News article");
   });
 
   it("never stores the token in a private link", () => {
@@ -47,7 +48,14 @@ describe("page names", () => {
   });
 
   it("leaves out the portals", () => {
-    for (const p of ["/admin", "/admin/reports", "/club/x/events", "/coach", "/coach/calendar"])
+    for (const p of [
+      "/admin",
+      "/admin/reports",
+      "/club/x/events",
+      "/coach",
+      "/coach/calendar",
+      "/write/new",
+    ])
       expect(analyticsExcluded(p)).toBe(true);
     for (const p of ["/clubs", "/coaches", "/coaching", "/courses"])
       expect(analyticsExcluded(p)).toBe(false);

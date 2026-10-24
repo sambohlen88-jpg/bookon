@@ -2,7 +2,14 @@
 
 import { redirect } from "next/navigation";
 import { parsePublicHolidays, parseSchoolHolidays } from "@bookon/core";
-import { normaliseEmail, setAnalyticsSettings, setPitchContact, setWaCalendar } from "@bookon/db";
+import {
+  normaliseEmail,
+  setAnalyticsSettings,
+  setBusinessDetails,
+  setPitchContact,
+  setWaCalendar,
+} from "@bookon/db";
+import { formatAbn } from "@/lib/business";
 import { requireAdmin } from "@/lib/access";
 import { getDb } from "@/lib/db";
 
@@ -61,4 +68,18 @@ export async function turnWeeklySummaryOff() {
   const { actor } = await requireAdmin();
   await setAnalyticsSettings(getDb(), { weeklyEmail: false }, actor, new Date());
   redirect("/admin/settings?saved=1#analytics");
+}
+
+/** The business name and ABN, shown in the privacy policy and terms (Milestone 24). */
+export async function saveBusinessDetails(formData: FormData) {
+  const { actor } = await requireAdmin();
+  const name =
+    String(formData.get("name") ?? "")
+      .trim()
+      .slice(0, 120) || undefined;
+  const abnText = String(formData.get("abn") ?? "").trim();
+  const abn = abnText ? formatAbn(abnText) : null;
+  if (abnText && !abn) redirect("/admin/settings?error=abn#business");
+  await setBusinessDetails(getDb(), { name, abn: abn ?? undefined }, actor, new Date());
+  redirect("/admin/settings?saved=1#business");
 }
