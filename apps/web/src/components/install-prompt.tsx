@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { isIos, isStandalone } from "@/lib/push-client";
+import { track } from "@/lib/analytics-client";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -63,15 +64,24 @@ export function InstallPrompt() {
     const onPrompt = (event: Event) => {
       event.preventDefault();
       deferred.current = event as BeforeInstallPromptEvent;
-      if (eligible) setMode("button");
+      if (eligible) {
+        setMode("button");
+        track("install_prompt", "button");
+      }
     };
-    const onInstalled = () => setMode(null);
+    const onInstalled = () => {
+      setMode(null);
+      track("install");
+    };
     window.addEventListener("beforeinstallprompt", onPrompt);
     window.addEventListener("appinstalled", onInstalled);
     // Only Safari can add to the iPhone home screen.
     const safari =
       /Safari\//.test(navigator.userAgent) && !/CriOS|FxiOS|EdgiOS/.test(navigator.userAgent);
-    if (eligible && isIos() && safari) setMode("ios");
+    if (eligible && isIos() && safari) {
+      setMode("ios");
+      track("install_prompt", "iphone");
+    }
     return () => {
       window.removeEventListener("beforeinstallprompt", onPrompt);
       window.removeEventListener("appinstalled", onInstalled);

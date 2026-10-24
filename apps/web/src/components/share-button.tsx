@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { createShareLink } from "@/app/share-actions";
 import type { ShareLink } from "@/lib/share";
+import { track } from "@/lib/analytics-client";
 
 type Status = { kind: "idle" | "working" } | { kind: "error"; message: string };
 
@@ -40,6 +41,7 @@ export function ShareButton({
 
   async function open() {
     dialog.current?.showModal();
+    track("share", course ? "course" : "search");
     setTouch(matchMedia("(pointer: coarse)").matches);
     setDone(null);
     setShowText(false);

@@ -1218,3 +1218,77 @@ export const coachBusy = pgTable(
   },
   (t) => [index("coach_busy_coach_time_idx").on(t.coachId, t.startTime)],
 );
+
+/*
+ * Analytics (Milestone 23): BookOn's own, with no outside service. Visitors
+ * are the anonymous `bookon_sid` cookie; no IP addresses are kept, and
+ * private links are stored without their tokens. Kept for
+ * ANALYTICS_KEEP_MONTHS, then deleted.
+ */
+
+export const pageViews = pgTable(
+  "page_views",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+    visitorId: text("visitor_id").notNull(),
+    /** A visit ends after VISIT_MINUTES with no page views. */
+    visitId: uuid("visit_id").notNull(),
+    /** First page of the visit. */
+    entry: boolean("entry").notNull().default(false),
+    path: text("path").notNull(),
+    section: text("section").notNull(),
+    /** Where the visit came from; set on its first page only. */
+    channel: text("channel"),
+    source: text("source"),
+    referrerHost: text("referrer_host"),
+    utmSource: text("utm_source"),
+    utmMedium: text("utm_medium"),
+    utmCampaign: text("utm_campaign"),
+    device: text("device").notNull(),
+    browser: text("browser").notNull(),
+    os: text("os").notNull(),
+    /** Opened from the installed app (home screen). */
+    app: boolean("app").notNull().default(false),
+    signedIn: boolean("signed_in").notNull().default(false),
+    country: text("country"),
+    region: text("region"),
+    city: text("city"),
+    /** Time the page was on screen, sent when the visitor leaves it. */
+    durationMs: integer("duration_ms"),
+  },
+  (t) => [
+    index("page_views_at_idx").on(t.at),
+    index("page_views_visitor_idx").on(t.visitorId, t.at),
+    index("page_views_visit_idx").on(t.visitId),
+  ],
+);
+
+/** Things visitors do that aren't page views: sorting, filtering, sharing, installing. */
+export const analyticsEvents = pgTable(
+  "analytics_events",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+    visitorId: text("visitor_id").notNull(),
+    name: text("name").notNull(),
+    section: text("section"),
+    /** A short label, like the sort chosen. */
+    label: text("label"),
+  },
+  (t) => [index("analytics_events_name_idx").on(t.name, t.at)],
+);
+
+/** Real loading times from visitors' browsers (Core Web Vitals). */
+export const webVitals = pgTable(
+  "web_vitals",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+    section: text("section").notNull(),
+    metric: text("metric").notNull(),
+    value: doublePrecision("value").notNull(),
+    device: text("device").notNull(),
+  },
+  (t) => [index("web_vitals_at_idx").on(t.at)],
+);

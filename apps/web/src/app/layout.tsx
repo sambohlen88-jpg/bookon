@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { siteUrl } from "@bookon/email";
 import { Suspense } from "react";
+import { Analytics } from "@/components/analytics";
 import { PendingForms } from "@/components/pending-forms";
 import { PhoneTabs } from "@/components/phone-tabs";
 import { ServiceWorker } from "@/components/service-worker";
@@ -45,6 +46,9 @@ export default function RootLayout({
           <PendingForms />
         </Suspense>
         <ServiceWorker />
+        <Suspense>
+          <Analytics />
+        </Suspense>
       </body>
     </html>
   );

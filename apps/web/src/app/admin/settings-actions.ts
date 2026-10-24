@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { parsePublicHolidays, parseSchoolHolidays } from "@bookon/core";
-import { normaliseEmail, setPitchContact, setWaCalendar } from "@bookon/db";
+import { normaliseEmail, setAnalyticsSettings, setPitchContact, setWaCalendar } from "@bookon/db";
 import { requireAdmin } from "@/lib/access";
 import { getDb } from "@/lib/db";
 
@@ -48,4 +48,17 @@ export async function saveWaCalendar(formData: FormData) {
     new Date(),
   );
   redirect("/admin/settings?saved=1#holidays");
+}
+
+/** The Monday analytics summary email (Milestone 23): one action to turn it on, one off. */
+export async function turnWeeklySummaryOn() {
+  const { actor } = await requireAdmin();
+  await setAnalyticsSettings(getDb(), { weeklyEmail: true }, actor, new Date());
+  redirect("/admin/settings?saved=1#analytics");
+}
+
+export async function turnWeeklySummaryOff() {
+  const { actor } = await requireAdmin();
+  await setAnalyticsSettings(getDb(), { weeklyEmail: false }, actor, new Date());
+  redirect("/admin/settings?saved=1#analytics");
 }

@@ -2,8 +2,14 @@ import { NextResponse, type NextRequest } from "next/server";
 import { hasSitePassword, sitePassword } from "@/lib/private-site";
 import { SESSION_COOKIE, SESSION_MAX_AGE_SECONDS, validSessionId } from "@/lib/session";
 
-/** Pages that give each visitor an anonymous id, visible to the page on their very first request. */
-const SESSION_PATHS = /^\/($|search$|go\/|s\/)/;
+/**
+ * Pages that give each visitor an anonymous id, visible to the page on their
+ * very first request: every page, so a new visitor's first page views
+ * (analytics, Milestone 23) all carry the same id. Not API calls or files.
+ */
+function sessionPath(pathname: string): boolean {
+  return !pathname.startsWith("/api/") && !/\.[a-z0-9]+$/i.test(pathname);
+}
 
 /**
  * Open even in private test mode: robots.txt so crawlers can read "keep out"
@@ -37,7 +43,7 @@ export function middleware(request: NextRequest) {
 }
 
 function session(request: NextRequest): NextResponse {
-  if (!SESSION_PATHS.test(request.nextUrl.pathname)) return NextResponse.next();
+  if (!sessionPath(request.nextUrl.pathname)) return NextResponse.next();
   if (validSessionId(request.cookies.get(SESSION_COOKIE)?.value)) return NextResponse.next();
 
   const id = crypto.randomUUID();

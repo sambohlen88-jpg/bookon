@@ -10,7 +10,8 @@
     "./lessons": "./src/lessons.ts",
     "./money": "./src/money.ts",
     "./ratings": "./src/ratings.ts",
-    "./sorting": "./src/sorting.ts"
+    "./sorting": "./src/sorting.ts",
+    "./analytics": "./src/analytics.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

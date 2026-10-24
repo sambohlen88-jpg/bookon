@@ -9,6 +9,7 @@
  *   weather                                   refresh course forecasts from MET Norway
  *   lessons                                   close unpaid lesson checkouts, lapse unanswered requests
  *   calendars                                 re-read coaches' own calendar links for busy times
+ *   analytics                                 delete old page views; Monday's summary email to the admin
  *
  * poll and run email alert matches, tidy lesson bookings and re-read coaches' calendars after each pass. run also keeps
  * the weather fresh.
@@ -36,6 +37,7 @@ import {
   tidyMatchplay,
 } from "@bookon/payments";
 import { sendAlertNotifications } from "./alerts";
+import { analyticsUpkeep } from "./analytics";
 import { refreshCoachCalendars } from "./calendars";
 import { loadConfig } from "./config";
 import type { HttpClient } from "@bookon/core";
@@ -194,6 +196,28 @@ async function calendarsOnce() {
   }
 }
 
+/**
+ * Analytics (Milestone 23): delete page views older than 13 months, and email
+ * the admin last week's summary on Monday morning. Never stops the worker either.
+ */
+async function analyticsOnce() {
+  try {
+    const result = await analyticsUpkeep({
+      db: handle.db,
+      mailer: createMailer(handle.db),
+      site: siteUrl(),
+      now: new Date(),
+      adminEmail: process.env.BOOKON_ADMIN_EMAIL?.trim().toLowerCase() || null,
+    });
+    if (result.purged || result.sent)
+      console.log(
+        `[analytics] ${result.purged} old page views deleted${result.sent ? ", weekly summary sent" : ""}`,
+      );
+  } catch (error) {
+    console.error("[analytics] could not tidy analytics", error);
+  }
+}
+
 /** Never stops the worker either. Forecasts only need courses that have a location. */
 async function weatherOnce() {
   try {
@@ -222,6 +246,8 @@ try {
     await calendarsOnce();
   } else if (command === "weather") {
     await weatherOnce();
+  } else if (command === "analytics") {
+    await analyticsOnce();
   } else if (command === "record") {
     if (!values.course) throw new Error("record needs --course <slug>");
     const directory = fileURLToPath(
@@ -239,11 +265,12 @@ try {
       await alertsOnce();
       await lessonsOnce();
       await calendarsOnce();
+      await analyticsOnce();
       await new Promise((resolve) => setTimeout(resolve, intervalMs));
     }
   } else {
     throw new Error(
-      `Unknown command "${command}". Use poll, run, record, alerts, lessons, calendars or weather.`,
+      `Unknown command "${command}". Use poll, run, record, alerts, lessons, calendars, weather or analytics.`,
     );
   }
 } finally {

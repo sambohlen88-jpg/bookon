@@ -28,6 +28,23 @@
   --logo-flag: #f2c14e;
   --logo-white: #ffffff;
   --logo-hole: #0e3a23;
+  /*
+   * Analytics charts (Milestone 23). Two series colours checked for
+   * colour-blind separation and contrast on this background; a one-hue
+   * blue scale for heat maps (low to high); status colours for loading
+   * times, always shown with a word.
+   */
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --heat-0: #f3f6f4;
+  --heat-1: #cde2fb;
+  --heat-2: #9ec5f4;
+  --heat-3: #6da7ec;
+  --heat-4: #2a78d6;
+  --heat-5: #184f95;
+  --status-good: #0ca30c;
+  --status-warn: #fab219;
+  --status-poor: #d03b3b;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -48,6 +65,14 @@
     --star: #f2c14e;
     --hero-bg: #0b2416;
     --hero-muted: #a9c4b1;
+    --chart-1: #3987e5;
+    --chart-2: #d95926;
+    --heat-0: #17211b;
+    --heat-1: #104281;
+    --heat-2: #1c5cab;
+    --heat-3: #2a78d6;
+    --heat-4: #5598e7;
+    --heat-5: #9ec5f4;
   }
 }
 
@@ -69,6 +94,11 @@
   --color-hero-bg: var(--hero-bg);
   --color-hero-fg: var(--hero-fg);
   --color-hero-muted: var(--hero-muted);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-status-good: var(--status-good);
+  --color-status-warn: var(--status-warn);
+  --color-status-poor: var(--status-poor);
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 

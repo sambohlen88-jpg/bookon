@@ -1,6 +1,7 @@
 import { formatPrice, formatPublicHolidays, formatSchoolHolidays } from "@bookon/core";
 import {
   SOCIAL_NETWORKS,
+  analyticsSettings,
   eventPaymentSettings,
   lessonPaymentSettings,
   pitchContact,
@@ -18,7 +19,12 @@ import {
   turnEventPaymentsOff,
   turnEventPaymentsOn,
 } from "@/app/admin/event-actions";
-import { savePitchContact, saveWaCalendar } from "@/app/admin/settings-actions";
+import {
+  savePitchContact,
+  saveWaCalendar,
+  turnWeeklySummaryOff,
+  turnWeeklySummaryOn,
+} from "@/app/admin/settings-actions";
 import { PageTitle, panel } from "@/components/admin/ui";
 import { Field, TextArea } from "@/components/form";
 import { Notice, primaryButton, secondaryButton } from "@/components/ui";
@@ -38,6 +44,7 @@ export default async function AdminSettings({
   const lessons = await lessonPaymentSettings(getDb());
   const holidays = await waCalendar(getDb());
   const events = await eventPaymentSettings(getDb());
+  const analytics = await analyticsSettings(getDb());
   const query = await searchParams;
   const { saved, error } = query;
   const bad = query.bad?.split("\n") ?? [];
@@ -108,6 +115,20 @@ export default async function AdminSettings({
           />
           <button type="submit" className={primaryButton}>
             Save fee
+          </button>
+        </form>
+      </section>
+      <section id="analytics" className={`${panel} mb-6 flex flex-col gap-4 scroll-mt-4`}>
+        <h2 className="text-lg font-semibold">Analytics summary email</h2>
+        <p className="text-sm text-muted">
+          {analytics.weeklyEmail
+            ? "On: every Monday morning you're emailed last week's visitors, searches, clicks to clubs and top courses."
+            : "Off: no Monday summary. Analytics is still in Admin, Analytics."}{" "}
+          It goes to the admin email the worker is given (BOOKON_ADMIN_EMAIL).
+        </p>
+        <form action={analytics.weeklyEmail ? turnWeeklySummaryOff : turnWeeklySummaryOn}>
+          <button type="submit" className={analytics.weeklyEmail ? secondaryButton : primaryButton}>
+            {analytics.weeklyEmail ? "Turn the Monday email off" : "Turn the Monday email on"}
           </button>
         </form>
       </section>

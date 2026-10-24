@@ -13,6 +13,40 @@ export interface Mailer {
 
 export const DEFAULT_FROM = "BookOn <info@bookon.com.au>";
 
+/** Which kind of email a link is from, by where it goes. */
+function campaignFor(path: string): string | null {
+  // Sign-in links, click-throughs to clubs, calendar files and downloads stay as they are.
+  if (/^\/(auth|go|calendar|api|dev)(\/|$)|\.(ics|csv)(\?|$)/.test(path)) return null;
+  if (path.startsWith("/alerts")) return "alert";
+  if (path.startsWith("/lessons") || path.startsWith("/coach")) return "lesson";
+  if (path.startsWith("/sessions")) return "group-session";
+  if (path.startsWith("/entries") || path.startsWith("/competitions")) return "event";
+  if (path.startsWith("/matchplay")) return "matchplay";
+  if (path.startsWith("/club")) return "club";
+  return "email";
+}
+
+/**
+ * Tag links to BookOn's own pages in an email (Milestone 23), so Analytics
+ * can count the visits BookOn's emails bring back.
+ */
+export function tagEmailLinks(message: EmailMessage, site: string): EmailMessage {
+  const escaped = site.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const link = new RegExp(`${escaped}(/[^\\s"'<>)]*)?`, "g");
+  const tag = (url: string, path = "/") => {
+    const campaign = campaignFor(path);
+    if (!campaign || /[?&]utm_source=/.test(url)) return url;
+    const [base, hash] = url.split("#");
+    const join = base!.includes("?") ? "&" : "?";
+    return `${base}${join}utm_source=bookon&utm_medium=email&utm_campaign=${campaign}${hash !== undefined ? `#${hash}` : ""}`;
+  };
+  return {
+    ...message,
+    text: message.text.replace(link, (url, path) => tag(url, path)),
+    html: message.html.replace(link, (url, path) => tag(url, path)),
+  };
+}
+
 /**
  * Development: keep emails in the database (shown at /dev/outbox) and print
  * them, instead of sending. No email account needed.
@@ -20,7 +54,8 @@ export const DEFAULT_FROM = "BookOn <info@bookon.com.au>";
 export class OutboxMailer implements Mailer {
   constructor(private readonly db: Database) {}
 
-  async send(message: EmailMessage): Promise<void> {
+  async send(original: EmailMessage): Promise<void> {
+    const message = tagEmailLinks(original, siteUrl());
     await addOutboxEmail(this.db, message);
     const firstLink = /https?:\/\/\S+/.exec(message.text)?.[0];
     console.log(
@@ -37,7 +72,8 @@ export class PostmarkMailer implements Mailer {
     private readonly fetchImpl: typeof fetch = globalThis.fetch.bind(globalThis),
   ) {}
 
-  async send(message: EmailMessage): Promise<void> {
+  async send(original: EmailMessage): Promise<void> {
+    const message = tagEmailLinks(original, siteUrl());
     const response = await this.fetchImpl("https://api.postmarkapp.com/email", {
       method: "POST",
       headers: {

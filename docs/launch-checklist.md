@@ -1,6 +1,6 @@
 # Launch checklist
 
-Things that must be done before BookOn launches publicly (SPEC section 11, Milestone 23). Claude Code is asked, in `CLAUDE.md`, to raise these with the owner before any launch work.
+Things that must be done before BookOn launches publicly (SPEC section 11, Milestone 24). Claude Code is asked, in `CLAUDE.md`, to raise these with the owner before any launch work.
 
 ## Platform access (owner asked to be reminded)
 
@@ -86,6 +86,15 @@ Data is read from public booking pages with the owner's approval, ahead of forma
 - [ ] Refund rule for paid match play entries (a full refund until the draw is made, then it's up to the club) reviewed with the event payment terms.
 - [ ] Try a paid match play entry and a club cancelling a competition with Stripe in test mode.
 - [ ] Show a club captain the draw and results flow before launch. Clubs run match play differently (strokes given, extra holes, deadlines) and may want more.
+
+## Analytics (Milestone 23)
+
+- [ ] **Privacy policy:** BookOn records the pages visited, where the visit came from, device and browser, rough city (from the host), time on each page, a few actions and loading times, linked to the anonymous BookOn cookie (and to "signed in", not to the account). No IP addresses are kept. Private links are stored without their codes. Raw records are deleted after 13 months. "Do not track" and Global Privacy Control are respected.
+- [ ] Ask the lawyer whether Australian law (or visitors from overseas, such as the EU) needs a cookie notice for first-party analytics. BookOn shows none now.
+- [ ] Set **BOOKON_ADMIN_EMAIL on the worker** too (Railway or Fly), or the Monday summary email doesn't go out.
+- [ ] Check the city shows in Admin, Analytics, Who, once on Vercel (it comes from Vercel's location headers; elsewhere it shows as Unknown).
+- [ ] Before launch, delete the test-mode visits so the numbers start clean (ask Claude for a one-off clear-out), or note the launch date when comparing.
+- [ ] Sign in on your own phone too, so your phone visits aren't counted.
 
 ## Business and legal
 

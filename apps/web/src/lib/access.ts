@@ -75,6 +75,18 @@ export async function isAdminRequest(): Promise<boolean> {
 }
 
 /**
+ * For analytics (Milestone 23): whether this visitor is signed in, and
+ * whether it's the admin, whose own visits aren't counted.
+ */
+export async function visitorKind(): Promise<{ signedIn: boolean; admin: boolean }> {
+  const current = await session().catch(() => null);
+  return {
+    signedIn: Boolean(current),
+    admin: Boolean(current && isAdminEmail(current.user.email)),
+  };
+}
+
+/**
  * The signed-in member of this club (or an admin, who can act as owner),
  * or off to sign in.
  */

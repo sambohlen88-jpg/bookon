@@ -9,6 +9,7 @@ import type { RatingSummary } from "@bookon/core/ratings";
 import { SORT_LABEL, sortCourses, type SortChoice } from "@bookon/core/sorting";
 import { CourseArt } from "@/components/course-art";
 import { RatingBadge } from "@/components/rating-badge";
+import { track } from "@/lib/analytics-client";
 
 export interface DirectoryCourse {
   slug: string;
@@ -84,6 +85,7 @@ export function CourseDirectory({
       (p) => {
         setHere({ latitude: p.coords.latitude, longitude: p.coords.longitude });
         setSort("near");
+        track("near_me", "courses");
         setFinding("idle");
       },
       () => setFinding("failed"),
@@ -138,7 +140,10 @@ export function CourseDirectory({
             key={a.id ?? "all"}
             type="button"
             aria-pressed={area === a.id}
-            onClick={() => setArea(a.id)}
+            onClick={() => {
+              setArea(a.id);
+              track("filter", "area");
+            }}
             className={`${chip} ${area === a.id ? "border-brand bg-brand text-brand-foreground" : "border-border"}`}
           >
             {a.name}
@@ -156,7 +161,10 @@ export function CourseDirectory({
             key={s}
             type="button"
             aria-pressed={sort === s}
-            onClick={() => setSort(s)}
+            onClick={() => {
+              setSort(s);
+              track("sort", s);
+            }}
             className={`${chip} ${sort === s ? "border-brand bg-brand text-brand-foreground" : "border-border"}`}
           >
             {SORT_LABEL[s]}

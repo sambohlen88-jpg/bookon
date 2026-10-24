@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AlertMatch, SearchParams } from "@bookon/db";
-import { PostmarkMailer, createMailer, OutboxMailer } from "./mailer";
+import { PostmarkMailer, createMailer, OutboxMailer, tagEmailLinks } from "./mailer";
 import { alertEmail, describeSearch, searchUrlFor, signInEmail } from "./templates";
 
 const filters: SearchParams = {
@@ -142,5 +142,36 @@ describe("createMailer", () => {
       createMailer(db, { EMAIL_PROVIDER: "postmark", POSTMARK_SERVER_TOKEN: "t" }),
     ).toBeInstanceOf(PostmarkMailer);
     expect(() => createMailer(db, { EMAIL_PROVIDER: "postmark" })).toThrow("POSTMARK_SERVER_TOKEN");
+  });
+});
+
+describe("tagging links in emails", () => {
+  const site = "https://bookon.com.au";
+  const message = (body: string) => ({
+    to: "a@example.com",
+    subject: "Hi",
+    text: body,
+    html: `<a href="${body}">x</a>`,
+  });
+
+  it("tags links to BookOn's pages with the kind of email", () => {
+    const tagged = tagEmailLinks(message("https://bookon.com.au/lessons/abc?paid=1#when"), site);
+    expect(tagged.text).toBe(
+      "https://bookon.com.au/lessons/abc?paid=1&utm_source=bookon&utm_medium=email&utm_campaign=lesson#when",
+    );
+    expect(tagged.html).toContain("utm_campaign=lesson");
+    expect(tagEmailLinks(message("https://bookon.com.au/alerts/xyz"), site).text).toBe(
+      "https://bookon.com.au/alerts/xyz?utm_source=bookon&utm_medium=email&utm_campaign=alert",
+    );
+  });
+
+  it("leaves sign-in links, club click-throughs, calendar files and other sites alone", () => {
+    for (const url of [
+      "https://bookon.com.au/auth/callback?token=abc",
+      "https://bookon.com.au/go/tok",
+      "https://bookon.com.au/lessons/abc/calendar.ics",
+      "https://www.met.no/en",
+    ])
+      expect(tagEmailLinks(message(url), site).text).toBe(url);
   });
 });

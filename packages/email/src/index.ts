@@ -7,3 +7,4 @@ export * from "./lesson-emails";
 export * from "./group-emails";
 export * from "./event-emails";
 export * from "./matchplay-emails";
+export * from "./analytics-emails";
