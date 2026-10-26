@@ -122,6 +122,9 @@ Data is read from public booking pages with the owner's approval, ahead of forma
 
 ## Business and legal
 
+- [ ] **Register "BookOn" as a business name** with ASIC (about $47 for a year, $108 for three) before the site goes public, takes booking fees or is advertised. You have an ABN as a sole trader; trading under any name other than your own needs the business name registered. Until then, put your own legal name and ABN in Admin, Settings, Business details, and change it to BookOn once registered.
+- [ ] Search IP Australia for "BookOn" trade marks in software and booking services, and decide whether to register one. A business name doesn't protect the name; a trade mark does. Settle the name before launch: changing it later means a new domain, emails, accounts and telling everyone.
+
 - [ ] **Buy bookon.au** from an Australian registrar. .au names need an Australian presence (being an Australian citizen or resident counts, as does an ABN). If bookon.com.au is free, consider buying it too and pointing it at bookon.au.
 - [ ] Create the **info@bookon.au** mailbox (Google Workspace or Microsoft 365). It's in the worker's user agent, so clubs may write to it, and replies to alert emails go there.
 - [ ] Add **alerts@bookon.au**. Tee time alerts come from it. It can be a free alias of info@, since replies are sent to info@.
