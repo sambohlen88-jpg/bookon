@@ -1,6 +1,6 @@
 # Launch checklist
 
-Things that must be done before BookOn launches publicly (SPEC section 11, Milestone 28). Claude Code is asked, in `CLAUDE.md`, to raise these with the owner before any launch work.
+Things that must be done before BookOn launches publicly (SPEC section 11, Milestone 29). Claude Code is asked, in `CLAUDE.md`, to raise these with the owner before any launch work.
 
 ## Platform access (owner asked to be reminded)
 
@@ -119,6 +119,11 @@ Data is read from public booking pages with the owner's approval, ahead of forma
 - [ ] Check Admin, Newsletter shows "Up to date" after the worker's next pass, and that unsubscribing in a test newsletter shows there as unsubscribed.
 - [ ] Only email people on this list with marketing. Don't import other lists (club members, coaches' clients) without each person asking.
 - [ ] Have the lawyer check the tick box wording and the newsletter part of the privacy policy.
+
+## Adding and editing alerts (Milestone 28)
+
+- [ ] Privacy policy: the phone's rounded location is kept with a "near me" alert and deleted with it. Include it in the lawyer's review.
+- [ ] Try "Use my location" on a real iPhone and Android phone on the hosted site (it needs https, and asks for permission).
 
 ## Business and legal
 

@@ -31,7 +31,7 @@ import { describeRate } from "@bookon/email";
 import { createAlertFromSearch } from "@/app/actions";
 import { CourseArt } from "@/components/course-art";
 import { RateCourse, RatingBadge } from "@/components/rating";
-import { FavouriteStar } from "@/components/results";
+import { AlertBell, FavouriteStar } from "@/components/results";
 import { ShareButton } from "@/components/share-button";
 import { TeeSheet } from "@/components/tee-sheet";
 import { SiteHeader } from "@/components/site-header";
@@ -207,6 +207,8 @@ export default async function CoursePage({
                 {!venue && (
                   <ShareButton query={weekSearch} course={course.slug} courseName={course.name} />
                 )}
+                {/* Alerts are for golf courses (Milestone 28). */}
+                {!venue && <AlertBell slug={course.slug} name={course.name} />}
                 <FavouriteStar
                   courseId={course.id}
                   name={course.name}

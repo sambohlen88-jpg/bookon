@@ -23,7 +23,9 @@ export function AlertSummary({
     <div>
       <p className="font-medium">{describeSearch(filters)}</p>
       <p className="text-sm text-muted">
-        {courses.length > 0 ? courses.join(", ") : "Any course"} · {STATUS[alert.status]}
+        {/* Near me alerts say how far in the line above (Milestone 28). */}
+        {filters.near ? "" : `${courses.length > 0 ? courses.join(", ") : "Any course"} · `}
+        {STATUS[alert.status]}
       </p>
     </div>
   );

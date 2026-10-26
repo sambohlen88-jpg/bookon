@@ -97,7 +97,9 @@ export default async function PrivacyPage() {
             </li>
             <li>
               <strong>Near me:</strong> if you use it, your phone&apos;s location is rounded to
-              about a kilometre and used for that search only. We don&apos;t save it.
+              about a kilometre and used for that search only. We don&apos;t save it. The one
+              exception is an alert you set up for courses near you: then that rounded location is
+              kept with the alert, so we know which courses are close, and deleted with it.
             </li>
           </ul>
           <h3 className="mt-2 font-semibold">With an account</h3>

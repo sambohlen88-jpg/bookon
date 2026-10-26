@@ -21,6 +21,18 @@ export function areaName(id: string | null | undefined): string {
   return AREAS.find((a) => a.id === id)?.name ?? "Other";
 }
 
+/**
+ * How far "near me" reaches, in km (Milestone 28), for the search and alerts.
+ * 100 km at most keeps regional courses like Albany out of Perth searches.
+ */
+export const NEAR_DISTANCES_KM = [10, 20, 30, 50, 75, 100] as const;
+export type NearDistance = (typeof NEAR_DISTANCES_KM)[number];
+export const DEFAULT_NEAR_KM: NearDistance = 30;
+
+export function isNearDistance(value: unknown): value is NearDistance {
+  return (NEAR_DISTANCES_KM as readonly unknown[]).includes(value);
+}
+
 export interface LatLon {
   latitude: number;
   longitude: number;

@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { eq } from "drizzle-orm";
 import type { TeeTime } from "@bookon/core";
 import {
   MAX_ALERTS_PER_GOLFER,
@@ -10,11 +11,12 @@ import {
   newNotificationId,
   recordAlertRound,
   setAlertStatus,
+  updateAlert,
 } from "./alerts";
 import { createDb, type DbHandle } from "./client";
 import { findCourseBySlug, saveDayAvailability } from "./queries";
 import { alerts, availabilityChecks, availabilitySnapshots, users } from "./schema";
-import type { SearchParams } from "./search";
+import { listSearchableCourses, searchTeeTimes, withinReach, type SearchParams } from "./search";
 import { seed } from "./seed";
 
 // 7:00 am Perth, Saturday 17 October 2026.
@@ -190,3 +192,65 @@ describe("alerts", () => {
     ).toEqual({ error: "limit" });
   });
 });
+
+describe("near me alerts and editing (Milestone 28)", () => {
+  // Claremont, rounded as the browser's location is.
+  const claremont = { latitude: -31.98, longitude: 115.78 };
+
+  it("reaches Kennedy Bay at 50 km from Claremont, but never Albany or Broome", async () => {
+    const courses = await listSearchableCourses(handle.db);
+    const near = (withinKm: number) =>
+      withinReach(courses, { ...claremont, withinKm }).map((c) => c.slug);
+    expect(near(30)).toContain("collier-park");
+    expect(near(30)).not.toContain("kennedy-bay");
+    expect(near(50)).toContain("kennedy-bay");
+    expect(near(100)).not.toContain("albany");
+    expect(near(100)).not.toContain("broome");
+  });
+
+  it("only searches courses within reach", async () => {
+    await saveDayAvailability(handle.db, collier, "2026-10-18", [slot("2026-10-18T08:00:00")], now);
+    const base = { ...filters, courseSlugs: null };
+    const close = await findNear({ ...base, near: { ...claremont, withinKm: 30 } });
+    const far = await findNear({
+      ...base,
+      near: { latitude: -35.0, longitude: 117.9, withinKm: 30 },
+    });
+    expect(close).toContain("collier-park");
+    expect(far).not.toContain("collier-park");
+  });
+
+  it("edits an alert without sending times it already knew, and restarts an ended one", async () => {
+    const [user] = await handle.db
+      .insert(users)
+      .values({ email: "editor@example.com" })
+      .returning();
+    const made = await createAlert(handle.db, {
+      userId: user!.id,
+      email: "editor@example.com",
+      filters,
+      now,
+    });
+    const alert = (made as { alert: { id: string } }).alert;
+    // Nobody else can change it.
+    const [other] = await handle.db
+      .insert(users)
+      .values({ email: "someone.else@example.com" })
+      .returning();
+    expect(
+      await updateAlert(handle.db, { alertId: alert.id, userId: other!.id, filters, now }),
+    ).toBe(false);
+    await handle.db.update(alerts).set({ status: "ended" }).where(eq(alerts.id, alert.id));
+    const changed = { ...filters, timeFrom: "07:00", dateTo: "2026-10-19" };
+    expect(
+      await updateAlert(handle.db, { alertId: alert.id, userId: user!.id, filters: changed, now }),
+    ).toBe(true);
+    const [after] = await listAlerts(handle.db, user!.id);
+    expect(after).toMatchObject({ status: "active", filters: changed });
+  });
+});
+
+async function findNear(params: SearchParams): Promise<string[]> {
+  const result = await searchTeeTimes(handle.db, params, now);
+  return result.courses.map((c) => c.course.slug);
+}

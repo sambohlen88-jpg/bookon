@@ -53,20 +53,70 @@ export async function createAlert(
     })
     .returning();
 
-  const showing = await searchTeeTimes(db, input.filters, input.now);
+  await recordShowingAsSeen(db, alert!.id, input.filters, input.now);
+  return { alert: alert! };
+}
+
+/**
+ * Change an alert's search (Milestone 28). What it's already sent stays, so
+ * nothing is sent twice, and times showing now count as seen, as for a new
+ * alert. An ended alert with dates ahead starts again. Returns false if it
+ * isn't theirs.
+ */
+export async function updateAlert(
+  db: Database,
+  input: { alertId: string; userId: string; filters: SearchParams; now: Date },
+): Promise<boolean> {
+  const [alert] = await db
+    .select()
+    .from(alerts)
+    .where(and(eq(alerts.id, input.alertId), eq(alerts.userId, input.userId)));
+  if (!alert || alert.status === "deleted") return false;
+  const status =
+    alert.status === "ended" && input.filters.dateTo >= perthDate(input.now)
+      ? "active"
+      : alert.status;
+  await db
+    .update(alerts)
+    .set({ filters: input.filters as unknown as Record<string, unknown>, status })
+    .where(eq(alerts.id, alert.id));
+  await recordShowingAsSeen(db, alert.id, input.filters, input.now);
+  return true;
+}
+
+/** Times showing now for these filters count as seen, so only new ones are sent. */
+async function recordShowingAsSeen(
+  db: Database,
+  alertId: string,
+  filters: SearchParams,
+  now: Date,
+): Promise<void> {
+  const showing = await searchTeeTimes(db, filters, now);
   const seen = showing.courses.flatMap((c) =>
     c.teeTimes.map((t) => ({
-      alertId: alert!.id,
+      alertId,
       courseId: c.course.id,
       startTime: t.startTime,
       holes: t.holes,
       channel: "email" as const,
-      sentAt: input.now,
+      sentAt: now,
       baseline: true,
     })),
   );
   if (seen.length > 0) await db.insert(notifications).values(seen).onConflictDoNothing();
-  return { alert: alert! };
+}
+
+/** One of the golfer's alerts, for editing. */
+export async function alertForUser(
+  db: Database,
+  alertId: string,
+  userId: string,
+): Promise<Alert | null> {
+  const [alert] = await db
+    .select()
+    .from(alerts)
+    .where(and(eq(alerts.id, alertId), eq(alerts.userId, userId)));
+  return alert && alert.status !== "deleted" ? alert : null;
 }
 
 export async function listAlerts(db: Database, userId: string): Promise<Alert[]> {

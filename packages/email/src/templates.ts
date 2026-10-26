@@ -63,7 +63,8 @@ export function describeSearch(params: SearchParams): string {
     : `${formatPerthTime(perthToUtc("2026-01-01", params.timeFrom))} to ${formatPerthTime(perthToUtc("2026-01-01", params.timeTo))}`;
   const players = `${params.players} ${params.players === 1 ? "player" : "players"}`;
   const holes = params.holes ? `${params.holes} holes` : "9 or 18 holes";
-  return `${days} · ${time} · ${players} · ${holes}`;
+  const where = params.near ? ` · within ${params.near.withinKm} km of you` : "";
+  return `${days} · ${time} · ${players} · ${holes}${where}`;
 }
 
 /** Slots listed in one email. The rest are behind "see all". */
@@ -147,5 +148,11 @@ export function searchUrlFor(site: string, params: SearchParams): string {
     holes: params.holes ? String(params.holes) : "any",
   });
   for (const slug of params.courseSlugs ?? []) query.append("course", slug);
+  // Near me alerts (Milestone 28) open the search near the same place.
+  if (params.near) {
+    query.set("lat", String(params.near.latitude));
+    query.set("lon", String(params.near.longitude));
+    query.set("within", String(params.near.withinKm));
+  }
   return `${site}/search?${query}`;
 }

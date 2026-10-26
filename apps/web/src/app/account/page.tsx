@@ -29,7 +29,7 @@ import {
 import { AlertSummary } from "@/components/alert-summary";
 import { PushToggle } from "@/components/push-toggle";
 import { SiteHeader } from "@/components/site-header";
-import { Notice, secondaryButton } from "@/components/ui";
+import { Notice, primaryButton, secondaryButton } from "@/components/ui";
 import { currentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { pushPublicKey } from "@/lib/push";
@@ -67,7 +67,7 @@ export default async function AccountPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
-  const { error, tab: asked, newsletter } = await searchParams;
+  const { error, tab: asked, newsletter, alert: alertSaved } = await searchParams;
   const tab: Tab = TABS.some((t) => t.id === asked) ? (asked as Tab) : "courses";
   const user = await currentUser();
   if (!user)
@@ -169,13 +169,28 @@ export default async function AccountPage({
         {tab === "alerts" && (
           <>
             <section className={section} aria-labelledby="alerts">
-              <h2 id="alerts" className={heading}>
-                Alerts
-              </h2>
+              <div className="flex items-center justify-between gap-3">
+                <h2 id="alerts" className={heading}>
+                  Alerts
+                </h2>
+                <Link href="/account/alerts/new" className={`${primaryButton} min-h-11 text-sm`}>
+                  + Add an alert
+                </Link>
+              </div>
+              {(alertSaved === "added" || alertSaved === "saved") && (
+                <div className="mt-3">
+                  <Notice tone="info">
+                    {alertSaved === "added"
+                      ? "Alert set up. We'll tell you when a time opens up."
+                      : "Alert saved. Times you've already been told about won't be sent again."}
+                  </Notice>
+                </div>
+              )}
               {alerts.length === 0 ? (
                 <p className="mt-2 text-sm text-muted">
-                  Search for a time, then tap <strong>Tell me when a time opens up</strong>.
-                  We&apos;ll email you when one appears.
+                  Tap <strong>Add an alert</strong>, or search for a time and tap{" "}
+                  <strong>Tell me when a time opens up</strong>. We&apos;ll email you when one
+                  appears.
                 </p>
               ) : (
                 <ul className={card}>
@@ -188,8 +203,18 @@ export default async function AccountPage({
                       {a.status !== "ended" && (
                         <AlertChannels alert={a} canPush={devices.length > 0} />
                       )}
-                      {a.status !== "ended" && (
+                      {a.status === "ended" && (
                         <div className="flex gap-2">
+                          <Link href={`/account/alerts/${a.id}`} className={secondaryButton}>
+                            Set up again
+                          </Link>
+                        </div>
+                      )}
+                      {a.status !== "ended" && (
+                        <div className="flex flex-wrap gap-2">
+                          <Link href={`/account/alerts/${a.id}`} className={secondaryButton}>
+                            Edit
+                          </Link>
                           <form action={changeAlert}>
                             <input type="hidden" name="alertId" value={a.id} />
                             <input

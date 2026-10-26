@@ -202,6 +202,36 @@ const starClass =
   "-mr-2 -mt-2 flex size-11 shrink-0 items-center justify-center rounded-lg text-2xl leading-none";
 
 /** Star a course to find it fast. Signed out, the star leads to sign in. */
+/**
+ * A bell beside the star (Milestone 28): opens the alert form with this
+ * course picked. Signing in first, if needed, happens on the way.
+ */
+export function AlertBell({ slug, name }: { slug: string; name: string }) {
+  return (
+    <Link
+      href={`/account/alerts/new?course=${encodeURIComponent(slug)}`}
+      prefetch={false}
+      aria-label={`Set up an alert for ${name}`}
+      title="Tell me when a time opens up"
+      className="-mt-2 flex size-11 shrink-0 items-center justify-center rounded-lg text-muted hover:text-brand"
+    >
+      <svg
+        aria-hidden
+        viewBox="0 0 24 24"
+        className="size-6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M6 9a6 6 0 1 1 12 0c0 5 2 6.5 2 6.5H4S6 14 6 9" />
+        <path d="M10 19a2 2 0 0 0 4 0" />
+      </svg>
+    </Link>
+  );
+}
+
 export function FavouriteStar({
   courseId,
   name,

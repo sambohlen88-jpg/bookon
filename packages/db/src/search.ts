@@ -1,5 +1,12 @@
 import { and, arrayContains, between, eq, gt, gte, inArray, lte, ne, or } from "drizzle-orm";
-import { addPerthDays, eachPerthDate, perthDate, perthToUtc, type VenueKind } from "@bookon/core";
+import {
+  addPerthDays,
+  distanceKm,
+  eachPerthDate,
+  perthDate,
+  perthToUtc,
+  type VenueKind,
+} from "@bookon/core";
 import type { Database } from "./client";
 import { availabilityChecks, availabilitySnapshots, courses } from "./schema";
 
@@ -17,6 +24,11 @@ export interface SearchParams {
   holes: 9 | 18 | null;
   /** Course slugs to include, or null for every searchable course. */
   courseSlugs: string[] | null;
+  /**
+   * Only courses within `withinKm` of here (Milestone 28, for "near me"
+   * alerts). The location is rounded to about a kilometre.
+   */
+  near?: { latitude: number; longitude: number; withinKm: number } | null;
   /**
    * Golf courses (the default, so saved alerts never pick up a simulator),
    * simulator and range bays, or both.
@@ -118,6 +130,22 @@ export interface SearchableCourse {
   longitude: number | null;
 }
 
+/**
+ * The courses within `near.withinKm` of a place (Milestone 28). Courses
+ * without a known location can't be measured, so they're left out.
+ */
+export function withinReach<T extends { latitude: number | null; longitude: number | null }>(
+  list: T[],
+  near: NonNullable<SearchParams["near"]>,
+): T[] {
+  return list.filter(
+    (c) =>
+      c.latitude !== null &&
+      c.longitude !== null &&
+      distanceKm(near, { latitude: c.latitude, longitude: c.longitude }) <= near.withinKm,
+  );
+}
+
 /** Courses that can appear in search, for the course filter. */
 export async function listSearchableCourses(db: Database): Promise<SearchableCourse[]> {
   return db
@@ -197,7 +225,8 @@ export async function searchTeeTimes(
             : undefined,
       ),
     )
-    .orderBy(courses.name);
+    .orderBy(courses.name)
+    .then((rows) => (params.near ? withinReach(rows, params.near) : rows));
   if (courseRows.length === 0) return { courses: [], totalTeeTimes: 0 };
 
   const courseIds = courseRows.map((c) => c.id);
