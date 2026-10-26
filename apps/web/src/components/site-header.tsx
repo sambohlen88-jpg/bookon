@@ -1,81 +1,45 @@
 import Link from "next/link";
+import { Suspense } from "react";
+import { HeaderNav, type AccountLink } from "@/components/header-nav";
 import { InstallPrompt } from "@/components/install-prompt";
 import { currentAccess } from "@/lib/access";
-
-const navLink = "text-sm font-medium text-foreground hover:text-brand";
+import { LATEST_BAY_TIME, defaultForm, searchHref } from "@/lib/search-form";
+import { siteNav } from "@/lib/site-nav";
 
 /**
- * Phones: the name and an account link, as before. Desktop: a full site
- * header with the logo and main pages.
+ * The site header (Milestone 25): the logo (home, where the search is), the
+ * menu, and the areas this person can open. It stays at the top while
+ * scrolling, so the menu is always a tap away.
  */
 export async function SiteHeader() {
   const { user, admin, clubs, coach, author } = await currentAccess();
+  const now = new Date();
+  const account: AccountLink[] = [
+    ...(admin ? [{ href: "/admin", label: "Admin" }] : []),
+    ...(clubs > 0 ? [{ href: "/club", label: "My club" }] : []),
+    ...(coach ? [{ href: "/coach", label: "My coaching" }] : []),
+    ...(author && !admin ? [{ href: "/write", label: "Write" }] : []),
+  ];
+  const sections = siteNav({
+    baysHref: searchHref({ ...defaultForm(now), play: "bays", to: LATEST_BAY_TIME }),
+  });
   return (
     <>
-      <header className="md:border-b md:border-border print:hidden">
-        <div className="mx-auto flex max-w-md items-center justify-between px-4 pt-4 md:max-w-6xl md:px-6 md:py-4">
+      {/* Solid, not frosted: a blur would trap the menus' full-screen layers inside the header. */}
+      <header className="sticky top-0 z-40 border-b border-border bg-background print:hidden">
+        <div className="mx-auto flex h-[var(--header-height)] max-w-[1440px] items-center justify-between gap-4 px-4 md:px-6 lg:px-10">
           <Link
             href="/"
-            className="flex items-center gap-3 text-xl font-bold tracking-tight text-brand md:text-2xl"
+            aria-label="BookOn, home"
+            className="flex shrink-0 items-center gap-3 text-xl font-bold tracking-tight text-brand lg:text-2xl"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/icons/icon.svg"
-              alt=""
-              width={40}
-              height={40}
-              className="hidden size-10 md:block"
-            />
+            <img src="/icons/icon.svg" alt="" width={36} height={36} className="size-8 lg:size-9" />
             BookOn
           </Link>
-          <nav aria-label="Main" className="hidden items-center gap-6 md:flex lg:gap-8">
-            <Link href="/" className={navLink}>
-              Find a tee time
-            </Link>
-            <Link href="/courses" className={navLink}>
-              Courses
-            </Link>
-            <Link href="/competitions" className={navLink}>
-              Competitions
-            </Link>
-            <Link href="/coaches" className={navLink}>
-              Find a coach
-            </Link>
-            <Link href="/news" className={navLink}>
-              News
-            </Link>
-            <Link href="/clubs" className={navLink}>
-              For golf clubs
-            </Link>
-          </nav>
-          <div className="flex items-center gap-4">
-            {admin && (
-              <Link href="/admin" className="text-sm font-medium text-brand">
-                Admin
-              </Link>
-            )}
-            {author && !admin && (
-              <Link href="/write" className="text-sm font-medium text-brand">
-                Write
-              </Link>
-            )}
-            {coach && (
-              <Link href="/coach" className="text-sm font-medium text-brand">
-                My coaching
-              </Link>
-            )}
-            {clubs > 0 && (
-              <Link href="/club" className="text-sm font-medium text-brand">
-                My club
-              </Link>
-            )}
-            <Link
-              href={user ? "/account" : "/signin"}
-              className="flex min-h-11 items-center text-sm font-medium text-brand md:rounded-lg md:border md:border-border md:px-4"
-            >
-              {user ? "My account" : "Sign in"}
-            </Link>
-          </div>
+          <Suspense>
+            <HeaderNav sections={sections} account={account} signedIn={Boolean(user)} />
+          </Suspense>
         </div>
       </header>
       <InstallPrompt />

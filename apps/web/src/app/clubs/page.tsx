@@ -71,7 +71,10 @@ export default function ClubsPage() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-md px-4 pb-12 md:max-w-6xl md:px-6 md:pb-16">
+        <section
+          id="events"
+          className="mx-auto max-w-md px-4 pb-12 md:max-w-6xl md:px-6 md:pb-16 scroll-mt-20"
+        >
           <h2 className="text-2xl font-bold tracking-tight md:text-3xl">
             Run your events on BookOn
           </h2>
@@ -109,7 +112,10 @@ export default function ClubsPage() {
           </p>
         </section>
 
-        <section className="mx-auto max-w-md px-4 pb-12 md:max-w-6xl md:px-6 md:pb-16">
+        <section
+          id="matchplay"
+          className="mx-auto max-w-md px-4 pb-12 md:max-w-6xl md:px-6 md:pb-16 scroll-mt-20"
+        >
           <h2 className="text-2xl font-bold tracking-tight md:text-3xl">
             Run your match play on BookOn
           </h2>

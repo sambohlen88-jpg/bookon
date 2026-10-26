@@ -228,7 +228,10 @@ export default async function SearchPage({
       <SiteHeader />
       <main className="mx-auto max-w-md px-4 pb-12 pt-4 lg:grid lg:max-w-6xl lg:grid-cols-[340px_minmax(0,1fr)] lg:items-start lg:gap-10 lg:px-6 lg:pt-8">
         {/* Desktop: the search stays open beside the results. */}
-        <aside aria-label="Your search" className="hidden lg:sticky lg:top-6 lg:block">
+        <aside
+          aria-label="Your search"
+          className="hidden lg:sticky lg:top-[calc(var(--header-height)+1.5rem)] lg:block"
+        >
           {/* Taller than the window? It scrolls inside, with the button always in view. */}
           <div className="max-h-[calc(100vh-8rem)] overflow-y-auto overflow-x-hidden rounded-2xl border border-border p-5">
             <h2 className="mb-4 text-lg font-semibold">Your search</h2>

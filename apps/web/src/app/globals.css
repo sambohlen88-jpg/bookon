@@ -102,6 +102,21 @@
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
+/* The site header's height (Milestone 25): the menus drop down from just below it. */
+:root {
+  --header-height: 3.5rem;
+}
+@media (min-width: 64rem) {
+  :root {
+    --header-height: 4.5rem;
+  }
+}
+
+/* Jumping to a part of a page stops below the header. */
+html {
+  scroll-padding-top: calc(var(--header-height) + 0.5rem);
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

@@ -357,7 +357,7 @@ export default async function CoursePage({
           </div>
 
           <aside className="mt-8 md:mt-10">
-            <div className="flex flex-col gap-3 rounded-xl border border-border p-5 md:sticky md:top-6">
+            <div className="flex flex-col gap-3 rounded-xl border border-border p-5 md:sticky md:top-[calc(var(--header-height)+1.5rem)]">
               <Link href={weekSearch} className={primaryButton}>
                 {venue ? "See free bays" : "See tee times"}
               </Link>

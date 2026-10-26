@@ -266,7 +266,7 @@ export default async function CoachPage({ params }: { params: Promise<{ slug: st
         </div>
 
         <aside aria-labelledby="book" className="mt-8 md:mt-10">
-          <div className="flex flex-col gap-3 rounded-xl border border-border p-5 md:sticky md:top-6">
+          <div className="flex flex-col gap-3 rounded-xl border border-border p-5 md:sticky md:top-[calc(var(--header-height)+1.5rem)]">
             <h2 id="book" className="text-lg font-semibold">
               Book a lesson
             </h2>

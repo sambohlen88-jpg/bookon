@@ -305,7 +305,7 @@ export function TeeSheet({
                 aria-label={h.label}
                 className="rounded-xl border border-border"
               >
-                <h4 className="sticky top-0 z-10 flex items-center justify-between gap-3 rounded-t-xl border-b border-border bg-surface px-4 py-2 text-sm">
+                <h4 className="sticky top-[var(--header-height)] z-10 flex items-center justify-between gap-3 rounded-t-xl border-b border-border bg-surface px-4 py-2 text-sm">
                   <span className="font-semibold">{h.label}</span>
                   {w && (
                     <span className="text-muted">
