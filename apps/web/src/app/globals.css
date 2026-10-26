@@ -103,6 +103,35 @@
     var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
+/*
+ * Tell the browser which mode the page is in, so its own parts of form
+ * controls (dropdown arrows, date pickers, scrollbars) are drawn to match.
+ * Without this, iPhones drew dark arrows on the dark page.
+ */
+:root {
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+  }
+}
+
+/*
+ * iPhones give date and time boxes a fixed minimum width, so in a two-column
+ * row they spilled into the box beside them. This lets them fit their column.
+ */
+input[type="date"],
+input[type="time"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+}
+input[type="date"]::-webkit-date-and-time-value,
+input[type="time"]::-webkit-date-and-time-value {
+  text-align: left;
+}
+
 /* The site header's height (Milestone 25): the menus drop down from just below it. */
 :root {
   --header-height: 3.5rem;
