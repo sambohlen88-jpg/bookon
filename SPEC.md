@@ -199,6 +199,8 @@ Each milestone ends with a short written summary, a list of open issues, and a d
 
 **Planned (owner, 26 October 2026):** when an alert ends, an email asking if they'd like to set up another. Alerts already keep their search and an "ended" status, so a later email can use them.
 
+**Owner's change, 26 October 2026 (tester links):** so friends can test the private site without the owner's login, `BOOKON_TESTER_CODE` turns on a tester link, `/?tester=<code>`. Opening it once lets that browser in for 30 days without the password box (so testers can use the Home Screen app and notifications), then drops the code from the address. The cookie holds a fingerprint of the code, not the code, so changing the code locks everyone out. Testers sign in with their own email. Search engines are still kept out, and Admin, Settings, Testers shows the link.
+
 ## 12. Phase 2 preview (do not build yet)
 
 Stripe Connect style payments for tee times (lessons are Milestone 15), official partner API adapters that can book and cancel, support for a booking history and refunds, more cities, and native apps. Keep the adapter interface flexible enough that a `book()` and `cancel()` method can be added later.

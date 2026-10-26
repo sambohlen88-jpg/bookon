@@ -35,7 +35,7 @@ Data is read from public booking pages with the owner's approval, ahead of forma
 
 ## Users, pitch report and Google (Milestone 14)
 
-- [ ] **Remove `BOOKON_SITE_PASSWORD`** from the website host on launch day. While it's set, every page asks for a password and search engines are told to keep out.
+- [ ] **Remove `BOOKON_SITE_PASSWORD`** (and `BOOKON_TESTER_CODE`, the tester link) from the website host on launch day. While it's set, every page asks for a password and search engines are told to keep out.
 - [ ] Set the pitch report contact (name, phone, email) in Admin, Settings before printing a pitch for a club.
 - [ ] Once the site is on its real domain: add it to Google Search Console, submit `/sitemap.xml`, and check a few `/golf/...` pages with the URL inspection tool.
 - [ ] Read the wording on the `/golf` pages (`apps/web/src/lib/seo-pages.ts`) and change anything that doesn't sound like BookOn.

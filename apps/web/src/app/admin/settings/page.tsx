@@ -31,6 +31,8 @@ import { PageTitle, panel } from "@/components/admin/ui";
 import { Field, TextArea } from "@/components/form";
 import { Notice, primaryButton, secondaryButton } from "@/components/ui";
 import { requireAdmin } from "@/lib/access";
+import { sitePassword, testerCode } from "@/lib/private-site";
+import { siteOrigin } from "@/lib/site";
 import { getDb } from "@/lib/db";
 
 const NAMES = { instagram: "Instagram", facebook: "Facebook", tiktok: "TikTok" } as const;
@@ -74,6 +76,33 @@ export default async function AdminSettings({
           <Notice tone="warning">Check the email address.</Notice>
         </div>
       )}
+      {/* Tester links (private test mode): a link for friends to try the site without the password. */}
+      <section id="testers" className={`${panel} mb-6 flex flex-col gap-3`}>
+        <h2 className="text-lg font-semibold">Testers</h2>
+        {!sitePassword() ? (
+          <p className="text-sm text-muted">
+            The site is public, so testers don&apos;t need anything: send them the address.
+          </p>
+        ) : testerCode() ? (
+          <>
+            <p className="text-sm text-muted">
+              Send testers this link. Opening it once lets that phone or computer in for 30 days,
+              without the password box, so they can add BookOn to their Home Screen and turn on
+              notifications. They sign in with their own email. To lock everyone out, change
+              BOOKON_TESTER_CODE in Vercel and redeploy.
+            </p>
+            <p className="break-all rounded-lg bg-surface px-3 py-2 font-mono text-sm">
+              {`${await siteOrigin()}/?tester=${encodeURIComponent(testerCode()!)}`}
+            </p>
+          </>
+        ) : (
+          <p className="text-sm text-muted">
+            To give testers a link instead of the site password, add BOOKON_TESTER_CODE in Vercel (a
+            long random code, like the result of <code>openssl rand -hex 12</code>) and redeploy.
+            The link shows here.
+          </p>
+        )}
+      </section>
       <section id="lesson-payments" className={`${panel} mb-6 flex flex-col gap-4`}>
         <h2 className="text-lg font-semibold">Lesson payments</h2>
         <p className="text-sm text-muted">

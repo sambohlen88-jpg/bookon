@@ -1,5 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { hasSitePassword, sitePassword } from "@/lib/private-site";
+import {
+  TESTER_COOKIE,
+  TESTER_COOKIE_MAX_AGE_SECONDS,
+  hasSitePassword,
+  sameText,
+  sitePassword,
+  testerCode,
+  testerCookieValue,
+} from "@/lib/private-site";
 import { SESSION_COOKIE, SESSION_MAX_AGE_SECONDS, validSessionId } from "@/lib/session";
 
 /**
@@ -26,11 +34,40 @@ const OPEN_PATHS = new Set([
 /** Coaches' calendar links: calendar apps can't type the site password, and the link is private. */
 const OPEN_PREFIXES = ["/calendar/"];
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   // Private test mode: ask for the site password, and keep search engines out.
   const password = sitePassword();
+  if (password) {
+    // A tester link: let this browser in for 30 days, then drop the code from the address.
+    const code = testerCode();
+    const given = request.nextUrl.searchParams.get("tester");
+    if (code && given !== null) {
+      const url = request.nextUrl.clone();
+      url.searchParams.delete("tester");
+      const response = NextResponse.redirect(url);
+      if (sameText(given, code)) {
+        response.cookies.set(TESTER_COOKIE, await testerCookieValue(code), {
+          httpOnly: true,
+          sameSite: "lax",
+          secure: process.env.NODE_ENV === "production",
+          maxAge: TESTER_COOKIE_MAX_AGE_SECONDS,
+          path: "/",
+        });
+      }
+      response.headers.set("X-Robots-Tag", "noindex, nofollow");
+      return response;
+    }
+  }
+  const tester =
+    password !== null &&
+    testerCode() !== null &&
+    sameText(
+      request.cookies.get(TESTER_COOKIE)?.value ?? "",
+      await testerCookieValue(testerCode()!),
+    );
   if (
     password &&
+    !tester &&
     !OPEN_PATHS.has(request.nextUrl.pathname) &&
     !OPEN_PREFIXES.some((p) => request.nextUrl.pathname.startsWith(p)) &&
     !hasSitePassword(request.headers.get("authorization"), password)
