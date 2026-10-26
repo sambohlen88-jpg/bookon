@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import {
   WEEKDAYS,
   areaName,
+  lessonKindName,
   formatAuPhone,
   formatPrice,
   specialityName,
@@ -231,12 +232,21 @@ function Summary({ profile }: { profile: CoachProfile }) {
     ],
     ["Specialities", profile.specialities.map(specialityName).join(", ")],
     ["Based", `${profile.suburb} · ${areaName(profile.area)}`],
-    ["Teaches at", profile.places.map((p) => `${p.name} (${p.suburb})`).join("; ")],
+    ["Teaches at", profile.places.map((p) => `${p.name} (${p.suburb})`).join("; ") || "None"],
+    [
+      "Travels to golfers",
+      profile.travel
+        ? [profile.travel.areas.map(areaName).join(", "), profile.travel.note]
+            .filter(Boolean)
+            .join(". ")
+        : "No",
+    ],
     [
       "Rates",
       profile.rates
         .map(
-          (r) => `${r.name}, ${r.minutes} min, ${PEOPLE[r.people]}: ${formatPrice(r.priceCents)}`,
+          (r) =>
+            `${r.name}${r.kind ? ` (${lessonKindName(r.kind)})` : ""}, ${r.minutes} min, ${PEOPLE[r.people]}: ${formatPrice(r.priceCents)}`,
         )
         .join("; "),
     ],

@@ -59,12 +59,12 @@ type Font = { name: string; data: Buffer; weight: 400 | 600 | 700 | 800; style: 
 let fonts: Promise<Font[]> | null = null;
 let logo: Promise<string> | null = null;
 
-/** Inter, from src/fonts (SIL Open Font License). */
+/** DM Sans, from src/fonts (SIL Open Font License), as on the site. */
 export function pictureFonts(): Promise<Font[]> {
   fonts ??= Promise.all(
     ([400, 600, 700, 800] as const).map(async (weight) => ({
-      name: "Inter",
-      data: await readFile(join(process.cwd(), "src/fonts", `inter-${weight}.woff`)),
+      name: "DM Sans",
+      data: await readFile(join(process.cwd(), "src/fonts", `dm-sans-${weight}.woff`)),
       weight,
       style: "normal" as const,
     })),
@@ -165,7 +165,7 @@ export async function sharePicture(share: Share, url: string) {
         flexDirection: "column",
         background: C.background,
         color: C.foreground,
-        fontFamily: "Inter",
+        fontFamily: "DM Sans",
       }}
     >
       <div
@@ -339,7 +339,7 @@ export async function shareCard(share: Share | null) {
           gap: 28,
           background: C.heroBg,
           color: C.heroFg,
-          fontFamily: "Inter",
+          fontFamily: "DM Sans",
         }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text */}
@@ -359,7 +359,7 @@ export async function shareCard(share: Share | null) {
         flexDirection: "column",
         background: C.background,
         color: C.foreground,
-        fontFamily: "Inter",
+        fontFamily: "DM Sans",
       }}
     >
       <div
@@ -372,7 +372,8 @@ export async function shareCard(share: Share | null) {
           color: C.heroFg,
         }}
       >
-        <div style={{ display: "flex", flexDirection: "column" }}>
+        {/* Room beside the logo, so a long title wraps rather than running into it. */}
+        <div style={{ display: "flex", flexDirection: "column", flex: 1, marginRight: 32 }}>
           <div style={{ fontSize: 54, fontWeight: 800, letterSpacing: -1 }}>
             {shareTitle(share.params)}
           </div>
@@ -381,7 +382,12 @@ export async function shareCard(share: Share | null) {
           </div>
         </div>
         {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text */}
-        <img src={await logoSrc()} width={96} height={96} style={{ borderRadius: 22 }} />
+        <img
+          src={await logoSrc()}
+          width={96}
+          height={96}
+          style={{ borderRadius: 22, flexShrink: 0 }}
+        />
       </div>
       <div style={{ display: "flex", flexDirection: "column", padding: "28px 56px 0", gap: 18 }}>
         {shown.map((course) => (
@@ -445,7 +451,7 @@ export async function newsCard(
         padding: "56px 64px",
         background: C.heroBg,
         color: C.heroFg,
-        fontFamily: "Inter",
+        fontFamily: "DM Sans",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 20 }}>

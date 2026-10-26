@@ -1,6 +1,6 @@
 # Launch checklist
 
-Things that must be done before BookOn launches publicly (SPEC section 11, Milestone 26). Claude Code is asked, in `CLAUDE.md`, to raise these with the owner before any launch work.
+Things that must be done before BookOn launches publicly (SPEC section 11, Milestone 27). Claude Code is asked, in `CLAUDE.md`, to raise these with the owner before any launch work.
 
 ## Platform access (owner asked to be reminded)
 
@@ -104,6 +104,11 @@ Data is read from public booking pages with the owner's approval, ahead of forma
 - [ ] **Remove the example news articles** (Admin, News, "Remove all examples") once you've written a few, or keep them only if you're happy they read as BookOn's own.
 - [ ] Add BookOn's Instagram, Facebook and TikTok in Admin, Settings, so articles show "Follow BookOn".
 - [ ] Authors: tell them pictures must be their own or used with permission (the editor asks them to confirm each upload, with their name).
+
+## Coach places, travel and lesson types (Milestone 26)
+
+- [ ] **Ask live coaches to check their listing** once: each lesson's type is guessed from its name until they save again, and coaches who go to golfers can now tick "happy to travel".
+- [ ] Privacy policy: it now says where a golfer would like the lesson goes to the coach (it may be a home address). Include it in the lawyer's review.
 
 ## Business and legal
 

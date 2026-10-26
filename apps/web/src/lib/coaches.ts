@@ -1,6 +1,7 @@
 import {
   WEEKDAYS,
   areaName,
+  guessLessonKind,
   formatPrice,
   fromPriceCents,
   isoWeekday,
@@ -49,6 +50,12 @@ export interface DirectoryCoach {
   suburb: string;
   area: string;
   areaName: string;
+  /** Every area they teach in (Milestone 26): base, their places' courses, and where they travel. */
+  areas: string[];
+  /** Happy to travel to the golfer. */
+  travels: boolean;
+  /** The kinds of lesson they offer. */
+  kinds: string[];
   specialities: string[];
   /** "from $65", or null without rates. */
   from: string | null;
@@ -61,9 +68,20 @@ export interface DirectoryCoach {
   sample: boolean;
 }
 
-export function directoryCoach(coach: LiveCoach, now: Date): DirectoryCoach {
+/** `courseAreas` is each BookOn course's area, by slug. */
+export function directoryCoach(
+  coach: LiveCoach,
+  now: Date,
+  courseAreas: Map<string, string | null> = new Map(),
+): DirectoryCoach {
   const weeks = coachWeeks(coach, now);
   const from = fromPriceCents(coach.profile);
+  const { profile } = coach;
+  const areas = new Set<string>([profile.area, ...(profile.travel?.areas ?? [])]);
+  for (const place of profile.places) {
+    const area = place.courseSlug ? courseAreas.get(place.courseSlug) : null;
+    if (area) areas.add(area);
+  }
   return {
     slug: coach.slug,
     name: coach.profile.name,
@@ -71,6 +89,9 @@ export function directoryCoach(coach: LiveCoach, now: Date): DirectoryCoach {
     suburb: coach.profile.suburb,
     area: coach.profile.area,
     areaName: areaName(coach.profile.area),
+    areas: [...areas].filter(Boolean),
+    travels: Boolean(profile.travel && profile.travel.areas.length > 0),
+    kinds: [...new Set(profile.rates.map(guessLessonKind))],
     specialities: coach.profile.specialities,
     from: from === null ? null : `from ${formatPrice(from)}`,
     thisWeek: weeks.thisWeek.map(dayLabel),

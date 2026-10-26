@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   formatAuPhone,
   fromPriceCents,
+  guessLessonKind,
+  isLessonKind,
+  lessonKindName,
+  lessonPlaces,
   normaliseAuPhone,
+  PLAYER_CHOICE,
+  placeKey,
   teachingDates,
   weekDates,
   whatsappLink,
@@ -85,5 +91,42 @@ describe("contact", () => {
       }),
     ).toBe(4000);
     expect(fromPriceCents({ rates: [] })).toBeNull();
+  });
+});
+
+describe("places and lessons (Milestone 26)", () => {
+  const places = [
+    { courseSlug: "wembley", name: "Wembley Golf Course", suburb: "Wembley Downs" },
+    { name: "Home studio", suburb: "Joondalup" },
+  ];
+  it("keys places so lessons keep pointing at them", () => {
+    expect(placeKey(places[0]!)).toBe("course:wembley");
+    expect(placeKey(places[1]!)).toBe("home studio|joondalup");
+  });
+  it("works out where a lesson can be", () => {
+    const travel = { areas: ["north"] };
+    expect(lessonPlaces({ places, travel }, {})).toEqual({ places, playerChoice: true });
+    expect(lessonPlaces({ places }, { at: ["course:wembley"] })).toEqual({
+      places: [places[0]],
+      playerChoice: false,
+    });
+    expect(lessonPlaces({ places, travel }, { at: [PLAYER_CHOICE] })).toEqual({
+      places: [],
+      playerChoice: true,
+    });
+    // Its only place was removed: everywhere again.
+    expect(lessonPlaces({ places }, { at: ["course:gone"] })).toEqual({
+      places,
+      playerChoice: false,
+    });
+  });
+  it("names lesson kinds", () => {
+    expect(lessonKindName("playing")).toBe("Playing lesson");
+    expect(isLessonKind("nope")).toBe(false);
+    expect(guessLessonKind({ name: "9 hole playing lesson", people: "1" })).toBe("playing");
+    expect(guessLessonKind({ name: "Junior clinic", people: "group" })).toBe("junior");
+    expect(guessLessonKind({ name: "Saturday session", people: "group" })).toBe("group-clinic");
+    expect(guessLessonKind({ name: "Private lesson", people: "1" })).toBe("private");
+    expect(guessLessonKind({ name: "Clinic", people: "1", kind: "video" })).toBe("video");
   });
 });

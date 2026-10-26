@@ -1,20 +1,26 @@
 /** Reading a coach's listing from the portal form (Milestone 12). */
 import {
   isAreaId,
+  isLessonKind,
   isSpecialityId,
+  MAX_COACH_LESSONS,
+  MAX_COACH_PLACES,
   normaliseAuPhone,
+  placeKey,
+  PLAYER_CHOICE,
   type CoachAway,
   type CoachHours,
   type CoachPlace,
   type CoachProfile,
   type CoachRate,
+  type CoachTravel,
   type SpecialityId,
 } from "@bookon/core";
 import { normaliseEmail } from "@bookon/db";
 import { str, webAddress } from "./club-form";
 
-export const MAX_PLACES = 3;
-export const MAX_RATES = 6;
+export const MAX_PLACES = MAX_COACH_PLACES;
+export const MAX_RATES = MAX_COACH_LESSONS;
 export const MAX_AWAY = 3;
 
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -47,18 +53,33 @@ export function parseCoachForm(
   if (!suburb) problems.push("Add the suburb you're based in.");
   if (!isAreaId(area)) problems.push("Pick your area.");
 
+  // Happy to travel (Milestone 26): to these areas, and then places are optional.
+  let travel: CoachTravel | undefined;
+  if (form.get("travel")) {
+    const areas = [...new Set(form.getAll("travelArea").map(String).filter(isAreaId))];
+    if (areas.length === 0) problems.push("Pick the areas you'll travel to.");
+    const note = str(form, "travelNote", 120);
+    travel = { areas, ...(note ? { note } : {}) };
+  }
+
+  // Each row's place, by its number on the form, for lessons to point at.
+  const placeAt = new Map<number, CoachPlace>();
   const places: CoachPlace[] = [];
   for (let i = 0; i < MAX_PLACES; i++) {
     const course = courses.find((c) => c.slug === String(form.get(`place${i}Course`) ?? ""));
-    if (course) {
-      places.push({ courseSlug: course.slug, name: course.name, suburb: course.suburb });
-      continue;
-    }
     const placeName = str(form, `place${i}Name`, 80);
     const placeSuburb = str(form, `place${i}Suburb`, 60);
-    if (placeName || placeSuburb) places.push({ name: placeName ?? "", suburb: placeSuburb ?? "" });
+    const place: CoachPlace | null = course
+      ? { courseSlug: course.slug, name: course.name, suburb: course.suburb }
+      : placeName || placeSuburb
+        ? { name: placeName ?? "", suburb: placeSuburb ?? "" }
+        : null;
+    if (!place || places.some((p) => placeKey(p) === placeKey(place))) continue;
+    places.push(place);
+    placeAt.set(i, place);
   }
-  if (places.length === 0) problems.push("Add at least one place you teach.");
+  if (places.length === 0 && !travel)
+    problems.push("Add at least one place you teach, or say you're happy to travel.");
   if (places.some((p) => !p.name || !p.suburb))
     problems.push("Give each place you teach a name and suburb.");
 
@@ -93,11 +114,28 @@ export function parseCoachForm(
       }
       return Math.round(value * 100);
     };
+    const kind = String(form.get(`rate${i}Kind`) ?? "");
+    if (!isLessonKind(kind)) problems.push(`Lesson ${i + 1}: pick the type of lesson.`);
+    // Where it's taught (Milestone 26): every place unless the coach picks some.
+    let at: string[] | undefined;
+    if (form.get(`rate${i}Where`) === "some") {
+      at = form
+        .getAll(`rate${i}At`)
+        .map(String)
+        .flatMap((value) => {
+          if (value === PLAYER_CHOICE) return travel ? [PLAYER_CHOICE] : [];
+          const place = placeAt.get(Number(value));
+          return place ? [placeKey(place)] : [];
+        });
+      if (at.length === 0) problems.push(`Lesson ${i + 1}: pick where it's taught.`);
+    }
     const weekendCents = special("Weekend");
     const publicHolidayCents = special("PublicHoliday");
     const schoolHolidayCents = special("SchoolHoliday");
     rates.push({
       name: rateName,
+      ...(isLessonKind(kind) ? { kind } : {}),
+      ...(at && at.length > 0 ? { at } : {}),
       minutes,
       priceCents: Math.round(price * 100),
       people: people === "2" || people === "group" ? people : "1",
@@ -161,6 +199,7 @@ export function parseCoachForm(
       hours,
       away,
       places,
+      ...(travel ? { travel } : {}),
       suburb,
       area: isAreaId(area) ? area : "",
       contact: {

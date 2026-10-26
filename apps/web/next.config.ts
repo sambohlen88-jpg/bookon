@@ -12,7 +12,10 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["@electric-sql/pglite", "web-push", "sharp", "stripe"],
   poweredByHeader: false,
   // Share pictures read their fonts and logo from disk, so ship them with those routes.
-  outputFileTracingIncludes: { "/s/**": ["./src/fonts/**", "./src/app/icon.svg"] },
+  outputFileTracingIncludes: {
+    "/s/**": ["./src/fonts/**", "./src/app/icon.svg"],
+    "/news/**": ["./src/fonts/**", "./src/app/icon.svg"],
+  },
   async headers() {
     return [
       {

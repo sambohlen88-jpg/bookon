@@ -99,7 +99,8 @@
   --color-status-good: var(--status-good);
   --color-status-warn: var(--status-warn);
   --color-status-poor: var(--status-poor);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-sans:
+    var(--font-dm-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 /* The site header's height (Milestone 25): the menus drop down from just below it. */

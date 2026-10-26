@@ -48,6 +48,7 @@ export async function bookLesson(formData: FormData) {
       rateIndex: Number(rate),
       startTime: start,
       place: field("place"),
+      playerPlace: field("playerPlace") || undefined,
       golferName,
       golferEmail: golferEmail!,
       golferPhone: golferPhone!,

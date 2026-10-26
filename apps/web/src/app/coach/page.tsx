@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AREAS, SPECIALITIES, WEEKDAYS, formatAuPhone, type CoachProfile } from "@bookon/core";
+import { SPECIALITIES, WEEKDAYS, formatAuPhone, type CoachProfile } from "@bookon/core";
 import {
   COACH_CONSENT,
   acceptedLessonPaymentTerms,
@@ -17,12 +17,13 @@ import { coachTakesBookings, placeLabel, refreshCoachPayments } from "@bookon/pa
 import { saveCoachListing, sendCoachListing } from "@/app/coach/actions";
 import { CoachLessons } from "@/components/coach-lessons";
 import { CoachPhotoUploader } from "@/components/coach-photo-uploader";
+import { CoachPlacesLessons } from "@/components/coach-places-lessons";
 import { CoachSessions } from "@/components/coach-sessions";
-import { Checkbox, Field, Fieldset, Select, TextArea, fieldLabel } from "@/components/form";
+import { Checkbox, Field, Fieldset, TextArea } from "@/components/form";
 import { SiteHeader } from "@/components/site-header";
 import { Notice, primaryButton, secondaryButton, textInput } from "@/components/ui";
 import { currentUser } from "@/lib/auth";
-import { MAX_AWAY, MAX_PLACES, MAX_RATES } from "@/lib/coach-form";
+import { MAX_AWAY } from "@/lib/coach-form";
 import { getDb } from "@/lib/db";
 import { lessonContext } from "@/lib/lessons";
 
@@ -43,7 +44,6 @@ const EMPTY: CoachProfile = {
   contact: {},
 };
 
-const PEOPLE = { "1": "1 person", "2": "2 people", group: "Per person, in a group" };
 const PHOTO_STATUS = {
   pending: "Waiting for approval",
   approved: "On your page",
@@ -271,158 +271,14 @@ export default async function CoachPortal({
             </div>
           </Fieldset>
 
-          <Fieldset
-            legend="3. Where you teach"
-            hint="Pick a course or venue on BookOn, or type the name and suburb of anywhere else."
-          >
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field
-                label="Suburb you're based in"
-                name="suburb"
-                required
-                defaultValue={v.suburb}
-                maxLength={60}
-              />
-              <Select
-                label="Area"
-                name="area"
-                required
-                defaultValue={v.area}
-                options={Object.fromEntries(AREAS.map((a) => [a.id, a.name]))}
-              />
-            </div>
-            {Array.from({ length: MAX_PLACES }, (_, i) => {
-              const place = v.places[i];
-              return (
-                <div key={i} className="rounded-lg bg-surface p-3">
-                  <p className="mb-2 text-sm font-semibold">Place {i + 1}</p>
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <div>
-                      <label htmlFor={`f-place${i}Course`} className={fieldLabel}>
-                        On BookOn
-                      </label>
-                      <select
-                        id={`f-place${i}Course`}
-                        name={`place${i}Course`}
-                        defaultValue={place?.courseSlug ?? ""}
-                        className={textInput}
-                      >
-                        <option value="">Somewhere else</option>
-                        {courses.map((c) => (
-                          <option key={c.slug} value={c.slug}>
-                            {c.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <Field
-                      label="Or its name"
-                      name={`place${i}Name`}
-                      defaultValue={place?.courseSlug ? "" : place?.name}
-                      maxLength={80}
-                    />
-                    <Field
-                      label="Suburb"
-                      name={`place${i}Suburb`}
-                      defaultValue={place?.courseSlug ? "" : place?.suburb}
-                      maxLength={60}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </Fieldset>
-
-          <Fieldset legend="4. Lessons and rates" hint="Prices include GST, as golfers pay them.">
-            {Array.from({ length: MAX_RATES }, (_, i) => {
-              const rate = v.rates[i];
-              return (
-                <div
-                  key={i}
-                  className="grid gap-3 rounded-lg bg-surface p-3 sm:grid-cols-[2fr_1fr_1fr_1.5fr]"
-                >
-                  <Field
-                    label={`Lesson ${i + 1}`}
-                    name={`rate${i}Name`}
-                    defaultValue={rate?.name}
-                    placeholder={i === 0 ? "Private lesson" : undefined}
-                    maxLength={60}
-                  />
-                  <Field
-                    label="Minutes"
-                    name={`rate${i}Minutes`}
-                    type="number"
-                    min={10}
-                    max={600}
-                    defaultValue={rate?.minutes}
-                  />
-                  <Field
-                    label="Price $"
-                    name={`rate${i}Price`}
-                    inputMode="decimal"
-                    defaultValue={rate ? String(rate.priceCents / 100) : ""}
-                  />
-                  <div>
-                    <label htmlFor={`f-rate${i}People`} className={fieldLabel}>
-                      For
-                    </label>
-                    <select
-                      id={`f-rate${i}People`}
-                      name={`rate${i}People`}
-                      defaultValue={rate?.people ?? "1"}
-                      className={textInput}
-                    >
-                      {Object.entries(PEOPLE).map(([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <details
-                    className="sm:col-span-4"
-                    open={Boolean(
-                      rate?.weekendCents || rate?.publicHolidayCents || rate?.schoolHolidayCents,
-                    )}
-                  >
-                    <summary className="cursor-pointer text-sm font-medium text-brand">
-                      Different price on weekends or holidays?
-                    </summary>
-                    <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                      <Field
-                        label="Weekends $"
-                        name={`rate${i}Weekend`}
-                        inputMode="decimal"
-                        defaultValue={rate?.weekendCents ? String(rate.weekendCents / 100) : ""}
-                      />
-                      <Field
-                        label="Public holidays $"
-                        name={`rate${i}PublicHoliday`}
-                        inputMode="decimal"
-                        defaultValue={
-                          rate?.publicHolidayCents ? String(rate.publicHolidayCents / 100) : ""
-                        }
-                      />
-                      <Field
-                        label="School holidays $"
-                        name={`rate${i}SchoolHoliday`}
-                        inputMode="decimal"
-                        defaultValue={
-                          rate?.schoolHolidayCents ? String(rate.schoolHolidayCents / 100) : ""
-                        }
-                      />
-                    </div>
-                    <p className="mt-2 text-sm text-muted">
-                      Leave any empty to use the price above. If a day is more than one (say, a
-                      Saturday in the school holidays), the public holiday price comes first, then
-                      weekend, then school holiday. BookOn uses WA public holidays and public school
-                      holidays.
-                    </p>
-                  </details>
-                </div>
-              );
-            })}
-          </Fieldset>
+          <CoachPlacesLessons
+            courses={courses.map((c) => ({ slug: c.slug, name: c.name, suburb: c.suburb }))}
+            places={v.places}
+            rates={v.rates}
+            travel={v.travel}
+            suburb={v.suburb}
+            area={v.area}
+          />
 
           <Fieldset
             legend="5. When you teach"

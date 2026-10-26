@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 // Only these modules: the rest of @bookon/core is server code.
 import { distanceKm, formatDistance } from "@bookon/core/areas";
-import { SPECIALITIES, specialityName } from "@bookon/core/coaching";
+import { LESSON_KINDS, SPECIALITIES, specialityName } from "@bookon/core/coaching";
 import { CoachAvatar, CoachBadges } from "@/components/coach-avatar";
 import type { DirectoryCoach } from "@/lib/coaches";
 
@@ -12,12 +12,15 @@ const chip =
   "flex min-h-11 shrink-0 items-center rounded-full border px-4 text-sm font-medium whitespace-nowrap";
 const on = "border-brand bg-brand text-brand-foreground";
 const off = "border-border";
+const select =
+  "min-h-12 w-full rounded-lg border border-border bg-background px-3 text-base md:w-72";
 
 type When = "any" | "this" | "next";
 
 /**
- * Every coach, with filters for when they teach, area, speciality and Near
- * me. Near me uses the phone's location in the browser only.
+ * Every coach, with filters for when they teach, area, speciality, type of
+ * lesson, coaches who come to you, and Near me. Near me uses the phone's
+ * location in the browser only.
  */
 export function CoachDirectory({
   coaches,
@@ -29,6 +32,10 @@ export function CoachDirectory({
   const [when, setWhen] = useState<When>("any");
   const [area, setArea] = useState<string | null>(null);
   const [speciality, setSpeciality] = useState("");
+  const [kind, setKind] = useState("");
+  const [comesToYou, setComesToYou] = useState(false);
+  const travelling = coaches.some((c) => c.travels);
+  const kinds = LESSON_KINDS.filter((k) => coaches.some((c) => c.kinds.includes(k.id)));
   const [here, setHere] = useState<{ latitude: number; longitude: number } | null>(null);
   const [finding, setFinding] = useState<"idle" | "finding" | "failed">("idle");
   const located = coaches.some((c) => c.latitude !== null);
@@ -36,8 +43,10 @@ export function CoachDirectory({
   const shown = useMemo(() => {
     const list = coaches
       .filter((c) => when === "any" || (when === "this" ? c.thisWeek : c.nextWeek).length > 0)
-      .filter((c) => !area || c.area === area)
+      .filter((c) => !area || c.areas.includes(area))
       .filter((c) => !speciality || c.specialities.includes(speciality))
+      .filter((c) => !kind || c.kinds.includes(kind))
+      .filter((c) => !comesToYou || c.travels)
       .map((c) => ({
         ...c,
         km:
@@ -49,7 +58,7 @@ export function CoachDirectory({
     if (here) list.sort((a, b) => (a.km ?? Infinity) - (b.km ?? Infinity));
     else list.sort((a, b) => Number(b.thisWeek.length > 0) - Number(a.thisWeek.length > 0));
     return list;
-  }, [coaches, when, area, speciality, here]);
+  }, [coaches, when, area, speciality, kind, comesToYou, here]);
 
   function nearMe() {
     if (here) return setHere(null);
@@ -84,6 +93,16 @@ export function CoachDirectory({
             {w.label}
           </button>
         ))}
+        {travelling && (
+          <button
+            type="button"
+            aria-pressed={comesToYou}
+            onClick={() => setComesToYou(!comesToYou)}
+            className={`${chip} ${comesToYou ? on : off}`}
+          >
+            Comes to you
+          </button>
+        )}
         {located && (
           <button
             type="button"
@@ -113,22 +132,44 @@ export function CoachDirectory({
           </button>
         ))}
       </div>
-      <label htmlFor="speciality" className="sr-only">
-        Speciality
-      </label>
-      <select
-        id="speciality"
-        value={speciality}
-        onChange={(e) => setSpeciality(e.target.value)}
-        className="mt-3 min-h-12 w-full rounded-lg border border-border bg-background px-3 text-base md:w-72"
-      >
-        <option value="">Any speciality</option>
-        {SPECIALITIES.map((s) => (
-          <option key={s.id} value={s.id}>
-            {s.name}
-          </option>
-        ))}
-      </select>
+      <div className="mt-3 flex flex-col gap-3 md:flex-row">
+        <label htmlFor="speciality" className="sr-only">
+          Speciality
+        </label>
+        <select
+          id="speciality"
+          value={speciality}
+          onChange={(e) => setSpeciality(e.target.value)}
+          className={select}
+        >
+          <option value="">Any speciality</option>
+          {SPECIALITIES.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+        {kinds.length > 1 && (
+          <>
+            <label htmlFor="lesson-kind" className="sr-only">
+              Type of lesson
+            </label>
+            <select
+              id="lesson-kind"
+              value={kind}
+              onChange={(e) => setKind(e.target.value)}
+              className={select}
+            >
+              <option value="">Any type of lesson</option>
+              {kinds.map((k) => (
+                <option key={k.id} value={k.id}>
+                  {k.name}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
+      </div>
       {finding === "failed" && (
         <p role="alert" className="mt-2 text-sm text-warning-fg">
           We couldn&apos;t get your location. Check location is allowed for BookOn in your
@@ -143,7 +184,9 @@ export function CoachDirectory({
         {here ? ", closest first" : ""}
       </p>
       {shown.length === 0 && (
-        <p className="mt-6 text-muted">No coaches match. Try another week, area or speciality.</p>
+        <p className="mt-6 text-muted">
+          No coaches match. Try another week, area, speciality or type of lesson.
+        </p>
       )}
 
       <ul className="mt-3 grid gap-3 md:grid-cols-2 md:gap-6 lg:grid-cols-3">
@@ -165,6 +208,7 @@ export function CoachDirectory({
                       {c.suburb}
                       {c.km !== null ? ` · ${formatDistance(c.km)}` : ` · ${c.areaName}`}
                     </p>
+                    {c.travels && <p className="text-sm font-medium text-brand">Comes to you</p>}
                     <div className="mt-1.5">
                       <CoachBadges pgaVerified={c.pgaVerified} sample={c.sample} />
                     </div>

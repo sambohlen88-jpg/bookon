@@ -4,6 +4,7 @@ import {
   isoWeekday,
   perthDate,
   perthToUtc,
+  PLAYER_CHOICE,
   weekDates,
   weeklyDates,
   type CoachProfile,
@@ -482,10 +483,24 @@ export const SAMPLE_COACHES: {
       bio: "I love getting new golfers comfortable on the course. Lessons are relaxed and practical: we work on the one or two things that make the biggest difference, then take them out to the course. Clubs are available if you don't have your own yet.",
       specialities: ["beginners", "short-game", "womens"],
       rates: [
-        { name: "Private lesson", minutes: 30, priceCents: 6500, people: "1" },
-        { name: "Private lesson", minutes: 60, priceCents: 11000, people: "1" },
-        { name: "9 hole playing lesson", minutes: 120, priceCents: 18000, people: "1" },
-        { name: "Beginners' clinic (up to 6)", minutes: 60, priceCents: 4000, people: "group" },
+        { name: "Private lesson", kind: "private", minutes: 30, priceCents: 6500, people: "1" },
+        { name: "Private lesson", kind: "private", minutes: 60, priceCents: 11000, people: "1" },
+        {
+          name: "9 hole playing lesson",
+          kind: "playing",
+          // On a course the golfer picks (Milestone 26).
+          at: [PLAYER_CHOICE],
+          minutes: 120,
+          priceCents: 18000,
+          people: "1",
+        },
+        {
+          name: "Beginners' clinic (up to 6)",
+          kind: "group-clinic",
+          minutes: 60,
+          priceCents: 4000,
+          people: "group",
+        },
       ],
       hours: [
         { day: 2, from: "15:00", to: "19:00" },
@@ -494,6 +509,7 @@ export const SAMPLE_COACHES: {
       ],
       away: [],
       places: [{ name: "Driving range and practice greens", suburb: "Osborne Park" }],
+      travel: { areas: ["north", "west"], note: "Courses within about 20 km of Osborne Park" },
       suburb: "Osborne Park",
       area: "north",
       contact: {
@@ -513,10 +529,17 @@ export const SAMPLE_COACHES: {
       bio: "Fifteen years teaching golfers of every level. Whether you want more distance off the tee, a better plan for getting round the course or a junior program for the kids, we'll set clear goals and track them with video.",
       specialities: ["all-round", "driving", "course-management", "juniors"],
       rates: [
-        { name: "Private lesson", minutes: 45, priceCents: 9000, people: "1" },
-        { name: "Private lesson", minutes: 60, priceCents: 12000, people: "1" },
-        { name: "Lesson for two", minutes: 60, priceCents: 15000, people: "2" },
-        { name: "Junior squad (8 to 14)", minutes: 60, priceCents: 3500, people: "group" },
+        { name: "Private lesson", kind: "private", minutes: 45, priceCents: 9000, people: "1" },
+        { name: "Private lesson", kind: "private", minutes: 60, priceCents: 12000, people: "1" },
+        { name: "Lesson for two", kind: "private", minutes: 60, priceCents: 15000, people: "2" },
+        { name: "Video swing analysis", kind: "video", minutes: 45, priceCents: 9500, people: "1" },
+        {
+          name: "Junior squad (8 to 14)",
+          kind: "junior",
+          minutes: 60,
+          priceCents: 3500,
+          people: "group",
+        },
       ],
       hours: [
         { day: 1, from: "16:00", to: "19:00" },
@@ -544,16 +567,17 @@ export const SAMPLE_COACHES: {
       bio: "Lower scores start on the greens. I help golfers of all ages roll the ball better, and fit clubs that suit how you swing today. Seniors are very welcome, with gentle sessions that look after your back.",
       specialities: ["putting", "seniors", "club-fitting", "short-game"],
       rates: [
-        { name: "Putting lesson", minutes: 30, priceCents: 6000, people: "1" },
+        { name: "Putting lesson", kind: "short-game", minutes: 30, priceCents: 6000, people: "1" },
         {
           name: "Private lesson",
+          kind: "private",
           minutes: 60,
           priceCents: 10500,
           people: "1",
           weekendCents: 11500,
           publicHolidayCents: 13000,
         },
-        { name: "Club fitting", minutes: 90, priceCents: 15000, people: "1" },
+        { name: "Club fitting", kind: "club-fitting", minutes: 90, priceCents: 15000, people: "1" },
       ],
       hours: [
         { day: 3, from: "09:00", to: "14:00" },

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AREAS } from "@bookon/core";
-import { listLiveCoaches } from "@bookon/db";
+import { listCourseDetails, listLiveCoaches } from "@bookon/db";
 import { CoachDirectory } from "@/components/coach-directory";
 import { GroupSessionList } from "@/components/group-session-list";
 import { SiteHeader } from "@/components/site-header";
@@ -18,9 +18,10 @@ export const metadata: Metadata = {
 
 export default async function CoachesPage() {
   const now = new Date();
-  const coaches = (await listLiveCoaches(getDb())).map((c) => directoryCoach(c, now));
+  const courseAreas = new Map((await listCourseDetails(getDb())).map((c) => [c.slug, c.area]));
+  const coaches = (await listLiveCoaches(getDb())).map((c) => directoryCoach(c, now, courseAreas));
   const sessions = await bookableGroupSessions(getDb(), now, 6);
-  const areas = AREAS.filter((a) => coaches.some((c) => c.area === a.id)).map((a) => ({
+  const areas = AREAS.filter((a) => coaches.some((c) => c.areas.includes(a.id))).map((a) => ({
     id: a.id,
     name: a.name,
   }));

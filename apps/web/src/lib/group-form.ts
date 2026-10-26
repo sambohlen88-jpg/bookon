@@ -15,7 +15,7 @@ export const SESSION_LENGTHS = [30, 45, 60, 90, 120, 150, 180, 240] as const;
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-/** The sessions to put on, or what to fix. `places` are the coach's teaching places, as labels. */
+/** The sessions to put on, or what to fix. `places` are the coach's teaching places, as labels: none means it's typed. */
 export function parseGroupSessionForm(
   form: FormData,
   places: string[],
@@ -37,8 +37,11 @@ export function parseGroupSessionForm(
   const minutes = Number(form.get("minutes"));
   if (!(SESSION_LENGTHS as readonly number[]).includes(minutes)) problems.push("Pick how long.");
 
-  const place = String(form.get("place") ?? "");
-  if (!places.includes(place)) problems.push("Pick where it's on.");
+  // A coach who only travels (Milestone 26) has no places, so types where it's on.
+  const place = String(form.get("place") ?? "")
+    .trim()
+    .slice(0, 100);
+  if (places.length > 0 ? !places.includes(place) : !place) problems.push("Pick where it's on.");
 
   const price = Number(String(form.get("price") ?? "").replace(/[$,\s]/g, ""));
   if (!Number.isFinite(price) || price < 1 || price > 1000)

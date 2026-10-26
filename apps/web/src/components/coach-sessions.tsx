@@ -230,8 +230,16 @@ export function CoachSessions({
                   ))}
                 </select>
               </div>
-            ) : (
+            ) : places.length === 1 ? (
               <input type="hidden" name="place" value={places[0]} />
+            ) : (
+              <Field
+                label="Where"
+                name="place"
+                required
+                maxLength={100}
+                hint="The course, park or venue, and its suburb."
+              />
             )}
             <div className="grid grid-cols-3 gap-3">
               <Field

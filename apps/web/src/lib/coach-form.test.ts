@@ -25,10 +25,12 @@ const complete = {
   rate0Minutes: "60",
   rate0Price: "$110",
   rate0People: "1",
+  rate0Kind: "private",
   rate1Name: "Clinic",
   rate1Minutes: "60",
   rate1Price: "40.50",
   rate1People: "group",
+  rate1Kind: "group-clinic",
   hours2From: "15:00",
   hours2To: "19:00",
   hours6From: "07:00",
@@ -54,8 +56,8 @@ describe("parseCoachForm", () => {
         { name: "Home studio", suburb: "Kensington" },
       ],
       rates: [
-        { name: "Private lesson", minutes: 60, priceCents: 11000, people: "1" },
-        { name: "Clinic", minutes: 60, priceCents: 4050, people: "group" },
+        { name: "Private lesson", kind: "private", minutes: 60, priceCents: 11000, people: "1" },
+        { name: "Clinic", kind: "group-clinic", minutes: 60, priceCents: 4050, people: "group" },
       ],
       hours: [
         { day: 2, from: "15:00", to: "19:00" },
@@ -92,5 +94,74 @@ describe("parseCoachForm", () => {
       "Check your WhatsApp number (an Australian mobile).",
       "Add at least one way to reach you: WhatsApp, phone or email.",
     ]);
+  });
+
+  it("reads travel and where each lesson is taught (Milestone 26)", () => {
+    const { profile, problems } = parseCoachForm(
+      form({
+        ...complete,
+        travel: "on",
+        travelArea: ["south", "east", "nowhere"],
+        travelNote: "Within 20 km of Como",
+        rate0Where: "some",
+        rate0At: ["1", "player"],
+        rate1Where: "all",
+        rate1At: ["0"],
+      }),
+      courses,
+    );
+    expect(problems).toEqual([]);
+    expect(profile.travel).toEqual({ areas: ["south", "east"], note: "Within 20 km of Como" });
+    expect(profile.rates[0]!.at).toEqual(["home studio|kensington", "player"]);
+    expect(profile.rates[1]!.at).toBeUndefined();
+  });
+
+  it("lets a travelling coach skip places, and checks the new choices", () => {
+    const { profile, problems } = parseCoachForm(
+      form({
+        ...complete,
+        place0Course: "",
+        place1Name: "",
+        place1Suburb: "",
+        travel: "on",
+        rate0Kind: "",
+        rate1Where: "some",
+      }),
+      courses,
+    );
+    expect(profile.places).toEqual([]);
+    expect(problems).toEqual([
+      "Pick the areas you'll travel to.",
+      "Lesson 1: pick the type of lesson.",
+      "Lesson 2: pick where it's taught.",
+    ]);
+    const noPlaces = parseCoachForm(
+      form({ ...complete, place0Course: "", place1Name: "", place1Suburb: "" }),
+      courses,
+    );
+    expect(noPlaces.problems).toContain(
+      "Add at least one place you teach, or say you're happy to travel.",
+    );
+  });
+
+  it("takes up to 10 places and 12 lessons, wherever they are on the form", () => {
+    const values: Record<string, string | string[]> = {
+      ...complete,
+      place0Course: "",
+      place1Name: "",
+      place1Suburb: "",
+    };
+    for (let i = 0; i < 11; i++)
+      Object.assign(values, { [`place${i}Name`]: `Park ${i}`, [`place${i}Suburb`]: "Como" });
+    for (let i = 0; i < 13; i++)
+      Object.assign(values, {
+        [`rate${i}Name`]: `Lesson ${i}`,
+        [`rate${i}Minutes`]: "30",
+        [`rate${i}Price`]: "50",
+        [`rate${i}Kind`]: "private",
+      });
+    const { profile } = parseCoachForm(form(values), courses);
+    expect(profile.places).toHaveLength(10);
+    expect(profile.rates).toHaveLength(12);
   });
 });

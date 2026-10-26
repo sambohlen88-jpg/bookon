@@ -240,6 +240,20 @@ describe("booking a lesson", () => {
     ).rejects.toThrow("Pick where");
   });
 
+  it("goes to the golfer when the coach travels (Milestone 26)", async () => {
+    const c = await freshCoach();
+    const away = { ...request("11:00"), place: "player", playerPlace: "  12 Fairway Dr,\n Como " };
+    await expect(startLessonCheckout(ctx(), { coach: c, ...away })).rejects.toThrow("Pick where");
+    const travels = { ...c, profile: { ...c.profile!, travel: { areas: ["south"] } } };
+    await expect(
+      startLessonCheckout(ctx(), { coach: travels, ...away, playerPlace: " " }),
+    ).rejects.toThrow("Tell Jo Coach where");
+    await startLessonCheckout(ctx(), { coach: travels, ...away });
+    const booking = (await lessonById(handle.db, payments.checkouts.at(-1)!.bookingId))!;
+    expect(booking.place).toBe("12 Fairway Dr, Como");
+    await markLessonAbandoned(handle.db, booking.id);
+  });
+
   it("is off when an admin turns lesson payments off", async () => {
     await setLessonPaymentSettings(handle.db, { enabled: false, feeCents: 250 }, admin, start);
     expect(await coachTakesBookings(ctx(), await freshCoach())).toBe(false);

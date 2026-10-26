@@ -69,4 +69,16 @@ describe("parseGroupSessionForm", () => {
         .problems,
     ).toEqual(["That time has already passed."]);
   });
+
+  it("takes a typed place from a coach who only travels", () => {
+    const typed = parseGroupSessionForm(
+      form({ place: " Lake Monger Reserve, Wembley " }),
+      [],
+      now,
+      "2026-10-20",
+    );
+    expect(typed.input?.place).toBe("Lake Monger Reserve, Wembley");
+    const empty = parseGroupSessionForm(form({ place: "" }), [], now, "2026-10-20");
+    expect(empty.problems).toContain("Pick where it's on.");
+  });
 });

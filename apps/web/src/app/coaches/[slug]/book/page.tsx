@@ -10,6 +10,8 @@ import {
   formatPerthTime,
   formatPrice,
   hasSpecialRates,
+  lessonKindName,
+  lessonPlaces,
   lessonSlots,
   perthDate,
   perthToUtc,
@@ -26,9 +28,10 @@ import {
 } from "@bookon/db";
 import { abandonLessonCheckout, coachTakesBookings, placeLabel } from "@bookon/payments";
 import { bookLesson } from "@/app/coaches/[slug]/book/actions";
-import { Checkbox, Field, TextArea, fieldLabel } from "@/components/form";
+import { Checkbox, Field, TextArea } from "@/components/form";
 import { SiteHeader } from "@/components/site-header";
-import { Notice, primaryButton, textInput } from "@/components/ui";
+import { LessonPlacePicker } from "@/components/lesson-place-picker";
+import { Notice, primaryButton } from "@/components/ui";
 import { currentUser } from "@/lib/auth";
 import { dayLabel, perthClock } from "@/lib/coaches";
 import { getDb } from "@/lib/db";
@@ -104,7 +107,9 @@ export default async function BookLessonPage({
       ? day.slots.find((s) => s.getTime() === perthToUtc(day.date, query.time!).getTime())
       : undefined;
   const user = start ? await currentUser() : null;
-  const places = live.profile.places.map(placeLabel);
+  // Where this lesson is taught (Milestone 26), and whether the coach comes to the golfer.
+  const where = rate ? lessonPlaces(live.profile, rate) : { places: [], playerChoice: false };
+  const places = where.places.map(placeLabel);
   const link = (q: Record<string, string | number | undefined>) => {
     const p = new URLSearchParams();
     for (const [k, v] of Object.entries(q)) if (v !== undefined) p.set(k, String(v));
@@ -158,7 +163,14 @@ export default async function BookLessonPage({
                       <span>
                         {r.name}
                         <span className="block text-sm font-normal text-muted">
-                          {r.minutes} min · {r.people === "2" ? "for 2 people" : "just you"}
+                          {[
+                            lessonKindName(r.kind) !== r.name ? lessonKindName(r.kind) : null,
+                            `${r.minutes} min`,
+                            r.people === "2" ? "for 2 people" : "just you",
+                            lessonPlaces(live.profile, r).playerChoice ? "comes to you" : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
                         </span>
                         {hasSpecialRates(r) && (
                           <span className="block text-sm font-normal text-muted">
@@ -266,20 +278,11 @@ export default async function BookLessonPage({
                     autoComplete="tel"
                     hint={`So ${first} can reach you about the lesson.`}
                   />
-                  {places.length > 1 ? (
-                    <div>
-                      <label htmlFor="f-place" className={fieldLabel}>
-                        Where
-                      </label>
-                      <select id="f-place" name="place" required className={textInput}>
-                        {places.map((p) => (
-                          <option key={p}>{p}</option>
-                        ))}
-                      </select>
-                    </div>
-                  ) : (
-                    <input type="hidden" name="place" value={places[0]} />
-                  )}
+                  <LessonPlacePicker
+                    places={places}
+                    playerChoice={where.playerChoice}
+                    coach={first}
+                  />
                   <TextArea
                     label={`Anything ${first} should know`}
                     name="note"
@@ -296,7 +299,7 @@ export default async function BookLessonPage({
                     </p>
                     <p className="mt-1">
                       {formatPerthDay(perthDate(start))} at {formatPerthTime(start)}
-                      {places.length === 1 ? ` · ${places[0]}` : ""}
+                      {places.length === 1 && !where.playerChoice ? ` · ${places[0]}` : ""}
                     </p>
                     <dl className="mt-3 grid grid-cols-[1fr_auto] gap-y-1 tabular-nums">
                       <dt>

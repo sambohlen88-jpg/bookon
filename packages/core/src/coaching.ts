@@ -31,9 +31,63 @@ export function specialityName(id: string): string {
 /** Monday first, as coaches think about their week. Index 0 is Monday (day 1). */
 export const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
+/** Kinds of lesson (Milestone 26), shown as a label and used to filter Find a coach. */
+export const LESSON_KINDS = [
+  { id: "private", name: "Private lesson" },
+  { id: "playing", name: "Playing lesson" },
+  { id: "short-game", name: "Short game and putting" },
+  { id: "junior", name: "Junior lesson" },
+  { id: "simulator", name: "Simulator or indoor" },
+  { id: "video", name: "Video analysis" },
+  { id: "club-fitting", name: "Club fitting" },
+  { id: "group-clinic", name: "Group clinic" },
+  { id: "other", name: "Other" },
+] as const;
+export type LessonKind = (typeof LESSON_KINDS)[number]["id"];
+
+export function isLessonKind(value: unknown): value is LessonKind {
+  return LESSON_KINDS.some((k) => k.id === value);
+}
+
+export function lessonKindName(id: string | undefined): string | null {
+  return LESSON_KINDS.find((k) => k.id === id)?.name ?? null;
+}
+
+/** A best guess at a lesson's kind from its name, for lessons saved before kinds existed. */
+export function guessLessonKind(rate: Pick<CoachRate, "name" | "people" | "kind">): LessonKind {
+  if (rate.kind) return rate.kind;
+  const name = rate.name.toLowerCase();
+  const guesses: [RegExp, LessonKind][] = [
+    [/junior|kids|child/, "junior"],
+    [/playing|on.course|holes?\b/, "playing"],
+    [/short game|putt|chip|bunker|pitch/, "short-game"],
+    [/sim|indoor|studio/, "simulator"],
+    [/video|analysis|trackman/, "video"],
+    [/fitting/, "club-fitting"],
+    [/clinic|group/, "group-clinic"],
+  ];
+  const found = guesses.find(([pattern]) => pattern.test(name));
+  if (found) return found[1];
+  return rate.people === "group" ? "group-clinic" : "private";
+}
+
+/** The most places and lessons a coach can list (Milestone 26). */
+export const MAX_COACH_PLACES = 10;
+export const MAX_COACH_LESSONS = 12;
+
+/** A lesson's "place" meaning wherever the golfer chooses, when the coach travels. */
+export const PLAYER_CHOICE = "player";
+
 export interface CoachRate {
   /** e.g. "Private lesson" or "9 hole playing lesson". */
   name: string;
+  /** What kind of lesson it is (Milestone 26). */
+  kind?: LessonKind;
+  /**
+   * Where it's taught (Milestone 26): place keys (see placeKey), and
+   * PLAYER_CHOICE when the coach travels to the golfer. Left out: everywhere.
+   */
+  at?: string[];
   minutes: number;
   priceCents: number;
   /** "1" for one person, "2" for two, "group" for a clinic priced per person. */
@@ -68,6 +122,37 @@ export interface CoachPlace {
   suburb: string;
 }
 
+/** A coach who'll come to the golfer (Milestone 26). */
+export interface CoachTravel {
+  /** The areas they'll travel to. */
+  areas: string[];
+  /** A note for golfers, like "Within 20 km of Joondalup". */
+  note?: string;
+}
+
+/** A place's lasting name, for a lesson to say it's taught there. */
+export function placeKey(place: CoachPlace): string {
+  return place.courseSlug
+    ? `course:${place.courseSlug}`
+    : `${place.name}|${place.suburb}`.toLowerCase();
+}
+
+/** Where a lesson can be: the coach's places it's taught at, and whether the golfer can choose. */
+export function lessonPlaces(
+  profile: Pick<CoachProfile, "places" | "travel">,
+  rate: Pick<CoachRate, "at">,
+): { places: CoachPlace[]; playerChoice: boolean } {
+  const travels = Boolean(profile.travel && profile.travel.areas.length > 0);
+  if (!rate.at) return { places: profile.places, playerChoice: travels };
+  const at = new Set(rate.at);
+  const places = profile.places.filter((p) => at.has(placeKey(p)));
+  const playerChoice = travels && at.has(PLAYER_CHOICE);
+  // A lesson whose places have all gone is taught everywhere, rather than nowhere.
+  if (places.length === 0 && !playerChoice)
+    return { places: profile.places, playerChoice: travels };
+  return { places, playerChoice };
+}
+
 export interface CoachProfile {
   name: string;
   /** One line under the name, e.g. "Short game and beginners, Osborne Park". */
@@ -80,6 +165,8 @@ export interface CoachProfile {
   hours: CoachHours[];
   away: CoachAway[];
   places: CoachPlace[];
+  /** Happy to travel to the golfer (Milestone 26). */
+  travel?: CoachTravel;
   /** Where they're based, for the list and areas. */
   suburb: string;
   area: string;

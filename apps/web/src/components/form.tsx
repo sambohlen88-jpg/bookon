@@ -11,6 +11,7 @@ export function Field({
   defaultValue,
   type = "text",
   required = false,
+  id = `f-${name}`,
   ...rest
 }: {
   label: string;
@@ -18,7 +19,6 @@ export function Field({
   hint?: string;
   defaultValue?: string | number | null;
 } & Omit<React.InputHTMLAttributes<HTMLInputElement>, "defaultValue">) {
-  const id = `f-${name}`;
   return (
     <div>
       <label htmlFor={id} className={fieldLabel}>

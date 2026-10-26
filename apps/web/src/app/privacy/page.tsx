@@ -120,7 +120,8 @@ export default async function PrivacyPage() {
           <ul>
             <li>
               <strong>Lessons and group sessions:</strong> your name, email, mobile and any note go
-              to the coach.
+              to the coach, and so does where you&apos;d like the lesson when the coach comes to
+              you.
             </li>
             <li>
               <strong>Club events:</strong> the players&apos; names and any member numbers, your

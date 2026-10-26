@@ -10,12 +10,15 @@ import {
   formatPerthDay,
   formatPrice,
   hasSpecialRates,
+  lessonKindName,
+  lessonPlaces,
   perthDate,
   specialRatesLine,
   specialityName,
   weekDates,
   whatsappLink,
 } from "@bookon/core";
+import type { CoachRate } from "@bookon/core";
 import { coachById, courseDetails, liveCoachBySlug, upcomingGroupSessions } from "@bookon/db";
 import { coachTakesBookings } from "@bookon/payments";
 import { CoachAvatar, CoachBadges } from "@/components/coach-avatar";
@@ -55,6 +58,18 @@ export default async function CoachPage({ params }: { params: Promise<{ slug: st
   const { profile } = coach;
   const first = profile.name.split(" ")[0];
   const weeks = coachWeeks(coach, now);
+  // A lesson taught at only some places (Milestone 26) says where.
+  const lessonWhere = (rate: CoachRate): string | null => {
+    if (!rate.at) return null;
+    const where = lessonPlaces(profile, rate);
+    const everywhere =
+      where.places.length === profile.places.length &&
+      where.playerChoice === Boolean(profile.travel);
+    if (everywhere) return null;
+    const names = listNames(where.places.map((p) => p.name));
+    if (!where.playerChoice) return `At ${names}`;
+    return names ? `At ${names}, or wherever you choose` : "Wherever you choose";
+  };
   // One after another: the local database takes one query at a time.
   const places = [];
   for (const place of profile.places) {
@@ -215,9 +230,17 @@ export default async function CoachPage({ params }: { params: Promise<{ slug: st
                   >
                     <span>
                       <span className="font-medium">{r.name}</span>
+                      {lessonKindName(r.kind) && lessonKindName(r.kind) !== r.name && (
+                        <span className="ml-2 inline-block rounded-full bg-surface px-2 py-0.5 align-middle text-xs font-medium text-muted">
+                          {lessonKindName(r.kind)}
+                        </span>
+                      )}
                       <span className="block text-sm text-muted">
                         {r.minutes} min · {PEOPLE[r.people]}
                       </span>
+                      {lessonWhere(r) && (
+                        <span className="block text-sm text-muted">{lessonWhere(r)}</span>
+                      )}
                       {hasSpecialRates(r) && (
                         <span className="block text-sm text-muted">{specialRatesLine(r)}</span>
                       )}
@@ -236,6 +259,19 @@ export default async function CoachPage({ params }: { params: Promise<{ slug: st
               Where {first} teaches
             </h2>
             <ul className="mt-3 rounded-xl border border-border">
+              {profile.travel && (
+                <li className="border-t border-border px-4 py-3 first:border-t-0">
+                  <span className="font-medium">Comes to you</span>
+                  <span className="block text-sm text-muted">
+                    {[
+                      `Anywhere you choose in ${listNames(profile.travel.areas.map(areaName))}`,
+                      profile.travel.note,
+                    ]
+                      .filter(Boolean)
+                      .join(". ")}
+                  </span>
+                </li>
+              )}
               {places.map((p, i) => (
                 <li
                   key={i}
@@ -326,4 +362,11 @@ export default async function CoachPage({ params }: { params: Promise<{ slug: st
       </main>
     </>
   );
+}
+
+/** "A", "A and B", "A, B and C". */
+function listNames(names: string[]): string {
+  return names.length <= 1
+    ? (names[0] ?? "")
+    : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
 }

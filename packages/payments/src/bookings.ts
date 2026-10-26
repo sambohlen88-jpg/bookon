@@ -1,8 +1,10 @@
 import {
   bookableRates,
   freeToCancel,
+  lessonPlaces,
   lessonSlots,
   perthDate,
+  PLAYER_CHOICE,
   ratePriceAt,
   type CoachRate,
 } from "@bookon/core";
@@ -106,7 +108,10 @@ export interface LessonRequest {
   /** Which of the coach's bookable rates, by position. */
   rateIndex: number;
   startTime: Date;
+  /** One of the lesson's places (see placeLabel), or PLAYER_CHOICE with playerPlace. */
   place: string;
+  /** Where the golfer would like the lesson, when the coach travels (Milestone 26). */
+  playerPlace?: string;
   golferName: string;
   golferEmail: string;
   golferPhone: string;
@@ -125,8 +130,15 @@ export async function startLessonCheckout(
   const profile = coach.profile!;
   const rate: CoachRate | undefined = bookableRates(profile)[request.rateIndex];
   if (!rate) throw new BookingProblem("Pick a lesson.");
-  if (!profile.places.some((p) => placeLabel(p) === request.place))
-    throw new BookingProblem("Pick where you'd like the lesson.");
+  // Where (Milestone 26): one of the places this lesson is taught at, or the golfer's choice.
+  const where = lessonPlaces(profile, rate);
+  let place: string;
+  if (request.place === PLAYER_CHOICE && where.playerChoice) {
+    place = (request.playerPlace ?? "").trim().replace(/\s+/g, " ").slice(0, 200);
+    if (!place) throw new BookingProblem(`Tell ${nameOf(coach)} where you'd like the lesson.`);
+  } else if (where.places.some((p) => placeLabel(p) === request.place)) {
+    place = request.place;
+  } else throw new BookingProblem("Pick where you'd like the lesson.");
   const taken = await takenLessonTimes(ctx.db, coach.id, ctx.now);
   const slots = lessonSlots(profile, rate.minutes, perthDate(request.startTime), ctx.now, taken);
   if (!slots.some((s) => s.getTime() === request.startTime.getTime()))
@@ -145,7 +157,7 @@ export async function startLessonCheckout(
         ...(price.kind === "standard" ? {} : { charged: price.kind }),
       },
       startTime: request.startTime,
-      place: request.place,
+      place,
       golferName: request.golferName,
       golferEmail: request.golferEmail,
       golferPhone: request.golferPhone,

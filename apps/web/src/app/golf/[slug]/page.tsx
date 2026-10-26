@@ -121,9 +121,11 @@ export default async function SeoLandingPage({ params }: { params: Promise<{ slu
             courseSlugs: nearbyVenues.map((c) => c.slug),
           }),
         );
+      // Coaches based here, teaching at a course here, or travelling here (Milestone 26).
+      const courseAreas = new Map(all.map((c) => [c.slug, c.area]));
       coaches = (await listLiveCoaches(db))
-        .filter((c) => c.profile.area === area)
-        .map((c) => directoryCoach(c, now));
+        .map((c) => directoryCoach(c, now, courseAreas))
+        .filter((c) => c.areas.includes(area));
       searchLink = searchHref({ ...defaultForm(now), date: today, area });
       break;
     }
