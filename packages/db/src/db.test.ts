@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { TeeTime } from "@bookon/core";
-import { createDb, type DbHandle } from "./client";
+import { LOCAL_DATABASE_URL, createDb, postgresOptions, type DbHandle } from "./client";
 import {
   findCourseBySlug,
   finishFetchRun,
@@ -182,5 +182,18 @@ describe("fetch runs", () => {
     );
     const [run] = await handle.db.select().from(fetchRuns);
     expect(run).toMatchObject({ status: "error", requestCount: 2, error: "robots.txt disallows" });
+  });
+});
+
+describe("postgresOptions (hosting)", () => {
+  it("turns prepared statements off for Supabase's transaction pooler only", () => {
+    const pooler =
+      "postgresql://postgres.abc:pw@aws-0-ap-southeast-2.pooler.supabase.com:6543/postgres";
+    const session =
+      "postgresql://postgres.abc:pw@aws-0-ap-southeast-2.pooler.supabase.com:5432/postgres";
+    expect(postgresOptions(pooler).prepare).toBe(false);
+    expect(postgresOptions(`${pooler}?sslmode=require`).prepare).toBe(false);
+    expect(postgresOptions(session).prepare).toBe(true);
+    expect(postgresOptions(LOCAL_DATABASE_URL)).toMatchObject({ max: 1, prepare: true });
   });
 });

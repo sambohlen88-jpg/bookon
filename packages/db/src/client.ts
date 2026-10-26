@@ -31,11 +31,7 @@ function migrationsFolder(): string {
  */
 export function createDb(url: string): DbHandle {
   if (url.startsWith("postgres://") || url.startsWith("postgresql://")) {
-    // The local PGlite server is one database session, so queries from two connections can
-    // interleave and break each other. One connection keeps them in order.
-    const max = url === LOCAL_DATABASE_URL ? 1 : 5;
-    // Silence NOTICEs such as "schema already exists, skipping" on every migrate.
-    const sql = postgres(url, { max, onnotice: () => {} });
+    const sql = postgres(url, postgresOptions(url));
     const db = drizzlePostgres(sql, { schema });
     return {
       db: db as unknown as Database,
@@ -57,6 +53,24 @@ export function createDb(url: string): DbHandle {
   }
 
   throw new Error("DATABASE_URL must start with postgres://, postgresql:// or pglite:");
+}
+
+/** Connection settings for a postgres:// address. */
+export function postgresOptions(url: string): {
+  max: number;
+  prepare: boolean;
+  onnotice: () => void;
+} {
+  return {
+    // The local PGlite server is one database session, so queries from two connections can
+    // interleave and break each other. One connection keeps them in order.
+    max: url === LOCAL_DATABASE_URL ? 1 : 5,
+    // Supabase's transaction pooler (port 6543), which the website uses on Vercel, can't
+    // keep prepared statements between queries, so they're off there.
+    prepare: !/:6543(\/|$|\?)/.test(url),
+    // Silence NOTICEs such as "schema already exists, skipping" on every migrate.
+    onnotice: () => {},
+  };
 }
 
 /**
