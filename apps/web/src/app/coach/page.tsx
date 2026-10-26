@@ -109,8 +109,8 @@ export default async function CoachPortal({
           )}
           {coach?.status === "hidden" && (
             <Notice tone="warning">
-              Your listing is hidden from golfers. Write to info@bookon.com.au if you&apos;re not
-              sure why.
+              Your listing is hidden from golfers. Write to info@bookon.au if you&apos;re not sure
+              why.
             </Notice>
           )}
           {coach?.submittedAt && (

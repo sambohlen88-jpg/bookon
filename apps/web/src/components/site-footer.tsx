@@ -84,8 +84,8 @@ export function SiteFooter() {
           <p className={`${heading} mt-6`}>Contact</p>
           <ul className="mt-3 flex flex-col gap-2">
             <li>
-              <a href="mailto:info@bookon.com.au" className={link}>
-                info@bookon.com.au
+              <a href="mailto:info@bookon.au" className={link}>
+                info@bookon.au
               </a>
             </li>
             <li className="text-sm text-muted">Perth, Western Australia</li>

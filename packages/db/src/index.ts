@@ -25,3 +25,4 @@ export * from "./events";
 export * from "./matchplay";
 export * from "./analytics";
 export * from "./news";
+export * from "./newsletter";

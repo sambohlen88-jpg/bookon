@@ -8,6 +8,7 @@ import { currentUser } from "@/lib/auth";
 import { perthClock } from "@/lib/coaches";
 import { getDb } from "@/lib/db";
 import { lessonContext } from "@/lib/lessons";
+import { joinNewsletterIfTicked } from "@/lib/newsletter";
 
 /** Check the golfer's details, hold the time, and send them to pay. */
 export async function bookLesson(formData: FormData) {
@@ -61,5 +62,6 @@ export async function bookLesson(formData: FormData) {
     if (error instanceof BookingProblem || error instanceof PaymentError) back(error.message);
     throw error;
   }
+  await joinNewsletterIfTicked(formData, golferEmail, "lesson");
   redirect(url!);
 }

@@ -66,7 +66,7 @@ describe("WebPushSender", () => {
 
   it("sends an encrypted, signed message to the push service", async () => {
     let sent: { url: string; init: RequestInit } | null = null;
-    const sender = new WebPushSender(keys, "mailto:info@bookon.com.au", (async (
+    const sender = new WebPushSender(keys, "mailto:info@bookon.au", (async (
       url: string,
       init: RequestInit,
     ) => {

@@ -81,7 +81,7 @@ async function readNow(coachId: string, url: string): Promise<string | null> {
   const now = new Date();
   try {
     const busy = await fetchBusyTimes(url, {
-      userAgent: `BookOnBot/0.1 (+${process.env.BOOKON_SITE_URL || "https://bookon.com.au"}; ${process.env.BOOKON_CONTACT_EMAIL || "info@bookon.com.au"})`,
+      userAgent: `BookOnBot/0.1 (+${process.env.BOOKON_SITE_URL || "https://bookon.au"}; ${process.env.BOOKON_CONTACT_EMAIL || "info@bookon.au"})`,
       from: new Date(now.getTime() - 24 * 60 * 60 * 1000),
       to: new Date(now.getTime() + 35 * 24 * 60 * 60 * 1000),
       timeoutMs: 15_000,

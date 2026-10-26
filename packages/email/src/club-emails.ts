@@ -271,7 +271,7 @@ export function clubDeclinedEmail(input: {
 }): EmailMessage {
   const body = `Thanks for your interest in listing ${input.clubName} on BookOn. We can't list it right now.`;
   const after =
-    "If you have questions, or things change, reply to this email or write to info@bookon.com.au.";
+    "If you have questions, or things change, reply to this email or write to info@bookon.au.";
   return {
     to: input.to,
     subject: `Your BookOn listing for ${input.clubName}`,

@@ -7,6 +7,7 @@ import { BookingProblem, PaymentError, startMpEntry } from "@bookon/payments";
 import { currentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { lessonContext } from "@/lib/lessons";
+import { joinNewsletterIfTicked } from "@/lib/newsletter";
 
 /** Enter a match play competition online (Milestone 22): free entries go straight in, paid ones to pay. */
 export async function enterMatchplay(formData: FormData) {
@@ -43,5 +44,6 @@ export async function enterMatchplay(formData: FormData) {
     if (error instanceof BookingProblem || error instanceof PaymentError) back(error.message);
     throw error;
   }
+  await joinNewsletterIfTicked(formData, contactEmail, "matchplay");
   redirect(url!);
 }

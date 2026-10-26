@@ -275,8 +275,8 @@ function ApprovalFields({ application }: { application: ClubApplication }) {
             prices as your booking page shows them, and tell golfers how recently we checked.
           </p>
           <p>
-            <strong className="text-foreground">Leave any time.</strong> Email info@bookon.com.au
-            and we&apos;ll take your listing down within two working days.
+            <strong className="text-foreground">Leave any time.</strong> Email info@bookon.au and
+            we&apos;ll take your listing down within two working days.
           </p>
           <p>
             <strong className="text-foreground">Reports.</strong> We share how many golfers saw your
@@ -370,10 +370,10 @@ function ReviewStep({
         <Notice tone="info">
           {justSent ? "Sent. Thanks! " : ""}
           {application.status === "submitted"
-            ? `We've got your listing and will be in touch at ${application.contactEmail}, usually within a week. To change anything now, email info@bookon.com.au.`
+            ? `We've got your listing and will be in touch at ${application.contactEmail}, usually within a week. To change anything now, email info@bookon.au.`
             : application.status === "approved"
-              ? "Your listing is approved. To change anything, email info@bookon.com.au."
-              : "This listing is closed. Email info@bookon.com.au with any questions."}
+              ? "Your listing is approved. To change anything, email info@bookon.au."
+              : "This listing is closed. Email info@bookon.au with any questions."}
         </Notice>
       )}
       <ListingSummary

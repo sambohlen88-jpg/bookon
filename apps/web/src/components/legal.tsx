@@ -3,9 +3,9 @@ import type { BusinessDetails } from "@bookon/db";
 
 /** Shared pieces of the privacy policy and terms (Milestone 24). */
 
-export const PRIVACY_UPDATED = "24 October 2026";
+export const PRIVACY_UPDATED = "26 October 2026";
 export const TERMS_UPDATED = "24 October 2026";
-export const CONTACT_EMAIL = "info@bookon.com.au";
+export const CONTACT_EMAIL = "info@bookon.au";
 
 /** Who runs BookOn, from Admin, Settings once the business is registered. */
 export function whoWeAre(business: BusinessDetails): string {

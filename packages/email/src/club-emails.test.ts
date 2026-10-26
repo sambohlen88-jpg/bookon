@@ -99,7 +99,7 @@ describe("club listing emails", () => {
     expect(text).toMatch(/\[yes\] I'm authorised .* \(Jo Smith, 2026-10-18T01:00:00.000Z\)/);
     expect(text).toContain("Interested in taking payments through BookOn: maybe");
     expect(
-      clubApplicationNotice({ to: "info@bookon.com.au", application, rates, photoCount: 2 }).text,
+      clubApplicationNotice({ to: "info@bookon.au", application, rates, photoCount: 2 }).text,
     ).toContain("pnpm clubs show 11111111-2222-3333-4444-555555555555");
   });
 

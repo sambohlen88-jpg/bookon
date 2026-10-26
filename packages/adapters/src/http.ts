@@ -7,7 +7,7 @@ import type { HttpClient } from "@bookon/core";
  */
 
 export interface PoliteHttpOptions {
-  /** Must name the product and give a contact, e.g. "BookOnBot/0.1 (+https://bookon.com.au; hello@bookon.com.au)". */
+  /** Must name the product and give a contact, e.g. "BookOnBot/0.1 (+https://bookon.au; hello@bookon.au)". */
   userAgent: string;
   /** Minimum gap between requests to the same host. */
   minIntervalMs?: number;

@@ -43,7 +43,7 @@ function view(visitorId: string, path: string, over: Partial<PageViewInput> = {}
     visitorId,
     path,
     referrer: null,
-    ownHost: "bookon.com.au",
+    ownHost: "bookon.au",
     utm: {},
     userAgent: IPHONE,
     width: 390,
@@ -79,7 +79,7 @@ describe("recording", () => {
     );
     await recordPageView(
       db,
-      view("v1", "/search?date=2026-10-18", { referrer: "https://bookon.com.au/" }),
+      view("v1", "/search?date=2026-10-18", { referrer: "https://bookon.au/" }),
       at(2),
     );
     // Over 30 minutes later: a new visit, straight in.

@@ -65,7 +65,7 @@ export default async function WriteArticle({
               {article.publishAt! <= now
                 ? "It's published. Thanks for writing it!"
                 : "It's approved and scheduled to go live by itself."}{" "}
-              To change it now, email BookOn at info@bookon.com.au.
+              To change it now, email BookOn at info@bookon.au.
             </p>
             {article.publishAt! <= now && (
               <Link

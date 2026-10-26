@@ -11,12 +11,12 @@ export interface WorkerConfig {
 }
 
 /** Goes in the user agent so clubs can contact us. */
-export const DEFAULT_CONTACT_EMAIL = "info@bookon.com.au";
+export const DEFAULT_CONTACT_EMAIL = "info@bookon.au";
 
 /** Read worker settings from the environment. */
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): WorkerConfig {
   const contact = env.BOOKON_CONTACT_EMAIL?.trim() || DEFAULT_CONTACT_EMAIL;
-  const site = env.BOOKON_SITE_URL?.trim() || "https://bookon.com.au";
+  const site = env.BOOKON_SITE_URL?.trim() || "https://bookon.au";
   return {
     databaseUrl: env.DATABASE_URL?.trim() || LOCAL_DATABASE_URL,
     userAgent: `BookOnBot/0.1 (+${site}; ${contact})`,

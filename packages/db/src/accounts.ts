@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { and, count, desc, eq, gt, isNull } from "drizzle-orm";
 import type { ClickSource } from "@bookon/core";
 import type { Database } from "./client";
+import { subscribeNewsletter, unsubscribeNewsletter } from "./newsletter";
 import { clickEvents, courses, favourites, signInTokens, users, userSessions } from "./schema";
 
 /** How long an emailed sign-in link works. */
@@ -38,6 +39,8 @@ export async function createSignInToken(
   email: string,
   next: string | null,
   now: Date,
+  /** They ticked "Send me BookOn news" (Milestone 27); recorded once they use the link. */
+  newsletter = false,
 ): Promise<{ token: string } | { error: "rate-limited" }> {
   const [recent] = await db
     .select({ n: count() })
@@ -57,6 +60,7 @@ export async function createSignInToken(
     createdAt: now,
     expiresAt: new Date(now.getTime() + SIGN_IN_LINK_TTL_MS),
     next: safeNextPath(next),
+    newsletter,
   });
   return { token };
 }
@@ -77,7 +81,7 @@ export async function consumeSignInToken(
   anonymousSessionId: string | null,
   now: Date,
 ): Promise<SignInResult | null> {
-  return db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
     const [link] = await tx
       .select()
       .from(signInTokens)
@@ -113,8 +117,13 @@ export async function consumeSignInToken(
           and(eq(clickEvents.anonymousSessionId, anonymousSessionId), isNull(clickEvents.userId)),
         );
     }
-    return { sessionToken, user: user!, next: link.next };
+    return { sessionToken, user: user!, next: link.next, newsletter: link.newsletter };
   });
+  if (!result) return null;
+  // Only now is the email address proven theirs, so only now are they added to the newsletter.
+  if (result.newsletter)
+    await subscribeNewsletter(db, { email: result.user.email, source: "signin", now });
+  return { sessionToken: result.sessionToken, user: result.user, next: result.next };
 }
 
 /** The signed-in golfer for a device cookie, or null. */
@@ -158,7 +167,11 @@ export async function endSession(db: Database, sessionToken: string): Promise<vo
  * and their notifications. Clicks stay in club reports, but no longer point to the golfer.
  */
 export async function deleteUser(db: Database, userId: string): Promise<void> {
+  const [user] = await db.select({ email: users.email }).from(users).where(eq(users.id, userId));
   await db.delete(users).where(eq(users.id, userId));
+  // Off the newsletter too (Milestone 27). The address stays as unsubscribed so it isn't re-added.
+  if (user)
+    await unsubscribeNewsletter(db, { email: user.email, via: "account-deleted", now: new Date() });
 }
 
 export interface FavouriteCourse {

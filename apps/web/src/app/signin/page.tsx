@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { safeNextPath } from "@bookon/db";
 import { requestSignIn } from "@/app/actions";
+import { NewsletterTick } from "@/components/newsletter-tick";
 import { SiteHeader } from "@/components/site-header";
 import { Notice, primaryButton, textInput } from "@/components/ui";
 
@@ -88,6 +89,7 @@ export default async function SignInPage({
                   className={textInput}
                 />
               </div>
+              <NewsletterTick />
               <button type="submit" className={primaryButton}>
                 Email me a sign-in link
               </button>

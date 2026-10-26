@@ -13,10 +13,16 @@ function sessionPath(pathname: string): boolean {
 
 /**
  * Open even in private test mode: robots.txt so crawlers can read "keep out"
- * (Google reads a 401 there as "anything goes"), the uptime check, and Stripe's
- * webhook (it checks Stripe's own signature instead).
+ * (Google reads a 401 there as "anything goes"), the uptime check, Stripe's
+ * webhook (it checks Stripe's own signature instead) and Mailchimp's (it checks
+ * the secret in its address).
  */
-const OPEN_PATHS = new Set(["/robots.txt", "/api/health", "/api/stripe/webhook"]);
+const OPEN_PATHS = new Set([
+  "/robots.txt",
+  "/api/health",
+  "/api/stripe/webhook",
+  "/api/mailchimp/webhook",
+]);
 /** Coaches' calendar links: calendar apps can't type the site password, and the link is private. */
 const OPEN_PREFIXES = ["/calendar/"];
 

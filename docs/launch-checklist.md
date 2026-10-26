@@ -1,6 +1,6 @@
 # Launch checklist
 
-Things that must be done before BookOn launches publicly (SPEC section 11, Milestone 27). Claude Code is asked, in `CLAUDE.md`, to raise these with the owner before any launch work.
+Things that must be done before BookOn launches publicly (SPEC section 11, Milestone 28). Claude Code is asked, in `CLAUDE.md`, to raise these with the owner before any launch work.
 
 ## Platform access (owner asked to be reminded)
 
@@ -110,9 +110,21 @@ Data is read from public booking pages with the owner's approval, ahead of forma
 - [ ] **Ask live coaches to check their listing** once: each lesson's type is guessed from its name until they save again, and coaches who go to golfers can now tick "happy to travel".
 - [ ] Privacy policy: it now says where a golfer would like the lesson goes to the coach (it may be a home address). Include it in the lawyer's review.
 
+## Newsletter (Milestone 27)
+
+- [ ] **Mailchimp account** with one audience for BookOn news. Mailchimp asks for a postal address for the footer of every newsletter (a PO box is fine), and the Spam Act asks for the sender's details: BookOn and the ABN.
+- [ ] In the audience settings, turn **off** double opt-in for API sign-ups (BookOn already checks the address for sign-ins), or leave it on if you'd rather everyone confirms by email.
+- [ ] Set `MAILCHIMP_API_KEY` and `MAILCHIMP_AUDIENCE_ID` on the worker and the website, and `MAILCHIMP_WEBHOOK_SECRET` on the website (`openssl rand -hex 24`).
+- [ ] In Mailchimp, add a webhook to `https://bookon.au/api/mailchimp/webhook?key=<the secret>` for unsubscribes, cleaned addresses, subscribes and profile email changes, from the subscriber and from the account.
+- [ ] Check Admin, Newsletter shows "Up to date" after the worker's next pass, and that unsubscribing in a test newsletter shows there as unsubscribed.
+- [ ] Only email people on this list with marketing. Don't import other lists (club members, coaches' clients) without each person asking.
+- [ ] Have the lawyer check the tick box wording and the newsletter part of the privacy policy.
+
 ## Business and legal
 
-- [ ] Create the **info@bookon.com.au** mailbox. It is already in the worker's user agent, so clubs may write to it.
+- [ ] **Buy bookon.au** from an Australian registrar. .au names need an Australian presence (being an Australian citizen or resident counts, as does an ABN). If bookon.com.au is free, consider buying it too and pointing it at bookon.au.
+- [ ] Create the **info@bookon.au** mailbox (Google Workspace or Microsoft 365). It's in the worker's user agent, so clubs may write to it, and replies to alert emails go there.
+- [ ] Add **alerts@bookon.au**. Tee time alerts come from it. It can be a free alias of info@, since replies are sent to info@.
 - [ ] Domain and brand.
 - [ ] **Club listing terms and approvals** (the wording on the onboarding Approvals step, in `packages/db/src/clubs.ts`), reviewed by a lawyer. Changing the wording means bumping `CONSENTS_VERSION`.
 - [ ] Decide who reviews new club listings and how fast. The pages promise clubs "usually within a week".
@@ -120,17 +132,17 @@ Data is read from public booking pages with the owner's approval, ahead of forma
 
 ## Hosting and operations
 
-- [ ] Hosting: Vercel (website), a hosted Postgres such as Supabase or Neon, and Railway or Fly for the worker.
+- [ ] Hosting: **Vercel Pro** for the website (the free Hobby plan is for non-commercial sites only, and BookOn charges booking fees), a hosted Postgres in Sydney (**Neon** or Supabase) with backups on, and **Railway** (or Fly) for the worker, which runs all the time. Put the website's functions in Sydney too.
 - [ ] The worker running on a schedule, so results stay fresh.
 - [ ] `BOOKON_SITE_URL` set on the website host and the worker. Without it, signing in, starting a club listing and sharing times fail on purpose, as emailed links must never use an address taken from the request.
 - [ ] `BOOKON_ADMIN_EMAIL` set on the website host to your email (one address only). Nobody can open the admin area without it.
-- [ ] `BOOKON_OWNER_EMAIL` set to whoever reviews new club listings (otherwise they go to info@bookon.com.au).
+- [ ] `BOOKON_OWNER_EMAIL` set to whoever reviews new club listings (otherwise they go to info@bookon.au).
 - [ ] `CLICK_SIGNING_SECRET` set on the website host **and** the worker, the same value on both (`openssl rand -base64 32`). Without it, Book clicks still work but aren't tracked.
 - [ ] **Email sending (Postmark).** Until then, sign-in links and alerts go to the local outbox only, so nobody can sign in on a hosted site.
   - Sign up at postmarkapp.com and create a server. Copy its Server API token.
-  - Add bookon.com.au as a sender domain and add the DKIM and Return-Path DNS records Postmark shows. Add a DMARC record if the domain has none.
+  - Add bookon.au as a sender domain and add the DKIM and Return-Path DNS records Postmark shows. Add a DMARC record if the domain has none.
   - Ask Postmark to approve the account for sending to anyone (new accounts can only email their own domain).
-  - Set `EMAIL_PROVIDER=postmark`, `POSTMARK_SERVER_TOKEN`, `EMAIL_FROM` and `BOOKON_SITE_URL` on the website host and the worker.
+  - Set `EMAIL_PROVIDER=postmark`, `POSTMARK_SERVER_TOKEN`, `EMAIL_FROM` (BookOn <info@bookon.au>), `EMAIL_ALERTS_FROM` (BookOn alerts <alerts@bookon.au>) and `BOOKON_SITE_URL` on the website host and the worker. Postmark needs both addresses on the verified bookon.au domain.
 - [ ] **Push notification keys.** Run `pnpm push:keys` once and set `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` on the website host and the worker. Never change them after launch: every golfer's notifications would stop until they turn them on again.
 - [ ] **Test sharing on a real iPhone** once the site is on https: search, tap Share, then Send picture. The share sheet should open with the picture attached. Paste a share link into Messages and check the preview shows the times.
 - [ ] **Test push on a real iPhone** once the site is on https: add BookOn to the Home Screen, open it from there, turn on notifications, set an alert.

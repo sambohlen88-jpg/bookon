@@ -26,6 +26,7 @@ import { currentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { lessonContext } from "@/lib/lessons";
 import { PrivacyNote } from "@/components/legal";
+import { NewsletterTick } from "@/components/newsletter-tick";
 
 export const dynamic = "force-dynamic";
 
@@ -238,6 +239,7 @@ export default async function GroupSessionPage({
                   I agree to the cancellation rule above, and to BookOn sharing my name, email and
                   mobile with {first} for this session.
                 </Checkbox>
+                <NewsletterTick />
                 <PrivacyNote />
                 <button type="submit" className={primaryButton}>
                   Continue to payment

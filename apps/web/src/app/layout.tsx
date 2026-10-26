@@ -9,13 +9,13 @@ import { ServiceWorker } from "@/components/service-worker";
 import { SiteFooter } from "@/components/site-footer";
 import "./globals.css";
 
-// DM Sans (Milestone 26), stored with the site so pages don't wait on Google. One variable
-// file covers every weight used (400 to 700 on pages).
-const dmSans = localFont({
-  src: "../fonts/dm-sans-variable.woff2",
+// Inter (Milestone 27), stored with the site so pages don't wait on Google. One variable file
+// covers every weight used (400 to 700 on pages).
+const inter = localFont({
+  src: "../fonts/inter-variable.woff2",
   weight: "400 800",
   display: "swap",
-  variable: "--font-dm-sans",
+  variable: "--font-inter",
 });
 
 export const metadata: Metadata = {
@@ -44,7 +44,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en-AU" className={dmSans.variable}>
+    <html lang="en-AU" className={inter.variable}>
       {/* Phones: room at the bottom for the menu bar and the iPhone home bar. */}
       <body className="phone-tabs-space font-sans antialiased">
         {children}

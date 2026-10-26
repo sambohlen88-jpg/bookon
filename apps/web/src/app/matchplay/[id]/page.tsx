@@ -22,6 +22,7 @@ import { getDb } from "@/lib/db";
 import { lessonContext } from "@/lib/lessons";
 import { bracketSides, sideLabel } from "@/lib/matchplay";
 import { PrivacyNote } from "@/components/legal";
+import { NewsletterTick } from "@/components/newsletter-tick";
 
 export const dynamic = "force-dynamic";
 
@@ -266,6 +267,7 @@ export default async function MatchplayPage({
                   I agree to BookOn sharing my email and mobile with {comp.clubName} and with each
                   opponent, to arrange our matches.
                 </Checkbox>
+                <NewsletterTick />
                 <PrivacyNote />
                 <button type="submit" className={primaryButton}>
                   {paid ? "Continue to payment" : "Enter"}

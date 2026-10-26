@@ -47,7 +47,7 @@ import { clubApplications, clubs } from "./schema";
 import { seed } from "./seed";
 
 const now = new Date("2026-10-18T02:00:00Z");
-const admin: Actor = { email: "owner@bookon.com.au", role: "admin" };
+const admin: Actor = { email: "owner@bookon.au", role: "admin" };
 let handle: DbHandle;
 
 beforeAll(async () => {
@@ -228,7 +228,7 @@ describe("club logins", () => {
     expect(log.map((l) => [l.actor, l.action])).toEqual([
       ["jo@lakeside.example", "Updated price list"],
       ["jo@lakeside.example", "Updated club details"],
-      ["owner@bookon.com.au", "Approved club listing"],
+      ["owner@bookon.au", "Approved club listing"],
     ]);
   });
 

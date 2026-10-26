@@ -6,6 +6,7 @@ import {
   coachById,
   entriesForGolfer,
   groupBookingsForGolfer,
+  isSubscribed,
   lessonsForGolfer,
   listAlerts,
   listFavourites,
@@ -20,6 +21,8 @@ import {
   changeAlertChannel,
   clearMyVisits,
   deleteMyAccount,
+  joinNewsletter,
+  leaveNewsletter,
   signOut,
   toggleFavourite,
 } from "@/app/actions";
@@ -64,7 +67,7 @@ export default async function AccountPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
-  const { error, tab: asked } = await searchParams;
+  const { error, tab: asked, newsletter } = await searchParams;
   const tab: Tab = TABS.some((t) => t.id === asked) ? (asked as Tab) : "courses";
   const user = await currentUser();
   if (!user)
@@ -89,6 +92,8 @@ export default async function AccountPage({
   for (const id of [...lessons.map((l) => l.coachId), ...groups.map((g) => g.session.coachId)])
     if (!lessonCoaches.has(id)) lessonCoaches.set(id, await coachById(db, id));
   const courseNames = new Map(courses.map((c) => [c.slug, c.name]));
+  // The newsletter (Milestone 27), shown under Settings.
+  const subscribed = tab === "settings" ? await isSubscribed(db, user.email) : false;
 
   return (
     <>
@@ -349,6 +354,33 @@ export default async function AccountPage({
                 </form>
               </>
             )}
+          </section>
+        )}
+
+        {tab === "settings" && (
+          <section className={section} aria-labelledby="newsletter">
+            <h2 id="newsletter" className={heading}>
+              BookOn news
+            </h2>
+            <p className="mt-2 text-sm text-muted">
+              {subscribed
+                ? "We email you BookOn news, golf tips and offers. Stop any time."
+                : "Get BookOn news, golf tips and offers by email. Unsubscribe any time."}
+            </p>
+            {newsletter && (
+              <div className="mt-3">
+                <Notice tone="info">
+                  {newsletter === "on"
+                    ? "Done. You'll get the next BookOn news email."
+                    : "Done. We won't send you BookOn news any more."}
+                </Notice>
+              </div>
+            )}
+            <form action={subscribed ? leaveNewsletter : joinNewsletter} className="mt-3">
+              <button type="submit" className={secondaryButton}>
+                {subscribed ? "Stop sending me BookOn news" : "Send me BookOn news"}
+              </button>
+            </form>
           </section>
         )}
 

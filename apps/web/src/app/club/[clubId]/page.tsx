@@ -89,7 +89,7 @@ export default async function ClubOverview({ params }: { params: Promise<{ clubI
         )}
       </section>
       <p className="mt-8 text-sm text-muted">
-        Need to change a course&apos;s name or holes? Email info@bookon.com.au.
+        Need to change a course&apos;s name or holes? Email info@bookon.au.
       </p>
     </>
   );

@@ -15,7 +15,7 @@ export async function cancelLessonFromLink(formData: FormData) {
   const ctx = await lessonContext();
   if (!ctx)
     redirect(
-      `${page}?problem=${encodeURIComponent("Cancelling isn't available right now. Please email info@bookon.com.au.")}`,
+      `${page}?problem=${encodeURIComponent("Cancelling isn't available right now. Please email info@bookon.au.")}`,
     );
   try {
     await cancelLessonByGolfer(ctx!, booking!);

@@ -5,13 +5,16 @@ export interface EmailMessage {
   subject: string;
   text: string;
   html: string;
+  /** Which address it's from (Milestone 27): tee time alerts come from alerts@, the rest from info@. */
+  sender?: "alerts";
 }
 
 export interface Mailer {
   send(message: EmailMessage): Promise<void>;
 }
 
-export const DEFAULT_FROM = "BookOn <info@bookon.com.au>";
+export const DEFAULT_FROM = "BookOn <info@bookon.au>";
+export const DEFAULT_ALERTS_FROM = "BookOn alerts <alerts@bookon.au>";
 
 /** Which kind of email a link is from, by where it goes. */
 function campaignFor(path: string): string | null {
@@ -70,6 +73,7 @@ export class PostmarkMailer implements Mailer {
     private readonly serverToken: string,
     private readonly from = DEFAULT_FROM,
     private readonly fetchImpl: typeof fetch = globalThis.fetch.bind(globalThis),
+    private readonly alertsFrom = DEFAULT_ALERTS_FROM,
   ) {}
 
   async send(original: EmailMessage): Promise<void> {
@@ -82,7 +86,10 @@ export class PostmarkMailer implements Mailer {
         "X-Postmark-Server-Token": this.serverToken,
       },
       body: JSON.stringify({
-        From: this.from,
+        // Alerts come from alerts@, and replies go to info@, where a person reads them.
+        ...(message.sender === "alerts"
+          ? { From: this.alertsFrom, ReplyTo: this.from }
+          : { From: this.from }),
         To: message.to,
         Subject: message.subject,
         TextBody: message.text,
@@ -107,7 +114,12 @@ export function createMailer(db: Database, env: NodeJS.ProcessEnv = process.env)
   if (env.EMAIL_PROVIDER === "postmark") {
     if (!env.POSTMARK_SERVER_TOKEN)
       throw new Error("EMAIL_PROVIDER=postmark needs POSTMARK_SERVER_TOKEN");
-    return new PostmarkMailer(env.POSTMARK_SERVER_TOKEN, env.EMAIL_FROM || DEFAULT_FROM);
+    return new PostmarkMailer(
+      env.POSTMARK_SERVER_TOKEN,
+      env.EMAIL_FROM || DEFAULT_FROM,
+      undefined,
+      env.EMAIL_ALERTS_FROM || DEFAULT_ALERTS_FROM,
+    );
   }
   if (env.NODE_ENV === "production") {
     console.error(

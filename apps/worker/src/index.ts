@@ -10,6 +10,7 @@
  *   lessons                                   close unpaid lesson checkouts, lapse unanswered requests
  *   calendars                                 re-read coaches' own calendar links for busy times
  *   analytics                                 delete old page views; Monday's summary email to the admin
+ *   newsletter                                copy newsletter sign-ups and unsubscribes to Mailchimp
  *
  * poll and run email alert matches, tidy lesson bookings and re-read coaches' calendars after each pass. run also keeps
  * the weather fresh.
@@ -29,7 +30,13 @@ import {
   type Database,
   type PollableCourse,
 } from "@bookon/db";
-import { WebPushSender, createMailer, siteUrl, vapidKeys } from "@bookon/email";
+import {
+  WebPushSender,
+  createMailer,
+  createMarketingList,
+  siteUrl,
+  vapidKeys,
+} from "@bookon/email";
 import {
   paymentProvider,
   tidyEvents,
@@ -38,6 +45,7 @@ import {
   tidyMatchplay,
 } from "@bookon/payments";
 import { sendAlertNotifications } from "./alerts";
+import { syncNewsletter } from "./newsletter";
 import { analyticsUpkeep } from "./analytics";
 import { refreshCoachCalendars } from "./calendars";
 import { loadConfig } from "./config";
@@ -222,6 +230,21 @@ async function analyticsOnce() {
   }
 }
 
+/** Newsletter (Milestone 27): copy changes to Mailchimp, once it's set up. Never stops the worker. */
+async function newsletterOnce() {
+  const list = createMarketingList();
+  if (!list) return;
+  try {
+    const result = await syncNewsletter(handle.db, list);
+    if (result.synced || result.pending || result.failed)
+      console.log(
+        `[newsletter] ${result.synced} sent to Mailchimp, ${result.pending} asked to confirm, ${result.failed} failed`,
+      );
+  } catch (error) {
+    console.error("[newsletter] could not sync with Mailchimp", error);
+  }
+}
+
 /** Never stops the worker either. Forecasts only need courses that have a location. */
 async function weatherOnce() {
   try {
@@ -252,6 +275,8 @@ try {
     await weatherOnce();
   } else if (command === "analytics") {
     await analyticsOnce();
+  } else if (command === "newsletter") {
+    await newsletterOnce();
   } else if (command === "record") {
     if (!values.course) throw new Error("record needs --course <slug>");
     const directory = fileURLToPath(
@@ -270,11 +295,12 @@ try {
       await lessonsOnce();
       await calendarsOnce();
       await analyticsOnce();
+      await newsletterOnce();
       await new Promise((resolve) => setTimeout(resolve, intervalMs));
     }
   } else {
     throw new Error(
-      `Unknown command "${command}". Use poll, run, record, alerts, lessons, calendars, weather or analytics.`,
+      `Unknown command "${command}". Use poll, run, record, alerts, lessons, calendars, weather, analytics or newsletter.`,
     );
   }
 } finally {

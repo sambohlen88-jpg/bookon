@@ -88,7 +88,7 @@ export function coachDeclinedEmail(input: {
         ? "Thanks for listing your coaching on BookOn. We can't put it live yet."
         : "We couldn't put your latest changes live yet. Your page still shows what it did before.",
       input.note,
-      "You can change your listing and send it again. If you have questions, reply to this email or write to info@bookon.com.au.",
+      "You can change your listing and send it again. If you have questions, reply to this email or write to info@bookon.au.",
     ],
     link: { href: input.portalLink, label: "Open your listing" },
   });

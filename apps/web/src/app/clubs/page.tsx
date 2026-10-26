@@ -208,8 +208,8 @@ export default function ClubsPage() {
           </h2>
           <p className="mt-2 text-muted">
             Free to list. Questions? Email{" "}
-            <a href="mailto:info@bookon.com.au" className="text-brand underline">
-              info@bookon.com.au
+            <a href="mailto:info@bookon.au" className="text-brand underline">
+              info@bookon.au
             </a>
             .
           </p>

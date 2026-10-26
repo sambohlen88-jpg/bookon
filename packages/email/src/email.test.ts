@@ -25,7 +25,7 @@ function match(iso: string, price: number | null = 4000): AlertMatch & { href: s
       priceCents: price,
       bookingUrl: "https://bookings.collierparkgolf.com.au/x",
     },
-    href: `https://bookon.com.au/go/token-${iso}`,
+    href: `https://bookon.au/go/token-${iso}`,
   };
 }
 
@@ -39,8 +39,8 @@ describe("describeSearch", () => {
 
 describe("signInEmail", () => {
   it("contains the link and says it expires", () => {
-    const email = signInEmail("sam@example.com", "https://bookon.com.au/auth/callback?token=abc");
-    expect(email.text).toContain("https://bookon.com.au/auth/callback?token=abc");
+    const email = signInEmail("sam@example.com", "https://bookon.au/auth/callback?token=abc");
+    expect(email.text).toContain("https://bookon.au/auth/callback?token=abc");
     expect(email.html).toContain("token=abc");
     expect(email.text).toContain("15 minutes");
   });
@@ -51,25 +51,26 @@ describe("alertEmail", () => {
     to: "sam@example.com",
     filters,
     matches: [match("2026-10-17T23:40:00Z"), match("2026-10-18T00:20:00Z", null)],
-    searchUrl: "https://bookon.com.au/search?date=2026-10-18",
-    manageUrl: "https://bookon.com.au/alerts/manage-token",
+    searchUrl: "https://bookon.au/search?date=2026-10-18",
+    manageUrl: "https://bookon.au/alerts/manage-token",
   };
 
   it("lists each new time with its tracked Book link", () => {
     const email = alertEmail(input);
     expect(email.subject).toBe("2 new tee times at Collier Park Golf Course");
-    expect(email.text).toContain("https://bookon.com.au/go/token-2026-10-17T23:40:00Z");
+    expect(email.text).toContain("https://bookon.au/go/token-2026-10-17T23:40:00Z");
     expect(email.text).toMatch(
       /Sun 18 Oct 7:40\s?am · Collier Park Golf Course · 18 holes · 4 spots · \$40/,
     );
     expect(email.text).toContain("price at club");
+    expect(email.sender).toBe("alerts");
   });
 
   it("names the sender and offers a way to stop, as the Spam Act requires", () => {
     const email = alertEmail(input);
     for (const body of [email.text, email.html]) {
       expect(body).toContain("manage-token");
-      expect(body).toContain("info@bookon.com.au");
+      expect(body).toContain("info@bookon.au");
     }
   });
 
@@ -93,8 +94,8 @@ describe("alertEmail", () => {
 
 describe("searchUrlFor", () => {
   it("rebuilds the search", () => {
-    expect(searchUrlFor("https://bookon.com.au", { ...filters, dateTo: "2026-10-20" })).toBe(
-      "https://bookon.com.au/search?date=2026-10-18&days=3&from=06%3A00&to=12%3A00&players=2&holes=18&course=collier-park",
+    expect(searchUrlFor("https://bookon.au", { ...filters, dateTo: "2026-10-20" })).toBe(
+      "https://bookon.au/search?date=2026-10-18&days=3&from=06%3A00&to=12%3A00&players=2&holes=18&course=collier-park",
     );
   });
 });
@@ -106,7 +107,7 @@ describe("PostmarkMailer", () => {
       calls.push({ url, init });
       return new Response("{}", { status: 200 });
     }) as typeof fetch;
-    await new PostmarkMailer("server-token", "BookOn <info@bookon.com.au>", fakeFetch).send({
+    await new PostmarkMailer("server-token", "BookOn <info@bookon.au>", fakeFetch).send({
       to: "sam@example.com",
       subject: "Hi",
       text: "Hello",
@@ -117,6 +118,34 @@ describe("PostmarkMailer", () => {
     expect(JSON.parse(String(calls[0]!.init.body))).toMatchObject({
       To: "sam@example.com",
       MessageStream: "outbound",
+    });
+  });
+
+  it("sends alerts from alerts@, with replies to info@ (Milestone 27)", async () => {
+    const bodies: Record<string, unknown>[] = [];
+    const fakeFetch = (async (_url: string, init: RequestInit) => {
+      bodies.push(JSON.parse(String(init.body)));
+      return new Response("{}", { status: 200 });
+    }) as typeof fetch;
+    const mailer = new PostmarkMailer("server-token", "BookOn <info@bookon.au>", fakeFetch);
+    await mailer.send({
+      to: "sam@example.com",
+      subject: "Hi",
+      text: "Hello",
+      html: "<p>Hello</p>",
+    });
+    await mailer.send({
+      to: "sam@example.com",
+      subject: "New tee time",
+      text: "Hello",
+      html: "<p>Hello</p>",
+      sender: "alerts",
+    });
+    expect(bodies[0]).toMatchObject({ From: "BookOn <info@bookon.au>" });
+    expect(bodies[0]).not.toHaveProperty("ReplyTo");
+    expect(bodies[1]).toMatchObject({
+      From: "BookOn alerts <alerts@bookon.au>",
+      ReplyTo: "BookOn <info@bookon.au>",
     });
   });
 
@@ -146,7 +175,7 @@ describe("createMailer", () => {
 });
 
 describe("tagging links in emails", () => {
-  const site = "https://bookon.com.au";
+  const site = "https://bookon.au";
   const message = (body: string) => ({
     to: "a@example.com",
     subject: "Hi",
@@ -155,21 +184,21 @@ describe("tagging links in emails", () => {
   });
 
   it("tags links to BookOn's pages with the kind of email", () => {
-    const tagged = tagEmailLinks(message("https://bookon.com.au/lessons/abc?paid=1#when"), site);
+    const tagged = tagEmailLinks(message("https://bookon.au/lessons/abc?paid=1#when"), site);
     expect(tagged.text).toBe(
-      "https://bookon.com.au/lessons/abc?paid=1&utm_source=bookon&utm_medium=email&utm_campaign=lesson#when",
+      "https://bookon.au/lessons/abc?paid=1&utm_source=bookon&utm_medium=email&utm_campaign=lesson#when",
     );
     expect(tagged.html).toContain("utm_campaign=lesson");
-    expect(tagEmailLinks(message("https://bookon.com.au/alerts/xyz"), site).text).toBe(
-      "https://bookon.com.au/alerts/xyz?utm_source=bookon&utm_medium=email&utm_campaign=alert",
+    expect(tagEmailLinks(message("https://bookon.au/alerts/xyz"), site).text).toBe(
+      "https://bookon.au/alerts/xyz?utm_source=bookon&utm_medium=email&utm_campaign=alert",
     );
   });
 
   it("leaves sign-in links, club click-throughs, calendar files and other sites alone", () => {
     for (const url of [
-      "https://bookon.com.au/auth/callback?token=abc",
-      "https://bookon.com.au/go/tok",
-      "https://bookon.com.au/lessons/abc/calendar.ics",
+      "https://bookon.au/auth/callback?token=abc",
+      "https://bookon.au/go/tok",
+      "https://bookon.au/lessons/abc/calendar.ics",
       "https://www.met.no/en",
     ])
       expect(tagEmailLinks(message(url), site).text).toBe(url);

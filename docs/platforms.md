@@ -294,6 +294,15 @@ The owner approved taking lesson payments through Stripe Connect on 19 October 2
 - **How we use it:** `packages/payments` (the official `stripe` library, pinned). Keys: `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`. Webhook at `/api/stripe/webhook`.
 - **Not checked live yet:** this cloud environment can't reach api.stripe.com, so tests use hand-written Stripe responses (`packages/payments/fixtures/stripe/`). The owner's Stripe test mode is the first live check.
 
+### Mailchimp (the newsletter, Milestone 27, 26 October 2026)
+
+The owner approved email marketing on 26 October 2026 ("approve the rest"), with newsletters sent from a marketing tool; I suggested Mailchimp. Like Stripe, it's a service BookOn calls with its own key, not a site BookOn reads.
+
+- **What:** BookOn keeps the newsletter list and the proof of each person's consent (`newsletter_subscribers`). The worker copies each sign-up and unsubscribe to one Mailchimp audience. Newsletters are written and sent in Mailchimp. Mailchimp's webhook tells BookOn about unsubscribes, bounces ("cleaned"), sign-ups on Mailchimp's own forms and changed addresses.
+- **Terms:** Mailchimp's Standard Terms of Use and Acceptable Use Policy (https://www.intuit.com/legal/terms/en-us/mailchimp/) allow only people who've asked to hear from you, and every campaign needs a physical postal address (a PO box is fine) and Mailchimp's unsubscribe link. The Spam Act 2003 also asks for the sender's details and an unsubscribe that works within 5 working days.
+- **How we use it:** `packages/email/src/mailchimp.ts` (Mailchimp Marketing API 3.0, `PUT /lists/{audience}/members/{md5 of email}`). Settings: `MAILCHIMP_API_KEY`, `MAILCHIMP_AUDIENCE_ID`, `MAILCHIMP_WEBHOOK_SECRET`. Webhook at `/api/mailchimp/webhook?key=…`.
+- **Not checked live yet:** tests use responses written from Mailchimp's documentation. The owner's Mailchimp account is the first live check.
+
 ## Golf simulators and driving ranges (Milestone 11 research, 18 October 2026)
 
 The owner asked for Perth's golf simulators and bookable driving ranges. Venues come from Golf WA's simulator list, news and the venues' own sites. Each venue's booking system was checked for robots.txt rules, terms, and whether free times can be seen without logging in. Nothing below is read by BookOn until the owner approves it.

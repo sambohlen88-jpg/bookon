@@ -7,6 +7,7 @@ import { BookingProblem, PaymentError, startGroupCheckout } from "@bookon/paymen
 import { currentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { lessonContext } from "@/lib/lessons";
+import { joinNewsletterIfTicked } from "@/lib/newsletter";
 
 /** Check the golfer's details, hold their spots, and send them to pay (Milestone 19). */
 export async function bookGroupSpots(formData: FormData) {
@@ -52,5 +53,6 @@ export async function bookGroupSpots(formData: FormData) {
     if (error instanceof BookingProblem || error instanceof PaymentError) back(error.message);
     throw error;
   }
+  await joinNewsletterIfTicked(formData, golferEmail, "group-session");
   redirect(url!);
 }

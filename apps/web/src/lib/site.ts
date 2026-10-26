@@ -18,5 +18,5 @@ export async function siteOrigin(): Promise<string> {
 
 /** BookOn's own inbox, for notices such as a new club listing. */
 export function ownerEmail(): string {
-  return process.env.BOOKON_OWNER_EMAIL || process.env.BOOKON_CONTACT_EMAIL || "info@bookon.com.au";
+  return process.env.BOOKON_OWNER_EMAIL || process.env.BOOKON_CONTACT_EMAIL || "info@bookon.au";
 }

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { HttpError, PoliteHttpClient, RobotsDisallowedError, isAllowed, parseRobots } from "./http";
 
-const UA = "BookOnBot/0.1 (+https://bookon.com.au; hello@bookon.com.au)";
+const UA = "BookOnBot/0.1 (+https://bookon.au; hello@bookon.au)";
 
 /** A fake clock and fetch so tests run instantly and can see timing. */
 function harness(

@@ -27,8 +27,8 @@ export default async function TermsPage() {
         <h1 className="text-3xl font-bold tracking-tight md:text-4xl">Terms of use</h1>
         <p className="mt-2 text-muted">Last updated {TERMS_UPDATED}</p>
         <p className="mt-6 text-lg leading-relaxed">
-          These terms are between you and {who}. By using bookon.com.au or the BookOn app, you agree
-          to them. They&apos;re written to be read; if anything&apos;s unclear, email {mail}.
+          These terms are between you and {who}. By using bookon.au or the BookOn app, you agree to
+          them. They&apos;re written to be read; if anything&apos;s unclear, email {mail}.
         </p>
 
         <LegalSection id="what" title="What BookOn is">

@@ -42,8 +42,8 @@ export default async function PrivacyPage() {
         <p className="mt-2 text-muted">Last updated {PRIVACY_UPDATED}</p>
         <p className="mt-6 text-lg leading-relaxed">
           This policy explains how {who} (&ldquo;BookOn&rdquo;, &ldquo;we&rdquo;) handles personal
-          information when you use bookon.com.au and the BookOn app. We follow the Australian
-          Privacy Principles in the Privacy Act 1988. Questions? Email {mail}.
+          information when you use bookon.au and the BookOn app. We follow the Australian Privacy
+          Principles in the Privacy Act 1988. Questions? Email {mail}.
         </p>
         <nav aria-label="Contents" className="mt-6 rounded-xl bg-surface p-4">
           <p className="font-semibold">Contents</p>
@@ -198,8 +198,9 @@ export default async function PrivacyPage() {
             </li>
             <li>
               <strong>With companies that help us run BookOn</strong>, only as much as they need:
-              Stripe (payments), our email service (sending emails), our website and database hosts,
-              and the services that deliver phone notifications (such as Apple, Google and Mozilla).
+              Stripe (payments), our email service (sending emails), Mailchimp (our newsletter, if
+              you&apos;ve asked for it), our website and database hosts, and the services that
+              deliver phone notifications (such as Apple, Google and Mozilla).
             </li>
             <li>
               <strong>If the law requires it</strong>, or to protect someone&apos;s safety.
@@ -223,8 +224,16 @@ export default async function PrivacyPage() {
           <p>
             We email you about things you&apos;ve asked for: sign-in links, alerts, bookings,
             entries, and results. Every alert email has a link to stop it, and you can turn phone
-            notifications off in My account or your browser. We won&apos;t send marketing emails
-            unless you&apos;ve said yes.
+            notifications off in My account or your browser.
+          </p>
+          <p>
+            <strong>BookOn news</strong> (news, golf tips and offers) only goes to people who tick
+            the box asking for it, when signing in, booking or entering, or in My account. The box
+            always starts unticked. We keep when and where you ticked it, and the words you agreed
+            to. Your email address goes to Mailchimp, which sends the newsletter for us from the
+            United States. Every newsletter has an unsubscribe link, or turn it off in My account.
+            We act on it straight away, and always within 5 working days. If you unsubscribe, we
+            keep your address marked as unsubscribed so it isn&apos;t added again by mistake.
           </p>
         </LegalSection>
 

@@ -56,7 +56,7 @@ export async function vapidKeys(
 export class WebPushSender implements PushSender {
   constructor(
     private readonly keys: VapidKeys,
-    private readonly subject = "mailto:info@bookon.com.au",
+    private readonly subject = "mailto:info@bookon.au",
     private readonly fetchImpl: typeof fetch = globalThis.fetch.bind(globalThis),
   ) {}
 

@@ -22,6 +22,8 @@ import {
   removeCourseRating,
   setCourseRating,
   setFavourite,
+  subscribeNewsletter,
+  unsubscribeNewsletter,
 } from "@bookon/db";
 import { createMailer, signInEmail } from "@bookon/email";
 import { authToken, clearAuthCookie, currentUser, setAuthCookie } from "@/lib/auth";
@@ -38,7 +40,14 @@ export async function requestSignIn(formData: FormData) {
   if (!email) back("email");
 
   const db = getDb();
-  const result = await createSignInToken(db, email!, next || null, new Date());
+  // The newsletter tick is kept with the link and recorded once it's used (Milestone 27).
+  const result = await createSignInToken(
+    db,
+    email!,
+    next || null,
+    new Date(),
+    formData.get("newsletter") === "yes",
+  );
   if ("error" in result) back("limit");
   const { token } = result as { token: string };
   const link = `${await siteOrigin()}/auth/callback?token=${encodeURIComponent(token)}`;
@@ -182,6 +191,20 @@ export async function clearMyVisits() {
   const user = await requireUser("/account");
   await clearVisits(getDb(), user.id);
   revalidatePath("/account");
+}
+
+/** Join the newsletter from My account (Milestone 27). */
+export async function joinNewsletter() {
+  const user = await requireUser("/account?tab=settings");
+  await subscribeNewsletter(getDb(), { email: user.email, source: "account", now: new Date() });
+  redirect("/account?tab=settings&newsletter=on#newsletter");
+}
+
+/** Leave the newsletter from My account. Mailchimp hears on the worker's next pass. */
+export async function leaveNewsletter() {
+  const user = await requireUser("/account?tab=settings");
+  await unsubscribeNewsletter(getDb(), { email: user.email, via: "account", now: new Date() });
+  redirect("/account?tab=settings&newsletter=off#newsletter");
 }
 
 export async function deleteMyAccount(formData: FormData) {

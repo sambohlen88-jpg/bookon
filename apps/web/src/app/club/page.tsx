@@ -26,7 +26,7 @@ export default async function ClubHome() {
           <>
             <p className="mt-3 text-muted">
               {user.email} isn&apos;t linked to a club on BookOn. If your club is listed, ask its
-              owner to add you, or email info@bookon.com.au.
+              owner to add you, or email info@bookon.au.
             </p>
             <Link href="/clubs/join" className={`${primaryButton} mt-6`}>
               List your club

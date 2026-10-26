@@ -33,7 +33,7 @@ describe("the Monday summary", () => {
         visitorId: "v1",
         path: "/",
         referrer: "https://www.google.com/",
-        ownHost: "bookon.com.au",
+        ownHost: "bookon.au",
         utm: {},
         userAgent: IPHONE,
         width: 390,

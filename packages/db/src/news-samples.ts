@@ -29,7 +29,7 @@ export const SAMPLE_ARTICLES: {
 
 ## Got a story?
 
-If your club has news, or you've got a golf story worth telling, email us at [info@bookon.com.au](mailto:info@bookon.com.au). We'd love to hear it.
+If your club has news, or you've got a golf story worth telling, email us at [info@bookon.au](mailto:info@bookon.au). We'd love to hear it.
 
 In the meantime, [find a tee time](/) and get out there.`,
   },

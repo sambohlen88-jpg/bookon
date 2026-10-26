@@ -7,6 +7,7 @@ import { BookingProblem, PaymentError, startEntryCheckout } from "@bookon/paymen
 import { currentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { lessonContext } from "@/lib/lessons";
+import { joinNewsletterIfTicked } from "@/lib/newsletter";
 
 /** Enter a club event (Milestone 21): check the team, hold the places, and send them to pay. */
 export async function enterEvent(formData: FormData) {
@@ -45,6 +46,7 @@ export async function enterEvent(formData: FormData) {
     if (error instanceof BookingProblem || error instanceof PaymentError) back(error.message);
     throw error;
   }
+  await joinNewsletterIfTicked(formData, contactEmail, "event");
   redirect(url!);
 }
 

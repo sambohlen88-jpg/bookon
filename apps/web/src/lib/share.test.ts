@@ -81,7 +81,7 @@ describe("shareText", () => {
           ),
         ],
       },
-      "https://bookon.com.au/s/abc",
+      "https://bookon.au/s/abc",
     );
     expect(text).toBe(
       [
@@ -91,7 +91,7 @@ describe("shareText", () => {
         "Collier Park: 7:10 am, 7:20 am, 8:40 am ($32)",
         "Whaleback: 9:00 am, 9:01 am, 9:02 am, 9:03 am, 9:04 am, 9:05 am, 9:06 am, 9:07 am +1 more",
         "",
-        "https://bookon.com.au/s/abc",
+        "https://bookon.au/s/abc",
       ].join("\n"),
     );
   });
@@ -113,7 +113,7 @@ describe("shareText", () => {
           ),
         ],
       },
-      "https://bookon.com.au/s/abc",
+      "https://bookon.au/s/abc",
     );
     expect(text.split("\n")[3]).toBe(
       "Collier Park: Sat 24 Oct 6:00 am, 7:00 am, 8:00 am, 9:00 am; Sun 25 Oct 7:00 am +25 more ($32)",

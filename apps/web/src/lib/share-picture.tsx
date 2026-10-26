@@ -59,12 +59,12 @@ type Font = { name: string; data: Buffer; weight: 400 | 600 | 700 | 800; style: 
 let fonts: Promise<Font[]> | null = null;
 let logo: Promise<string> | null = null;
 
-/** DM Sans, from src/fonts (SIL Open Font License), as on the site. */
+/** Inter, from src/fonts (SIL Open Font License), as on the site. */
 export function pictureFonts(): Promise<Font[]> {
   fonts ??= Promise.all(
     ([400, 600, 700, 800] as const).map(async (weight) => ({
-      name: "DM Sans",
-      data: await readFile(join(process.cwd(), "src/fonts", `dm-sans-${weight}.woff`)),
+      name: "Inter",
+      data: await readFile(join(process.cwd(), "src/fonts", `inter-${weight}.woff`)),
       weight,
       style: "normal" as const,
     })),
@@ -79,7 +79,7 @@ async function logoSrc(): Promise<string> {
   return logo;
 }
 
-/** "bookon.com.au/s/abc" for the footer. */
+/** "bookon.au/s/abc" for the footer. */
 function shortUrl(url: string): string {
   return url.replace(/^https?:\/\//, "");
 }
@@ -165,7 +165,7 @@ export async function sharePicture(share: Share, url: string) {
         flexDirection: "column",
         background: C.background,
         color: C.foreground,
-        fontFamily: "DM Sans",
+        fontFamily: "Inter",
       }}
     >
       <div
@@ -339,7 +339,7 @@ export async function shareCard(share: Share | null) {
           gap: 28,
           background: C.heroBg,
           color: C.heroFg,
-          fontFamily: "DM Sans",
+          fontFamily: "Inter",
         }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text */}
@@ -359,7 +359,7 @@ export async function shareCard(share: Share | null) {
         flexDirection: "column",
         background: C.background,
         color: C.foreground,
-        fontFamily: "DM Sans",
+        fontFamily: "Inter",
       }}
     >
       <div
@@ -451,7 +451,7 @@ export async function newsCard(
         padding: "56px 64px",
         background: C.heroBg,
         color: C.heroFg,
-        fontFamily: "DM Sans",
+        fontFamily: "Inter",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
@@ -485,7 +485,7 @@ export async function newsCard(
         )}
       </div>
       <div style={{ fontSize: 26, color: C.heroMuted }}>
-        {article ? `By ${article.authorName}` : "bookon.com.au/news"}
+        {article ? `By ${article.authorName}` : "bookon.au/news"}
       </div>
     </div>
   );

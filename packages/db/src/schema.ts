@@ -301,6 +301,8 @@ export const signInTokens = pgTable(
     usedAt: timestamp("used_at", { withTimezone: true }),
     /** Where to go after signing in, e.g. back to a search. A path on this site. */
     next: text("next"),
+    /** They ticked "Send me BookOn news" (Milestone 27), recorded once the link is used. */
+    newsletter: boolean("newsletter").notNull().default(false),
   },
   (t) => [index("sign_in_tokens_email_created_idx").on(t.email, t.createdAt)],
 );
@@ -1364,3 +1366,31 @@ export const articlePhotos = pgTable("article_photos", {
   /** Who confirmed BookOn may use it. */
   rightsConfirmedBy: text("rights_confirmed_by").notNull(),
 });
+
+/**
+ * Who asked for BookOn's newsletter (Milestone 27), with proof of consent as
+ * the Spam Act asks: when, where on the site and the words they agreed to.
+ * Unsubscribed people stay, so they're never added back by mistake. The
+ * worker copies each change to Mailchimp when it's set up.
+ */
+export const newsletterSubscribers = pgTable(
+  "newsletter_subscribers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** Stored lower case. */
+    email: text("email").notNull().unique(),
+    status: text("status", { enum: ["subscribed", "unsubscribed"] }).notNull(),
+    /** Where they ticked the box: signin, account, lesson, group-session, event, matchplay, mailchimp. */
+    source: text("source").notNull(),
+    consentText: text("consent_text").notNull(),
+    consentedAt: timestamp("consented_at", { withTimezone: true }).notNull(),
+    unsubscribedAt: timestamp("unsubscribed_at", { withTimezone: true }),
+    /** How they left: account, mailchimp, account-deleted. */
+    unsubscribedVia: text("unsubscribed_via"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+    /** When Mailchimp last got this status; behind updatedAt means it's waiting to go. */
+    syncedAt: timestamp("synced_at", { withTimezone: true }),
+    syncError: text("sync_error"),
+  },
+  (t) => [index("newsletter_subscribers_status_idx").on(t.status)],
+);

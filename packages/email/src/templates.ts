@@ -10,7 +10,7 @@ import type { AlertMatch, SearchParams } from "@bookon/db";
 import type { EmailMessage } from "./mailer";
 
 /** The sender details every BookOn email ends with (Spam Act 2003: identify the sender). */
-export const SENDER = "BookOn · Perth, Western Australia · info@bookon.com.au";
+export const SENDER = "BookOn · Perth, Western Australia · info@bookon.au";
 
 export function escape(text: string): string {
   return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -130,6 +130,7 @@ ${listed
       `You're getting this because you set up a BookOn alert for ${escape(describeSearch(input.filters))}.<br>
 <a href="${escape(input.manageUrl)}" style="color:#5b6b62">Pause or stop this alert</a><br>${escape(SENDER)}`,
     ),
+    sender: "alerts",
   };
 }
 

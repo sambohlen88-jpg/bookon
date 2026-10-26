@@ -64,7 +64,7 @@ const TEXT_TIMES = { oneDay: 8, perDay: 4 };
  *
  *   Collier Park Golf Course: 7:10 am, 7:20 am, 8:40 am ($32)
  *   ...
- *   https://bookon.com.au/s/abc
+ *   https://bookon.au/s/abc
  */
 export function shareText(content: ShareContent, url: string): string {
   const multiDay = content.params.dateFrom !== content.params.dateTo;

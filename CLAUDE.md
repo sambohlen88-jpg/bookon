@@ -6,11 +6,11 @@ Read `SPEC.md` before starting work. The product is BookOn (the spec's working t
 
 - Build one milestone at a time (SPEC section 11). Plan first, wait for owner approval, then build. Never change scope silently.
 - End each milestone with a write-up in `docs/` covering what was done, what was uncertain, open issues, and how to demo it.
-- Only fetch platforms the owner has approved in `docs/platforms.md` (MiClub, Quick18, Chronogolf and Your Golf Booking so far), and only through `PoliteHttpClient`. The other outside services (MET Norway weather, OpenStreetMap locations, Stripe, and coaches' own calendar links) are listed there too, with their terms. Tests use saved fixtures only, never the live sites.
+- Only fetch platforms the owner has approved in `docs/platforms.md` (MiClub, Quick18, Chronogolf and Your Golf Booking so far), and only through `PoliteHttpClient`. The other outside services (MET Norway weather, OpenStreetMap locations, Stripe, Mailchimp, and coaches' own calendar links) are listed there too, with their terms. Tests use saved fixtures only, never the live sites.
 - A page that does not look like the expected platform page is an error, never "no tee times".
 - Never get past a CAPTCHA, login wall or other block a club puts up. Record it and tell the owner.
 - When Claude runs the worker or fetches pages, obey robots.txt rules for `Claude-User` as well as BookOnBot (the worker does this when `CLAUDECODE` is set). Quick18 blocks `Claude-User`, so Claude must not fetch Quick18 pages; the owner runs Quick18 checks.
-- Before any launch work (Milestone 27, a public link, or telling golfers about the site), remind the owner of the open items in `docs/launch-checklist.md`, starting with verified platform access.
+- Before any launch work (Milestone 28, a public link, or telling golfers about the site), remind the owner of the open items in `docs/launch-checklist.md`, starting with verified platform access.
 - Copy is plain Australian English, short and friendly.
 
 ## Code
@@ -23,7 +23,8 @@ Read `SPEC.md` before starting work. The product is BookOn (the spec's working t
 - Times: store UTC, display Perth time via helpers in `packages/core/src/time.ts`. Do not hand-roll offsets elsewhere.
 - Admin and club pages check access in every page, action and download (`requireAdmin`, `requireClub`, `clubAccess`, `isAdminRequest` in `apps/web/src/lib/access.ts`), never only in a layout. Give each form button that makes a different decision its own server action.
 - Lesson payments go through `packages/payments` (Stripe, or practice payments on a local database). Money moves first, then the booking, and every step only moves a booking from the state it expects. Tests use the saved Stripe responses, never the live API.
-- Emails go through `createMailer` in `packages/email`. Locally they land in the outbox (`/dev/outbox`); never send real email to anyone but the owner without their say-so.
+- Emails go through `createMailer` in `packages/email`. Locally they land in the outbox (`/dev/outbox`); never send real email to anyone but the owner without their say-so. Tee time alerts come from alerts@bookon.au (`sender: "alerts"`), everything else from info@bookon.au.
+- Marketing email only goes to people on the newsletter list (`packages/db/src/newsletter.ts`), who ticked a box that starts unticked. Never add anyone to it any other way.
 - Colours come from CSS tokens in `apps/web/src/app/globals.css`, not hard-coded values in components. The exceptions are the course illustrations (`apps/web/src/lib/course-art.ts`) and the share pictures (`apps/web/src/lib/share-picture.tsx`), which are served as images and can't see page CSS, so they carry their own palette.
 - Never copy photos or logos from club websites. Course pictures are drawn, or supplied by the club with permission.
 - Before finishing: `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build`.

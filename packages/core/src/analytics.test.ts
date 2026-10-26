@@ -86,7 +86,7 @@ describe("devices", () => {
 });
 
 describe("where visitors come from", () => {
-  const own = "bookon.com.au";
+  const own = "bookon.au";
   it("sorts referrers into channels", () => {
     expect(trafficSource({ referrer: "https://www.google.com.au/", ownHost: own })).toEqual({
       channel: "Search",
@@ -118,9 +118,7 @@ describe("where visitors come from", () => {
   });
 
   it("ignores moving between BookOn's own pages", () => {
-    expect(trafficSource({ referrer: "https://www.bookon.com.au/courses", ownHost: own })).toBe(
-      null,
-    );
+    expect(trafficSource({ referrer: "https://www.bookon.au/courses", ownHost: own })).toBe(null);
   });
 });
 
