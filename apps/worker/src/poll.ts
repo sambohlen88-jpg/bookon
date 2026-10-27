@@ -5,6 +5,7 @@ import {
   type CourseAdapter,
   type DateRange,
   type HttpClient,
+  type Platform,
 } from "@bookon/core";
 import { adapterFor } from "@bookon/adapters";
 import {
@@ -24,6 +25,14 @@ export interface PollResult {
   teeTimes: number;
   error?: string;
 }
+
+/**
+ * Platforms BookOn doesn't read for now. MiClub (27 October 2026): MiClub
+ * said it doesn't endorse automated reading of timesheets and isn't taking new
+ * integrations until about the end of Q1 2027, so the owner paused it. See
+ * docs/platforms.md. Their courses stay on the site; only the reading stops.
+ */
+export const PAUSED_PLATFORMS: readonly Platform[] = ["miclub"];
 
 /** Counts the pages one course requests, as courses share one HTTP client and poll in parallel. */
 function countingClient(http: HttpClient): HttpClient & { count: number } {
@@ -122,9 +131,21 @@ export async function pollAll(
   db: Database,
   courses: PollableCourse[],
   http: HttpClient,
-  options: { now?: () => Date; days?: number } = {},
+  options: { now?: () => Date; days?: number; pausedPlatforms?: readonly Platform[] } = {},
 ): Promise<PollResult[]> {
-  const results = await Promise.all(courses.map((course) => pollCourse(db, course, http, options)));
+  const paused = options.pausedPlatforms ?? PAUSED_PLATFORMS;
+  const results = await Promise.all(
+    courses.map((course) =>
+      paused.includes(course.platform)
+        ? Promise.resolve<PollResult>({
+            course: course.slug,
+            status: "skipped",
+            teeTimes: 0,
+            error: `${course.platform} reading is paused`,
+          })
+        : pollCourse(db, course, http, options),
+    ),
+  );
   const now = (options.now ?? (() => new Date()))();
   await exclusive(() => pruneOldSnapshots(db, perthDate(now), now));
   await exclusive(() => pruneExpiredShares(db, now));

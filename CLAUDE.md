@@ -6,7 +6,7 @@ Read `SPEC.md` before starting work. The product is BookOn (the spec's working t
 
 - Build one milestone at a time (SPEC section 11). Plan first, wait for owner approval, then build. Never change scope silently.
 - End each milestone with a write-up in `docs/` covering what was done, what was uncertain, open issues, and how to demo it.
-- Only fetch platforms the owner has approved in `docs/platforms.md` (MiClub, Quick18, Chronogolf and Your Golf Booking so far), and only through `PoliteHttpClient`. The other outside services (MET Norway weather, OpenStreetMap locations, Stripe, Mailchimp, and coaches' own calendar links) are listed there too, with their terms. Tests use saved fixtures only, never the live sites.
+- Only fetch platforms the owner has approved in `docs/platforms.md` (Quick18, Chronogolf and Your Golf Booking so far), and only through `PoliteHttpClient`. **MiClub is paused** (27 October 2026: MiClub doesn't endorse reading its timesheets); never switch it back on without MiClub's agreement. The other outside services (MET Norway weather, OpenStreetMap locations, Stripe, Mailchimp, and coaches' own calendar links) are listed there too, with their terms. Tests use saved fixtures only, never the live sites.
 - A page that does not look like the expected platform page is an error, never "no tee times".
 - Never get past a CAPTCHA, login wall or other block a club puts up. Record it and tell the owner.
 - When Claude runs the worker or fetches pages, obey robots.txt rules for `Claude-User` as well as BookOnBot (the worker does this when `CLAUDECODE` is set). Quick18 blocks `Claude-User`, so Claude must not fetch Quick18 pages; the owner runs Quick18 checks.

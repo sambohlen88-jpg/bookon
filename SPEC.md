@@ -201,6 +201,8 @@ Each milestone ends with a short written summary, a list of open issues, and a d
 
 **Owner's change, 26 October 2026 (tester links):** so friends can test the private site without the owner's login, `BOOKON_TESTER_CODE` turns on a tester link, `/?tester=<code>`. Opening it once lets that browser in for 30 days without the password box (so testers can use the Home Screen app and notifications), then drops the code from the address. The cookie holds a fingerprint of the code, not the code, so changing the code locks everyone out. Testers sign in with their own email. Search engines are still kept out, and Admin, Settings, Testers shows the link.
 
+**Owner's change, 27 October 2026 (MiClub paused):** MiClub replied that it doesn't endorse automated reading of its timesheets, even public ones, prefers sites to link golfers to the club's MiClub booking page, and isn't taking new integrations until about the end of Q1 2027. The owner paused MiClub reading: the worker skips MiClub courses (`PAUSED_PLATFORMS`), and the courses stay on the site. How BookOn presents itself until then (a Perth golf hub) is the owner's next decision. See `docs/platforms.md`.
+
 ## 12. Phase 2 preview (do not build yet)
 
 Stripe Connect style payments for tee times (lessons are Milestone 15), official partner API adapters that can book and cancel, support for a booking history and refunds, more cities, and native apps. Keep the adapter interface flexible enough that a `book()` and `cancel()` method can be added later.

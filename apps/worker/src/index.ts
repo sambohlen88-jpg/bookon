@@ -112,10 +112,15 @@ async function coursesToPoll(db: Database): Promise<PollableCourse[]> {
 }
 
 function report(results: PollResult[]) {
+  const paused = results.filter((r) => r.status === "skipped" && r.error?.endsWith("is paused"));
   for (const r of results) {
+    if (paused.includes(r)) continue;
     const detail = r.status === "error" ? r.error : `${r.teeTimes} tee times`;
     console.log(`[worker] ${r.course}: ${r.status}${detail ? ` (${detail})` : ""}`);
   }
+  // MiClub is paused for now (docs/platforms.md): one line, not one per course.
+  if (paused.length > 0)
+    console.log(`[worker] ${paused.length} courses not read: ${paused[0]!.error}`);
 }
 
 async function pollOnce(client: HttpClient) {

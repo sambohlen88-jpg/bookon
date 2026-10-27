@@ -6,6 +6,7 @@ Things that must be done before BookOn launches publicly (SPEC section 11, Miles
 
 Data is read from public booking pages with the owner's approval, ahead of formal permission. Before full launch, get verified access or written permission from each platform:
 
+- [ ] **MiClub: reading paused on 27 October 2026.** MiClub replied that it doesn't endorse automated reading of timesheets and isn't taking new integrations until about the end of Q1 2027 (details in `docs/platforms.md`). To do: fill in MiClub's Third-Party Integration Request Form, send the reply, and decide how MiClub courses show until then.
 - [ ] **MiClub** (Perth, owned by Northstar). Ask for read access to the live feed that powers TeeNet. Covers Collier Park, Fremantle Public, Whaleback, Wembley and other MiClub courses.
 - [ ] **Sagacity Golf** (Quick18). Ask for API or feed access. Covers Hamersley.
 - [ ] **Lightspeed Golf** (Chronogolf), only if a BookOn course turns out to use it. Apply for the [Partner API](https://partner-api.docs.chronogolf.com/). The Chronogolf pages for Marangaroo, The Cut and Point Walter now return 404, so they may be on MiClub instead.

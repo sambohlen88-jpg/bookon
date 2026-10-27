@@ -91,7 +91,11 @@ describe("pollAll", () => {
   it("counts each course's own requests when polling in parallel", async () => {
     const hamersleyCourse = (await findCourseBySlug(handle.db, "hamersley"))!;
     const collier = (await findCourseBySlug(handle.db, "collier-park"))!;
-    await pollAll(handle.db, [collier, hamersleyCourse], new FixtureHttp(), { now, days: 1 });
+    await pollAll(handle.db, [collier, hamersleyCourse], new FixtureHttp(), {
+      now,
+      days: 1,
+      pausedPlatforms: [],
+    });
     const runs = await handle.db.select().from(schema.fetchRuns);
     expect(runs.map((r) => r.requestCount).sort()).toEqual([1, 1]);
   });
@@ -102,10 +106,23 @@ describe("pollAll", () => {
     const results = await pollAll(handle.db, [collier, hamersleyCourse], new FixtureHttp(), {
       now,
       days: 1,
+      pausedPlatforms: [],
     });
     expect(results.map((r) => [r.course, r.status])).toEqual([
       ["collier-park", "error"],
       ["hamersley", "ok"],
     ]);
+  });
+
+  it("doesn't read MiClub while it's paused (27 October 2026)", async () => {
+    const hamersleyCourse = (await findCourseBySlug(handle.db, "hamersley"))!;
+    const collier = (await findCourseBySlug(handle.db, "collier-park"))!;
+    const http = new FixtureHttp();
+    const results = await pollAll(handle.db, [collier, hamersleyCourse], http, { now, days: 1 });
+    expect(results.map((r) => [r.course, r.status])).toEqual([
+      ["collier-park", "skipped"],
+      ["hamersley", "ok"],
+    ]);
+    expect(http.requestCount).toBe(1);
   });
 });

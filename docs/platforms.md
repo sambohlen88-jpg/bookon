@@ -125,6 +125,17 @@ Two of the owner's launch courses are on neither MiClub nor Quick18:
 
 Lightspeed publishes a [Partner API](https://partner-api.docs.chronogolf.com/) that lets approved partners read a club's tee sheet and pricing. That is an official, permitted feed, the route SPEC section 6 prefers. **Recommendation: apply for partner access rather than reading Chronogolf pages.** Both courses are seeded but switched off until then.
 
+## MiClub's reply, and reading paused (27 October 2026)
+
+The owner wrote to MiClub (as the launch checklist asked). MiClub's third-party integrations contact replied on 27 October 2026:
+
+- **No new third-party integrations are being reviewed** while MiClub redevelops its APIs and integration pathways and reviews commercial arrangements. They expect to reconsider pending applications **towards the end of Q1 2027**.
+- **MiClub does not endorse third-party scraping or automated extraction of timesheet data, even where it's publicly accessible.** Their preference is for other platforms to send golfers to the club's MiClub booking page rather than show timesheet inventory themselves.
+- MiClub is **strengthening its measures against bots**, so the current way of reading public timesheets may stop working.
+- They invited BookOn to complete their **Third-Party Integration Request Form**, and named their contact for integration requests (details are in the owner's email).
+
+**Owner decision, 27 October 2026: pause MiClub reading.** The worker no longer reads any MiClub course (`PAUSED_PLATFORMS` in `apps/worker/src/poll.ts`). MiClub courses stay on the site, but their times go stale and drop out of search within 90 minutes. How BookOn handles MiClub courses until an integration exists (for example, "Book with the club" links, as MiClub prefers) is for the owner to decide. Don't switch MiClub reading back on without MiClub's agreement.
+
 ## MiClub
 
 ### What it is
