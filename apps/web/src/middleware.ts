@@ -31,8 +31,11 @@ const OPEN_PATHS = new Set([
   "/api/stripe/webhook",
   "/api/mailchimp/webhook",
 ]);
-/** Coaches' calendar links: calendar apps can't type the site password, and the link is private. */
-const OPEN_PREFIXES = ["/calendar/"];
+/**
+ * Coaches' calendar links: calendar apps can't type the site password, and the link is private.
+ * Brand images (the logo in email signatures), which other people's inboxes load.
+ */
+const OPEN_PREFIXES = ["/calendar/", "/brand/"];
 
 export async function middleware(request: NextRequest) {
   // Private test mode: ask for the site password, and keep search engines out.
